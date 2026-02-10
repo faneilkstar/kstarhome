@@ -1,67 +1,81 @@
+#!/usr/bin/env python
+"""
+Script d'initialisation de la base de données KstarHome
+Crée toutes les tables et le compte administrateur par défaut
+"""
+import os
+import sys
+
+# Ajouter le répertoire racine au path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from app import create_app, db
 from app.models import User, Filiere, Classe
 
-# Pas besoin d'importer generate_password_hash ici, le modèle s'en charge !
+def init_database():
+    """Initialiser la base de données"""
+    print("=" * 60)
+    print("🔄 INITIALISATION DE LA BASE DE DONNÉES KSTARHOME")
+    print("=" * 60)
+    print()
 
-app = create_app()
+    # Créer l'application
+    app = create_app(os.getenv('FLASK_CONFIG') or 'default')
 
-
-def init_system():
     with app.app_context():
-        # 1. Nettoyage et Création des tables
-        print("Suppression des anciennes données...")
-        db.drop_all()
-        db.create_all()
-        print("Tables créées avec succès.")
+        try:
+            # Créer toutes les tables
+            print("📋 Création des tables...")
+            db.create_all()
+            print("✅ Tables créées avec succès")
+            print()
 
-        # 2. Création du compte Directeur
-        # On vérifie d'abord (même si drop_all a tout effacé, c'est une bonne pratique)
-        if not User.query.filter_by(username='admin').first():
-            admin = User(
-                username='admin',
-                email='directeur@ecole.tg',  # J'ai ajouté l'email pour être complet
-                role='DIRECTEUR',
-                statut='actif'
-            )
-            # CORRECTION : On assigne le mot de passe en CLAIR.
-            # Le modèle User va le hasher automatiquement grâce au @password.setter
-            admin.password = 'admin123'
+            # Créer le compte DIRECTEUR par défaut
+            print("👤 Création du compte Directeur...")
+            admin = User.query.filter_by(username='admin').first()
 
-            db.session.add(admin)
+            if not admin:
+                admin = User(
+                    username='admin',
+                    email='admin@kstarhome.com',
+                    role='DIRECTEUR'
+                )
+                admin.password = 'admin123'
+                db.session.add(admin)
+                db.session.commit()
+                print("✅ Compte DIRECTEUR créé :")
+                print("   Username: admin")
+                print("   Password: admin123")
+                print("   ⚠️  Changez ce mot de passe en production !")
+            else:
+                print("ℹ️  Compte admin existe déjà")
 
-        # 3. Création des données académiques de test
-        # Création Filière
-        filiere = Filiere(
-            nom_filiere="INFORMATIQUE",
-            code_filiere="INFO",
-            cycle="Licence",
-            description="Génie Logiciel et Systèmes"
-        )
-        db.session.add(filiere)
-        db.session.flush()  # Important pour récupérer l'ID de la filière tout de suite
+            print()
+            print("=" * 60)
+            print("🎉 BASE DE DONNÉES INITIALISÉE AVEC SUCCÈS !")
+            print("=" * 60)
+            print()
+            print("Vous pouvez maintenant lancer l'application avec :")
+            print("   python run.py")
+            print()
+            print("Connexion Directeur :")
+            print("   URL: http://localhost:5000")
+            print("   Username: admin")
+            print("   Password: admin123")
+            print()
 
-        # Création Classe
-        classe = Classe(
-            nom_classe="Licence 1",
-            code_classe="L1-INFO",  # Ajout du code classe unique
-            grade="L1",
-            cycle="Licence",
-            annee=1,
-            filiere_id=filiere.id,
-            capacite_max=50
-        )
-        db.session.add(classe)
-
-        # Validation finale
-        db.session.commit()
-
-        print("=" * 40)
-        print("✅ SYSTÈME INITIALISÉ AVEC SUCCÈS")
-        print("=" * 40)
-        print("👤 LOGIN    : admin")
-        print("🔑 PASSWORD : admin123")
-        print("=" * 40)
+        except Exception as e:
+            print()
+            print("=" * 60)
+            print("❌ ERREUR LORS DE L'INITIALISATION")
+            print("=" * 60)
+            print(f"Erreur: {e}")
+            print()
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
 
 
 if __name__ == '__main__':
-    init_system()
+    init_database()
+
