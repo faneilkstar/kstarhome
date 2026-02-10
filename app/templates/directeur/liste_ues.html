@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Direction - Unités d'Enseignement{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-blue: #4361ee;
+        --soft-bg: #f8fafc;
+    }
+    body { background-color: var(--soft-bg); }
+
+    /* Cartes de statistiques stylisées */
+    .stat-glass {
+        background: white;
+        border-radius: 20px;
+        padding: 1.5rem;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        transition: transform 0.3s;
+    }
+    .stat-glass:hover { transform: translateY(-5px); }
+    .icon-box {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Tableau Modernisé */
+    .ue-card {
+        background: white;
+        border-radius: 24px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
+    .table thead th {
+        background: #fdfdfd;
+        color: #64748b;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #f1f5f9;
+        padding: 1rem;
+    }
+    .table tbody td {
+        padding: 1.2rem 1rem;
+        vertical-align: middle;
+        color: #334155;
+    }
+
+    /* Badge spécial pour Code UE */
+    .code-badge {
+        background: #eef2ff;
+        color: #4361ee;
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-family: 'Monaco', monospace;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    /* Boutons d'action compacts */
+    .action-group .btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        margin: 0 2px;
+        transition: 0.2s;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Unités d'Enseignement</h2>
+            <p class="text-muted mb-0">Catalogue des cours et volumes horaires</p>
+        </div>
+        <a href="{{url_for('directeur.ajouter_ue')}}" class="btn btn-primary rounded-pill px-4 shadow">
+            <i class="fas fa-plus-circle me-2"></i>Nouvelle UE
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-glass">
+                <div class="icon-box bg-primary-subtle text-primary"><i class="fas fa-book"></i></div>
+                <h3 class="fw-bold mb-0">{{ ues|length }}</h3>
+                <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Total Unités</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-glass">
+                <div class="icon-box bg-success-subtle text-success"><i class="fas fa-clock"></i></div>
+                <h3 class="fw-bold mb-0">
+                    {% set total_h = namespace(v=0) %}
+                    {% for ue in ues %}{% set total_h.v = total_h.v + (ue.heures or 0) %}{% endfor %}
+                    {{ total_h.v }}h
+                </h3>
+                <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Volume Horaire Global</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-glass">
+                <div class="icon-box bg-warning-subtle text-warning"><i class="fas fa-coins"></i></div>
+                <h3 class="fw-bold mb-0">
+                    {% set total_c = namespace(v=0) %}
+                    {% for ue in ues %}{% set total_c.v = total_c.v + (ue.credits or 0) %}{% endfor %}
+                    {{ total_c.v }}
+                </h3>
+                <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Cumul Crédits</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-glass">
+                <div class="icon-box bg-info-subtle text-info"><i class="fas fa-users"></i></div>
+                <h3 class="fw-bold mb-0">
+                    {% set total_i = namespace(v=0) %}
+                    {% for ue in ues %}{% set total_i.v = total_i.v + ue.get_nombre_etudiants() %}{% endfor %}
+                    {{ total_i.v }}
+                </h3>
+                <small class="text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Total Inscriptions</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="ue-card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Code & Intitulé</th>
+                        <th>Classe & Filière</th>
+                        <th>Volume Horaire</th>
+                        <th>Crédits / Coef</th>
+                        <th>Statut</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ue in ues %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <span class="code-badge me-3">{{ ue.code_ue }}</span>
+                                <span class="fw-bold">{{ ue.intitule }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-bold small text-dark">{{ ue.classe.nom_classe }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">{{ ue.classe.filiere.nom_filiere }}</div>
+                        </td>
+                        <td>
+                            <span class="badge rounded-pill bg-light text-dark border">
+                                <i class="far fa-clock me-1 text-primary"></i> {{ ue.heures or 0 }}h
+                            </span>
+                        </td>
+                        <td>
+                            <span class="small fw-bold">{{ ue.credits }} C.</span>
+                            <span class="text-muted mx-1">/</span>
+                            <span class="small">coeff {{ ue.coefficient }}</span>
+                        </td>
+                        <td>
+                            {% set nb = ue.get_nombre_etudiants() %}
+                            <span class="badge {% if nb > 0 %}bg-success-subtle text-success{% else %}bg-light text-muted{% endif %} rounded-pill">
+                                {{ nb }} inscrit(s)
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <div class="action-group">
+                                <a href="{{ url_for('directeur.detail_ue', ue_id=ue.id) }}" class="btn btn-primary" title="Voir"><i class="fas fa-eye"></i></a>
+                                <a href="{{ url_for('directeur.modifier_ue', ue_id=ue.id) }}" class="btn btn-warning" title="Modifier"><i class="fas fa-edit"></i></a>
+                                <form action="{{ url_for('directeur.supprimer_ue', ue_id=ue.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-danger" onclick="return confirm('Supprimer ?')"><i class="fas fa-trash"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Ressources Pédagogiques{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">
+                <i class="fas fa-book-reader me-2 text-primary"></i>Bibliothèque de Cours
+            </h2>
+            <p class="text-muted">Téléchargez ici les supports, livres et exercices déposés par vos enseignants.</p>
+        </div>
+        <span class="badge bg-primary rounded-pill px-3 py-2">
+            {{ documents|length }} Ressource(s)
+        </span>
+    </div>
+
+    {% if documents %}
+    <div class="row g-4">
+        {% for doc in documents %}
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card h-100 border-0 shadow-sm rounded-4 hover-lift">
+                <div class="card-body p-4 text-center d-flex flex-column">
+
+                    <div class="mb-3">
+                        {% set ext = doc.nom_fichier.split('.')[-1]|lower if doc.nom_fichier else '' %}
+
+                        {% if ext == 'pdf' %}
+                            <div class="icon-circle bg-danger bg-opacity-10 text-danger mx-auto">
+                                <i class="fas fa-file-pdf fa-2x"></i>
+                            </div>
+                        {% elif ext in ['doc', 'docx'] %}
+                            <div class="icon-circle bg-primary bg-opacity-10 text-primary mx-auto">
+                                <i class="fas fa-file-word fa-2x"></i>
+                            </div>
+                        {% elif ext in ['ppt', 'pptx'] %}
+                            <div class="icon-circle bg-warning bg-opacity-10 text-warning mx-auto">
+                                <i class="fas fa-file-powerpoint fa-2x"></i>
+                            </div>
+                        {% elif ext in ['xls', 'xlsx'] %}
+                            <div class="icon-circle bg-success bg-opacity-10 text-success mx-auto">
+                                <i class="fas fa-file-excel fa-2x"></i>
+                            </div>
+                        {% else %}
+                            <div class="icon-circle bg-secondary bg-opacity-10 text-secondary mx-auto">
+                                <i class="fas fa-file-alt fa-2x"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <h6 class="fw-bold text-dark mb-1 text-truncate" title="{{ doc.titre }}">
+                        {{ doc.titre }}
+                    </h6>
+
+                    <div class="mb-4 mt-auto">
+                        <small class="d-block text-muted">
+                            <i class="fas fa-user-tie me-1"></i>
+                            {{ doc.enseignant.prenom }} {{ doc.enseignant.nom }}
+                        </small>
+                        <small class="text-muted" style="font-size: 0.75rem;">
+                            Publié le {{ doc.date_creation.strftime('%d/%m/%Y') if doc.date_creation else 'N/A' }}
+                        </small>
+                    </div>
+
+                    <a href="{{ url_for('static', filename='uploads/' + doc.nom_fichier) }}"
+                       class="btn btn-primary rounded-pill w-100 fw-bold shadow-sm btn-download"
+                       download>
+                        <i class="fas fa-cloud-download-alt me-2"></i>Télécharger
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="text-center py-5">
+        <div class="mb-3">
+            <span class="fa-stack fa-2x opacity-50">
+                <i class="fas fa-circle fa-stack-2x text-light"></i>
+                <i class="fas fa-folder-open fa-stack-1x text-secondary"></i>
+            </span>
+        </div>
+        <h5 class="text-muted">Aucune ressource disponible</h5>
+        <p class="text-muted small">Vos enseignants n'ont pas encore publié de documents pour votre classe.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+    /* Effet de survol sur la carte */
+    .hover-lift {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        background: #fff;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+
+    /* Cercle autour de l'icône */
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    /* Petit effet sur le bouton au clic */
+    .btn-download:active {
+        transform: scale(0.95);
+    }
+</style>
+{% endblock %}

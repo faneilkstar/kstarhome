@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Portail Académique | Polytech{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --poly-blue: #0f172a; --poly-accent: #3b82f6;
+        --sidebar-width: 280px; --border-color: #f1f5f9;
+    }
+    body { background-color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; color: #1e293b; }
+
+    /* --- SIDEBAR --- */
+    .sidebar-pilotage {
+        width: var(--sidebar-width); height: 100vh; position: fixed;
+        left: 0; top: 0; background: white; padding: 2rem 1.5rem;
+        display: flex; flex-direction: column; border-right: 1px solid var(--border-color); z-index: 1000;
+    }
+    .brand-logo { font-weight: 800; font-size: 1.5rem; letter-spacing: -1px; color: var(--poly-blue); margin-bottom: 2.5rem; }
+
+    .nav-link-custom {
+        display: flex; align-items: center; padding: 0.8rem 1rem; margin-bottom: 0.5rem;
+        border-radius: 12px; color: #64748b; font-weight: 600; text-decoration: none; transition: 0.2s;
+    }
+    .nav-link-custom i { width: 24px; margin-right: 12px; }
+    .nav-link-custom:hover, .nav-link-custom.active { background: #eff6ff; color: var(--poly-accent); }
+
+    /* --- LAYOUT --- */
+    .main-wrapper { margin-left: var(--sidebar-width); padding: 0; }
+    .top-header { height: 80px; padding: 0 3rem; display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 900; }
+    .content-padding { padding: 2rem 3rem; }
+
+    /* --- CARDS --- */
+    .hero-banner {
+        background: var(--poly-blue); border-radius: 24px; padding: 3rem; color: white; margin-bottom: 2rem;
+        position: relative; overflow: hidden; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.1);
+    }
+    .hero-banner::after { content: ''; position: absolute; right: -50px; top: -50px; width: 200px; height: 200px; background: rgba(59, 130, 246, 0.3); border-radius: 50%; filter: blur(50px); }
+
+    .stat-card { background: white; border-radius: 20px; padding: 1.5rem; border: 1px solid var(--border-color); transition: 0.3s; }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+    .icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; font-size: 1.2rem; }
+
+    .btn-premium { background: white; color: var(--poly-blue); border-radius: 12px; padding: 0.75rem 1.5rem; font-weight: 700; border: none; transition: 0.2s; }
+    .btn-premium:hover { transform: scale(1.05); background: #f8fafc; }
+
+    .timeline-item { border-left: 2px solid #e2e8f0; padding-left: 1.5rem; padding-bottom: 1.5rem; position: relative; }
+    .timeline-item::before { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: var(--poly-accent); }
+    .timeline-item:last-child { padding-bottom: 0; border-left: 2px solid transparent; }
+</style>
+{% endblock %}
+
+{% block content %}
+<aside class="sidebar-pilotage">
+    <div class="brand-logo"><i class="fas fa-shield-alt text-primary me-2"></i> POLYTECH</div>
+    <nav class="flex-grow-1">
+        <a href="{{url_for('etudiant.dashboard')}}" class="nav-link-custom active"><i class="fas fa-th-large"></i> Vue d'ensemble</a>
+
+        <a href="{{url_for('etudiant.ressources_pedagogiques')}}" class="nav-link-custom">
+            <i class="fas fa-book-reader"></i> Bibliothèque
+            <span class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">New</span>
+        </a>
+
+        <a href="{{url_for('etudiant.mes_ues')}}" class="nav-link-custom"><i class="fas fa-book"></i> Modules</a>
+        <a href="{{url_for('etudiant.mes_notes')}}" class="nav-link-custom"><i class="fas fa-chart-bar"></i> Résultats</a>
+
+        <a href="{{url_for('etudiant.mes_documents')}}" class="nav-link-custom"><i class="fas fa-folder-open"></i> Mes Documents</a>
+    </nav>
+    <div class="pt-4 border-top">
+        <a href="{{ url_for('auth.logout') }}" class="nav-link-custom text-danger"><i class="fas fa-power-off"></i> Déconnexion</a>
+    </div>
+</aside>
+
+<main class="main-wrapper">
+    <header class="top-header">
+        <h4 class="fw-800 mb-0">Pilotage Académique</h4>
+        <div class="d-flex align-items-center">
+            <div class="text-end me-3">
+                <p class="mb-0 fw-700 small">{{ etudiant.prenom }} {{ etudiant.nom }}</p>
+                <p class="mb-0 text-muted small">Matricule: #{{ etudiant.id }}</p>
+            </div>
+            <img src="https://ui-avatars.com/api/?name={{ etudiant.nom }}+{{ etudiant.prenom }}&background=0f172a&color=fff" class="rounded-circle" width="42">
+        </div>
+    </header>
+
+    <div class="content-padding">
+        <div class="hero-banner">
+            <div class="row">
+                <div class="col-md-8">
+                    <span class="badge bg-primary mb-3 px-3 py-2 rounded-pill">Année Académique 2025-2026</span>
+                    <h1 class="fw-800 mb-2">Heureux de vous revoir, {{ etudiant.prenom }} !</h1>
+                    <p class="opacity-75 mb-4 small">Votre dossier est à jour. Consultez vos dernières notes ou accédez à la bibliothèque de cours.</p>
+                    <div class="d-flex gap-2">
+                        <a href="{{url_for('etudiant.choisir_ues')}}" class="btn btn-premium shadow-sm"><i class="fas fa-plus me-2"></i> Inscription Modules</a>
+                        <a href="{{url_for('etudiant.telecharger_bulletin')}}" class="btn btn-outline-light border-2 fw-bold rounded-3"><i class="fas fa-file-invoice me-2"></i> Bulletin</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="icon-box bg-primary bg-opacity-10 text-primary"><i class="fas fa-star"></i></div>
+                    <p class="text-muted small fw-600 mb-1">MOYENNE</p>
+                    <h3 class="fw-800 mb-0">{{ moyenne_generale|default('--', true) }}<span class="fs-6 text-muted">/20</span></h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="icon-box bg-success bg-opacity-10 text-success"><i class="fas fa-graduation-cap"></i></div>
+                    <p class="text-muted small fw-600 mb-1">ECTS ACQUIS</p>
+                    <h3 class="fw-800 mb-0">{{ credits_valides|default(0, true) }}<span class="fs-6 text-muted"> ECTS</span></h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="icon-box bg-danger bg-opacity-10 text-danger"><i class="fas fa-user-times"></i></div>
+                    <p class="text-muted small fw-600 mb-1">ABSENCES NJ</p>
+                    <h3 class="fw-800 mb-0">{{ total_non_justifiees|default(0, true) }}</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="icon-box bg-info bg-opacity-10 text-info"><i class="fas fa-folder-open"></i></div>
+                    <p class="text-muted small fw-600 mb-1">MES FICHIERS</p>
+                    <h3 class="fw-800 mb-0">{{ documents|length }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+                    <div class="p-4 border-bottom d-flex justify-content-between">
+                        <h5 class="fw-800 mb-0">Notes Récentes</h5>
+                        <a href="{{url_for('etudiant.mes_notes')}}" class="text-primary fw-700 small text-decoration-none">Tout voir</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr><th class="ps-4">Module</th><th class="text-center">Note</th><th class="text-end pe-4">Statut</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for note in notes[:4] %}
+                                <tr>
+                                    <td class="ps-4 py-3">
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-700 small text-dark">{{ note.ue_parent.intitule }}</span>
+                                            <span class="text-muted" style="font-size: 0.75rem;">{{ note.ue_parent.code_ue }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center fw-800">{{ "%.2f"|format(note.note) }}</td>
+                                    <td class="text-end pe-4">
+                                        <span class="badge {{ 'bg-success' if note.note >= 10 else 'bg-danger' }} bg-opacity-10 {{ 'text-success' if note.note >= 10 else 'text-danger' }} px-3 py-1 rounded-pill small">
+                                            {{ 'Validé' if note.note >= 10 else 'Ajourné' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="3" class="text-center py-4 text-muted small">Aucun résultat récent.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <h6 class="fw-800 mb-4">Actualités du Campus</h6>
+                    <div class="timeline-item">
+                        <p class="mb-1 fw-bold text-dark">Mise en ligne des cours</p>
+                        <p class="text-muted small mb-0">De nouveaux supports de cours sont disponibles dans votre <a href="{{url_for('etudiant.ressources_pedagogiques')}}">bibliothèque</a>.</p>
+                    </div>
+                    <div class="timeline-item">
+                        <p class="mb-1 fw-bold text-dark">Conférence Tech & IA</p>
+                        <p class="text-muted small mb-0">Mercredi prochain à 14h, Amphi B.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 text-white" style="background: linear-gradient(135deg, #0f172a 0%, #334155 100%);">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <span class="badge bg-white text-dark bg-opacity-25 border border-white">08:00 - 10:00</span>
+                        <i class="fas fa-calendar-day opacity-50"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">Prochain Cours</h5>
+                    <p class="small opacity-75 mb-0">Consultez votre emploi du temps</p>
+                    <hr class="border-white opacity-25 my-3">
+                    <small class="d-block text-end opacity-75">Demain Matin</small>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white text-center">
+                    <h6 class="fw-800 mb-3 text-start">Progression Annuelle</h6>
+                    <div class="progress rounded-pill mb-3" style="height: 12px;">
+                        <div class="progress-bar bg-primary shadow-sm" style="width: {{ (credits_valides|default(0)/60)*100 }}%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small fw-bold">
+                        <span>0 ECTS</span>
+                        <span>{{ credits_valides|default(0) }} / 60</span>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <h6 class="fw-800 mb-3">Accès Rapide</h6>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('etudiant.ressources_pedagogiques') }}" class="btn btn-primary bg-opacity-10 text-primary border-0 rounded-3 small fw-bold text-start py-2">
+                            <i class="fas fa-book-reader me-2"></i> Mes Cours & Livres
+                        </a>
+                        <a href="{{ url_for('etudiant.mes_absences') }}" class="nav-link-custom">
+                            <i class="fas fa-user-clock"></i> Absences
+                        </a>
+
+                        <a href="{{ url_for('etudiant.telecharger_bulletin') }}" class="btn btn-light text-start py-2 border-0 rounded-3 small fw-bold text-dark">
+                            <i class="fas fa-file-invoice text-success me-2"></i> Relevé de notes
+                        </a>
+
+                        <a href="{{ url_for('etudiant.telecharger_lettre') }}" class="btn btn-light text-start py-2 border-0 rounded-3 small fw-bold text-dark">
+                            <i class="fas fa-file-pdf text-danger me-2"></i> Certificat d'admission
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}

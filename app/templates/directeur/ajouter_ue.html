@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Configuration UE Dynamique{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* On change le fond pour quelque chose de plus frais */
+    body { background: radial-gradient(circle at top right, #fdfbfb 0%, #ebedee 100%); }
+
+    /* En-tête avec un dégradé plus vif */
+    .action-header {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 20px;
+        border-left: 8px solid #4361ee; /* Bleu électrique */
+        box-shadow: 0 10px 30px rgba(67, 97, 238, 0.1);
+        margin-bottom: 2rem;
+    }
+
+    .card-form {
+        border: none;
+        border-radius: 25px;
+        box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+        background: white;
+        overflow: hidden;
+    }
+
+    /* Titres de section colorés */
+    .form-section-title {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: #4361ee;
+        font-weight: 900;
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Icônes de section avec fond coloré */
+    .section-icon {
+        width: 35px;
+        height: 35px;
+        background: rgba(67, 97, 238, 0.1);
+        color: #4361ee;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        margin-right: 15px;
+    }
+
+    /* Inputs avec focus coloré */
+    .form-control-lg, .form-select-lg {
+        border-radius: 15px;
+        border: 2px solid #f0f2f5;
+        padding: 0.8rem 1.2rem;
+    }
+
+    .form-control-lg:focus {
+        border-color: #4361ee;
+        box-shadow: 0 0 15px rgba(67, 97, 238, 0.2);
+        background: #fbfbff;
+    }
+
+    /* Icônes des inputs */
+    .input-group-text {
+        border-radius: 15px 0 0 15px;
+        background: #4361ee;
+        color: white;
+        border: none;
+    }
+
+    /* Bouton principal vibrant */
+    .btn-gradient-primary {
+        background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
+        border: none;
+        color: white;
+        box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3);
+    }
+
+    .btn-gradient-primary:hover {
+        transform: scale(1.05);
+        color: white;
+        box-shadow: 0 15px 25px rgba(114, 9, 183, 0.4);
+    }
+
+    .btn-light-custom {
+        background: #f8f9fa;
+        color: #6c757d;
+        border-radius: 50px;
+    }
+
+    /* Badge pour les classes */
+    .option-badge {
+        font-size: 0.8rem;
+        background: #eef2ff;
+        color: #4361ee;
+        padding: 2px 8px;
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="action-header d-flex justify-content-between align-items-center animate__animated animate__fadeInDown">
+        <div class="d-flex align-items-center">
+            <div class="bg-primary text-white p-3 rounded-4 me-3 shadow" style="background: linear-gradient(135deg, #4361ee, #4cc9f0) !important;">
+                <i class="fas fa-magic fa-lg"></i>
+            </div>
+            <div>
+                <h4 class="mb-0 fw-bold" style="color: #2b2d42;">Création Intuitive</h4>
+                <p class="text-muted small mb-0">Donnez vie à une nouvelle unité d'enseignement</p>
+            </div>
+        </div>
+        <div class="d-flex gap-3">
+            <a href="{{ url_for('directeur.dashboard') }}" class="btn btn-light-custom btn-pill px-4 shadow-sm text-decoration-none">
+                <i class="fas fa-th-large me-2 text-primary"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card card-form">
+                <div class="card-body p-5">
+                    <form method="POST">
+
+                        <div class="form-section-title">
+                            <div class="section-icon"><i class="fas fa-fingerprint"></i></div>
+                            Identité du Module
+                        </div>
+                        <div class="row g-4 mb-5">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Code Unique</label>
+                                <input type="text" name="code_ue" class="form-control form-control-lg" placeholder="MATH101" required>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">Nom de l'UE</label>
+                                <input type="text" name="intitule" class="form-control form-control-lg" placeholder="Ex: Analyse Mathématique II" required>
+                            </div>
+                        </div>
+
+                        <div class="form-section-title">
+                            <div class="section-icon"><i class="fas fa-chart-bar"></i></div>
+                            Volume & Valeur
+                        </div>
+                        <div class="row g-4 mb-5">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Volume Horaire</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-hourglass-half"></i></span>
+                                    <input type="number" name="heures" class="form-control form-control-lg" placeholder="45" required>
+                                    <span class="input-group-text bg-light text-dark border-start-0">Heures</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Crédits ECTS</label>
+                                <input type="number" name="credits" class="form-control form-control-lg" value="3" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Coefficient</label>
+                                <input type="number" name="coefficient" class="form-control form-control-lg" value="1" required>
+                            </div>
+                        </div>
+
+                        <div class="form-section-title">
+                            <div class="section-icon"><i class="fas fa-map-marker-alt"></i></div>
+                            Cible Académique
+                        </div>
+                        <div class="row mb-5">
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Assigner à une Classe</label>
+                                <select name="classe_id" class="form-select form-select-lg" required>
+                                    <option value="" disabled selected>Où ce cours sera-t-il enseigné ?</option>
+                                    {% for classe in classes %}
+                                    <option value="{{ classe.id }}">
+                                        📍 {{ classe.nom_classe }} — {{ classe.filiere.nom_filiere }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-3 pt-4 border-top">
+                            <a href="{{ url_for('directeur.liste_ues') }}" class="btn btn-light-custom btn-pill px-5">Annuler</a>
+                            <button type="submit" class="btn btn-gradient-primary btn-pill px-5">
+                                <i class="fas fa-rocket me-2"></i> Lancer l'UE
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

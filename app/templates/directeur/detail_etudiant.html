@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Dossier Étudiant | {{ etudiant.nom_complet }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        color: white;
+        padding: 40px;
+        border-radius: 20px;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Cercle décoratif en fond */
+    .profile-header::after {
+        content: '';
+        position: absolute;
+        top: -50%; right: -10%;
+        width: 300px; height: 300px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+    }
+
+    .avatar-big {
+        width: 100px; height: 100px;
+        background: white;
+        color: #1e3a8a;
+        font-size: 2.5rem;
+        font-weight: 900;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 25px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .info-card {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        height: 100%;
+        transition: transform 0.3s;
+    }
+    .info-card:hover { transform: translateY(-5px); }
+
+    .label-detail {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #64748b;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    .value-detail {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 20px;
+    }
+
+    .grade-badge {
+        background: #f1f5f9;
+        padding: 10px 15px;
+        border-radius: 12px;
+        font-weight: bold;
+        display: inline-block;
+        margin-right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <a href="{{ url_for('directeur.liste_etudiants') }}" class="btn btn-light rounded-pill px-4 fw-bold mb-4 shadow-sm">
+        <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+    </a>
+
+    <div class="profile-header d-flex align-items-center flex-wrap gap-4 shadow-lg">
+        <div class="avatar-big">
+            {{ (etudiant.nom[0]|upper) if etudiant.nom else '?' }}{{ (etudiant.prenom[0]|upper) if etudiant.prenom else '' }}
+        </div>
+        <div class="flex-grow-1">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <h1 class="fw-900 mb-0">{{ etudiant.nom_complet }}</h1>
+
+                {% if etudiant.statut_inscription == 'accepté' %}
+                    <span class="badge bg-success border border-white px-3 py-2 rounded-pill">ADMIS</span>
+                {% elif etudiant.statut_inscription == 'refusé' %}
+                    <span class="badge bg-danger border border-white px-3 py-2 rounded-pill">REFUSÉ</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark border border-white px-3 py-2 rounded-pill">EN ATTENTE</span>
+                {% endif %}
+            </div>
+            <p class="opacity-75 mb-0"><i class="fas fa-envelope me-2"></i>{{ etudiant.user.email }}</p>
+            <p class="opacity-75 mb-0"><i class="fas fa-phone me-2"></i>{{ etudiant.telephone }}</p>
+        </div>
+
+        <div class="d-flex gap-2">
+            {% if etudiant.statut_inscription == 'en_attente' %}
+                <button class="btn btn-success btn-lg fw-bold shadow" data-bs-toggle="modal" data-bs-target="#modalValider">
+                    <i class="fas fa-check me-2"></i>Valider
+                </button>
+                <button class="btn btn-danger btn-lg fw-bold shadow" data-bs-toggle="modal" data-bs-target="#modalRefuser">
+                    <i class="fas fa-times me-2"></i>Refuser
+                </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card info-card p-4">
+                <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-graduation-cap me-2"></i>Dossier Académique</h5>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="label-detail">Filière Demandée</div>
+                        <div class="value-detail text-primary">{{ etudiant.filiere_objet.nom_filiere if etudiant.filiere_objet else 'Non Définie' }}</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="label-detail">Moyenne BAC</div>
+                        <div class="grade-badge text-dark">
+                            {{ etudiant.moyenne_bac }}/20
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="label-detail">Série BAC</div>
+                        <div class="value-detail">{{ etudiant.serie_bac if etudiant.serie_bac else 'N/A' }}</div>
+                    </div>
+
+                    {% if etudiant.moyenne_licence %}
+                    <div class="col-md-12 mt-3">
+                        <div class="p-3 bg-light rounded-4 border">
+                            <div class="label-detail mb-2">Cycle Licence</div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold">{{ etudiant.diplome_licence }}</span>
+                                <span class="badge bg-primary fs-6">{{ etudiant.moyenne_licence }}/20</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card info-card p-4">
+                <h5 class="fw-bold mb-4 text-success"><i class="fas fa-user-shield me-2"></i>Informations Personnelles</h5>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="label-detail">Date de Naissance</div>
+                        <div class="value-detail">{{ etudiant.date_naissance.strftime('%d/%m/%Y') if etudiant.date_naissance else 'Non renseignée' }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="label-detail">Genre</div>
+                        <div class="value-detail">{{ 'Masculin' if etudiant.sexe == 'M' else 'Féminin' }}</div>
+                    </div>
+
+                    <div class="col-12"><hr class="my-1 opacity-25"></div>
+
+                    <div class="col-md-6 mt-3">
+                        <div class="label-detail">Nom du Père</div>
+                        <div class="value-detail">{{ etudiant.nom_pere if etudiant.nom_pere else '--' }}</div>
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <div class="label-detail">Nom de la Mère</div>
+                        <div class="value-detail">{{ etudiant.nom_mere if etudiant.nom_mere else '--' }}</div>
+                    </div>
+
+                    <div class="col-md-12 mt-3">
+                        <div class="p-3 bg-danger bg-opacity-10 rounded-4 border border-danger border-opacity-25">
+                            <div class="label-detail text-danger">Contact d'Urgence</div>
+                            <div class="fw-bold text-dark">
+                                {{ etudiant.contact_urgence if etudiant.contact_urgence else 'Aucun numéro' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalValider" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 p-4 pb-0">
+                <h5 class="fw-900 text-success">Valider l'Admission</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('directeur.valider_etudiant', etudiant_id=etudiant.id) }}">
+                <div class="modal-body p-4">
+                    <label class="form-label fw-bold small text-uppercase">Affectation Classe</label>
+                    <select name="classe_id" class="form-select form-select-lg" required>
+                        <option value="" disabled selected>-- Choisir --</option>
+                        {% for classe in classes %}
+                            {% if etudiant.filiere_id == classe.filiere_id %}
+                                <option value="{{ classe.id }}">{{ classe.nom_classe }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">Confirmer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalRefuser" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 p-4 pb-0">
+                <h5 class="fw-900 text-danger">Refuser le dossier</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('directeur.valider_etudiant', etudiant_id=etudiant.id) }}?action=refuser">
+                <div class="modal-body p-4">
+                    <p>Confirmez-vous le rejet de la candidature de <strong>{{ etudiant.nom_complet }}</strong> ?</p>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" name="refuser" value="true" class="btn btn-danger rounded-pill px-4 fw-bold">Rejeter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

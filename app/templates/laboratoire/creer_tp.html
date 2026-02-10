@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un TP - {{ ue.code_ue }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Créer un nouveau TP</h4>
+                    <small>UE : {{ ue.code_ue }} - {{ ue.intitule }}</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        
+                        <!-- Titre -->
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Titre du TP</strong> <span class="text-danger">*</span></label>
+                            <input type="text" name="titre" class="form-control" required 
+                                   placeholder="Ex: Étude d'un convertisseur Buck">
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Description / Objectifs</strong></label>
+                            <textarea name="description" class="form-control" rows="4" 
+                                      placeholder="Décrivez les objectifs pédagogiques du TP..."></textarea>
+                        </div>
+
+                        <div class="row">
+                            <!-- Type de simulation -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"><strong>Type de simulation</strong> <span class="text-danger">*</span></label>
+                                <select name="type_simulation" class="form-select" required>
+                                    <option value="">-- Choisir --</option>
+                                    <optgroup label="🔌 Génie Électrique">
+                                        <option value="buck">Convertisseur Buck</option>
+                                        <option value="boost">Convertisseur Boost</option>
+                                    </optgroup>
+                                    <optgroup label="🏗️ Génie Civil">
+                                        <option value="rdm_poutre">RDM - Poutre en flexion</option>
+                                    </optgroup>
+                                    <optgroup label="🔧 Mécanique">
+                                        <option value="chute_libre">Chute libre</option>
+                                        <option value="plan_incline">Plan incliné</option>
+                                        <option value="trajectoire">Trajectoire parabolique</option>
+                                    </optgroup>
+                                    <optgroup label="📊 Maths & Signal">
+                                        <option value="signal_fourier">Analyse de Fourier</option>
+                                        <option value="filtrage">Filtrage de signal</option>
+                                    </optgroup>
+                                    <optgroup label="📦 Logistique">
+                                        <option value="stock_flux">Gestion Stock & Flux</option>
+                                        <option value="transport_routage">Routage transport</option>
+                                    </optgroup>
+                                    <optgroup label="🌡️ Thermodynamique">
+                                        <option value="thermodynamique">Cycles thermodynamiques</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+
+                            <!-- IA Assistant -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"><strong>Assistant IA</strong> <span class="text-danger">*</span></label>
+                                <select name="ia_nom" class="form-select" required>
+                                    <option value="">-- Choisir --</option>
+                                    <option value="ETA" style="color: #e74c3c; font-weight: bold;">
+                                        🏗️ ETA - Génie Civil (RDM, Structures)
+                                    </option>
+                                    <option value="ALPHA" style="color: #2ecc71; font-weight: bold;">
+                                        🧮 ALPHA - Maths, Info, Logistique
+                                    </option>
+                                    <option value="KAYT" style="color: #f1c40f; font-weight: bold;">
+                                        ⚡ KAYT - Génie Électrique
+                                    </option>
+                                </select>
+                                <small class="text-muted">L'IA guidera les étudiants et notera automatiquement.</small>
+                            </div>
+                        </div>
+
+                        <!-- Fichier sujet -->
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Sujet PDF (optionnel)</strong></label>
+                            <input type="file" name="fichier_sujet" class="form-control" accept=".pdf">
+                            <small class="text-muted">Déposez le sujet du TP en PDF pour les étudiants.</small>
+                        </div>
+
+                        <div class="row">
+                            <!-- Note sur -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"><strong>Note sur</strong></label>
+                                <input type="number" name="note_sur" class="form-control" value="20" min="1" max="100">
+                            </div>
+
+                            <!-- Date limite -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"><strong>Date limite (optionnelle)</strong></label>
+                                <input type="date" name="date_limite" class="form-control">
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('laboratoire.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-check"></i> Créer le TP
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

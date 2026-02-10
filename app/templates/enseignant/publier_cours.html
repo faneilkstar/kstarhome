@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Publier un Cours{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-lg rounded-4">
+                <div class="card-header bg-primary text-white p-4 rounded-top-4">
+                    <h4 class="fw-bold mb-0"><i class="fas fa-cloud-upload-alt me-2"></i>Mettre un cours en ligne</h4>
+                </div>
+                <div class="card-body p-5">
+                    
+                    <form method="POST" enctype="multipart/form-data">
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Titre du document</label>
+                            <input type="text" name="titre" class="form-control form-control-lg bg-light border-0" placeholder="Ex: Chapitre 1 - Algèbre" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Classe concernée</label>
+                            <select name="classe_id" class="form-select form-select-lg bg-light border-0" required>
+                                <option value="" selected disabled>Choisir une classe...</option>
+                                {% for c in classes %}
+                                <option value="{{ c.id }}">{{ c.nom_classe }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="form-label fw-bold">Fichier (PDF, Word, PPT...)</label>
+                            <div class="input-group">
+                                <input type="file" name="fichier" class="form-control form-control-lg" required>
+                                <label class="input-group-text"><i class="fas fa-paperclip"></i></label>
+                            </div>
+                            <small class="text-muted">Taille max: 10 Mo.</small>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm">
+                                <i class="fas fa-paper-plane me-2"></i>Publier maintenant
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

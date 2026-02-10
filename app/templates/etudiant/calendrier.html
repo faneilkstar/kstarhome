@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Mon Emploi du Temps{% endblock %}
+
+{% block extra_css %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+<style>
+    #calendar {
+        max-width: 1100px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .fc-event {
+        cursor: pointer;
+        border: none; 
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="fw-bold mb-4">📅 Mon Emploi du Temps</h2>
+    
+    <div id='calendar'></div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek', // Vue par semaine
+            locale: 'fr',               // En Français
+            firstDay: 1,                // La semaine commence Lundi
+            slotMinTime: "07:00:00",    // Début journée
+            slotMaxTime: "19:00:00",    // Fin journée
+            allDaySlot: false,          // Pas de ligne "Toute la journée"
+            height: 'auto',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            
+            // C'est ici que la MAGIE opère : on connecte ton API Flask
+            events: "{{ url_for('etudiant.api_evenements') }}",
+            
+            eventClick: function(info) {
+                alert('Cours : ' + info.event.title + '\nDébut : ' + info.event.start.toLocaleTimeString());
+            }
+        });
+        
+        calendar.render();
+    });
+</script>
+{% endblock %}

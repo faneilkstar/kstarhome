@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Laboratoire Virtuel - Mes TPs{% endblock %}
+
+{% block content %}
+<style>
+    .lab-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 50px 0;
+        margin: -20px -15px 30px -15px;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .ue-card {
+        transition: transform 0.3s, box-shadow 0.3s;
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    .ue-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    .tp-item {
+        padding: 15px;
+        border-left: 4px solid #007bff;
+        background: #f8f9fa;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        transition: all 0.3s;
+    }
+    .tp-item:hover {
+        background: #e9ecef;
+        border-left-width: 6px;
+    }
+    .ia-badge {
+        font-size: 0.75em;
+        padding: 4px 10px;
+        border-radius: 12px;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="lab-header text-center">
+        <h1><i class="fas fa-flask"></i> Laboratoire Virtuel Harmony</h1>
+        <p class="lead">Bienvenue {{ etudiant.prenom }} - Expérimentez avec l'IA !</p>
+    </div>
+
+    <div class="container">
+        {% if ues_avec_tps %}
+            <div class="row">
+                {% for item in ues_avec_tps %}
+                <div class="col-lg-6 col-xl-4">
+                    <div class="card ue-card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-book"></i> {{ item.ue.code_ue }} - {{ item.ue.intitule }}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small">
+                                <i class="fas fa-graduation-cap"></i> {{ item.ue.enseignant.nom }} {{ item.ue.enseignant.prenom }}
+                            </p>
+                            
+                            <hr>
+                            
+                            <h6 class="text-primary"><i class="fas fa-vial"></i> TPs Disponibles ({{ item.nb_tps }})</h6>
+                            
+                            {% for tp in item.tps %}
+                            <div class="tp-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <strong>{{ tp.titre }}</strong>
+                                        <p class="mb-1 small text-muted">{{ tp.description[:80] }}...</p>
+                                        
+                                        <div class="mt-2">
+                                            <span class="badge bg-secondary">{{ tp.type_simulation|upper }}</span>
+                                            <span class="badge ia-badge" 
+                                                  style="background: {% if tp.ia_nom == 'ETA' %}#e74c3c{% elif tp.ia_nom == 'ALPHA' %}#2ecc71{% else %}#f1c40f{% endif %}; color: white;">
+                                                <i class="fas fa-robot"></i> {{ tp.ia_nom }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="ms-2">
+                                        <a href="{{ url_for('laboratoire.lancer_tp', tp_id=tp.id) }}" 
+                                           class="btn btn-sm btn-success">
+                                            <i class="fas fa-play"></i> Lancer
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                {% if tp.date_limite %}
+                                <div class="mt-2">
+                                    <small class="text-danger">
+                                        <i class="fas fa-clock"></i> Deadline : {{ tp.date_limite.strftime('%d/%m/%Y') }}
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle fa-3x mb-3"></i>
+                <h4>Aucun TP disponible pour le moment</h4>
+                <p>Vos enseignants n'ont pas encore déposé de travaux pratiques dans vos UE.</p>
+            </div>
+        {% endif %}
+
+        <!-- Historique des sessions -->
+        <div class="card mt-4">
+            <div class="card-header bg-dark text-white">
+                <i class="fas fa-history"></i> Mes dernières sessions
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>TP</th>
+                                <th>Date</th>
+                                <th>Durée</th>
+                                <th>Statut</th>
+                                <th>Note IA</th>
+                                <th>Note Finale</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for session in etudiant.sessions_tp.order_by(SessionTP.date_debut.desc()).limit(10) %}
+                            <tr>
+                                <td>{{ session.tp.titre }}</td>
+                                <td>{{ session.date_debut.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>{{ session.duree_minutes or 0 }} min</td>
+                                <td>
+                                    <span class="badge {% if session.statut == 'terminé' %}bg-success{% elif session.statut == 'en_cours' %}bg-warning{% else %}bg-primary{% endif %}">
+                                        {{ session.statut }}
+                                    </span>
+                                </td>
+                                <td>{{ session.note_ia or '-' }}/20</td>
+                                <td>
+                                    {% if session.note_finale %}
+                                        <strong class="text-primary">{{ session.note_finale }}/20</strong>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if session.statut == 'en_cours' %}
+                                        <a href="{{ url_for('laboratoire.lancer_tp', tp_id=session.tp_id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-play"></i> Continuer
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ url_for('laboratoire.resultat_tp', session_id=session.id) }}" 
+                                           class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i> Voir
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">Aucune session encore</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

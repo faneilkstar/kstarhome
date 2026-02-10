@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Recrutement - Polytechnique State{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1000px;">
+
+    <div class="d-flex justify-content-between align-items-center mb-5 animate__animated animate__fadeIn">
+        <div>
+            <h1 class="fw-900 text-dark mb-1">Recrutement Académique</h1>
+            <p class="text-muted fw-bold text-uppercase small" style="letter-spacing: 1px;">
+                <i class="fas fa-university me-2 text-primary"></i>École Polytechnique de la State
+            </p>
+        </div>
+        <a href="{{ url_for('directeur.dashboard') }}" class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm">
+            <i class="fas fa-arrow-left me-2"></i>Dashboard
+        </a>
+    </div>
+
+    <form method="POST" action="{{ url_for('directeur.ajouter_enseignant') }}" id="recrutementForm">
+        <div class="row g-4">
+
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-lg rounded-5 overflow-hidden">
+                    <div class="card-header bg-white py-4 border-0">
+                        <h5 class="mb-0 fw-800 text-primary"><i class="fas fa-user-tie me-2"></i>Profil du Collaborateur</h5>
+                    </div>
+                    <div class="card-body p-4 pt-0">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">NOM DE FAMILLE *</label>
+                                <input type="text" name="nom" class="form-control form-control-lg bg-light border-0 rounded-4" required placeholder="ex: KOFFI">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">PRÉNOM *</label>
+                                <input type="text" name="prenom" class="form-control form-control-lg bg-light border-0 rounded-4" required placeholder="ex: Kodjo">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-bold small text-muted">ADRESSE EMAIL PROFESSIONNELLE *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-0 rounded-start-4"><i class="fas fa-envelope text-muted"></i></span>
+                                    <input type="email" name="email" class="form-control form-control-lg bg-light border-0 rounded-end-4" required placeholder="koffi.k@state-polytech.tg">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">GRADE ACADÉMIQUE *</label>
+                                <select name="grade" class="form-select form-select-lg bg-light border-0 rounded-4" required>
+                                    <option value="" disabled selected>-- Sélectionner --</option>
+                                    <option value="Professeur">Professeur Titulaire</option>
+                                    <option value="Maître">Maître de Conférences</option>
+                                    <option value="Assistant">Assistant</option>
+                                    <option value="Vacataire">Vacataire</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">DOMAINE D'EXPERTISE</label>
+                                <input type="text" name="specialite" class="form-control form-control-lg bg-light border-0 rounded-4" placeholder="ex: Cybersécurité">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-lg rounded-5 text-white h-100" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);">
+                    <div class="card-body p-5 d-flex flex-column">
+                        <div class="mb-4">
+                            <h4 class="fw-900 mb-2"><i class="fas fa-shield-alt text-warning me-2"></i>Accès Système</h4>
+                            <p class="small opacity-75">Générez les accès sécurisés pour le portail enseignant.</p>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-white-50">IDENTIFIANT DE CONNEXION</label>
+                            <input type="text" name="username" class="form-control form-control-lg bg-white bg-opacity-10 border-0 text-white shadow-none rounded-4" required placeholder="ex: k.koffi">
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="form-label fw-bold small text-white-50">MOT DE PASSE PROVISOIRE</label>
+                            <div class="input-group">
+                                <input type="password" id="mainPass" name="password" class="form-control form-control-lg bg-white bg-opacity-10 border-0 text-white shadow-none rounded-start-4" required value="PolyState2026">
+                                <button class="btn btn-outline-light border-0 bg-white bg-opacity-10 rounded-end-4" type="button" onclick="toggleVisibility()">
+                                    <i class="fas fa-eye" id="eyeIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning w-100 py-3 fw-900 rounded-pill shadow-lg mt-auto text-dark border-0">
+                            VALIDER LE RECRUTEMENT <i class="fas fa-check-circle ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+<script>
+    function toggleVisibility() {
+        const passInput = document.getElementById('mainPass');
+        const eyeIcon = document.getElementById('eyeIcon');
+        if (passInput.type === "password") {
+            passInput.type = "text";
+            eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+            passInput.type = "password";
+            eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+    }
+</script>
+
+<style>
+    .fw-900 { font-weight: 900; }
+    .fw-800 { font-weight: 800; }
+    .form-control::placeholder { color: rgba(0,0,0,0.3); }
+    .bg-white.bg-opacity-10::placeholder { color: rgba(255,255,255,0.4); }
+
+    /* Animation au focus */
+    .form-control:focus {
+        background-color: #fff !important;
+        box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.1) !important;
+        border: 1px solid #1e3a8a !important;
+    }
+</style>
+{% endblock %}

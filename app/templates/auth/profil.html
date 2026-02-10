@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Mon Profil | Polytech{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-pro">
+                <div class="card-body p-5">
+                    
+                    <h2 class="mb-4 fw-bold">Mon Profil</h2>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        
+                        <div class="text-center mb-5">
+                            <div class="position-relative d-inline-block">
+                                <img src="{{ url_for('static', filename='avatars/' + (current_user.avatar or 'default.jpg')) }}" 
+                                     class="rounded-circle border border-4 border-light shadow"
+                                     style="width: 120px; height: 120px; object-fit: cover;"
+                                     alt="Avatar"
+                                     onerror="this.src='https://via.placeholder.com/120?text=User'">
+                                
+                                <label for="avatar_upload" class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle p-2 shadow" style="cursor: pointer;">
+                                    <i class="fas fa-camera"></i>
+                                </label>
+                                <input type="file" id="avatar_upload" name="avatar" class="d-none" accept="image/*" onchange="previewImage(this)">
+                            </div>
+                            <p class="text-muted mt-2 small">Cliquez sur l'icône caméra pour changer</p>
+                            <h4 class="mt-3">{{ current_user.username }}</h4>
+                            <span class="badge bg-secondary">{{ current_user.role }}</span>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-md-12">
+                                <h5 class="text-primary mb-3"><i class="fas fa-user-cog me-2"></i>Informations de compte</h5>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control" value="{{ current_user.email }}">
+                            </div>
+
+                            {% if current_user.is_etudiant and current_user.etudiant_profile %}
+                            <div class="col-md-6">
+                                <label class="form-label">Téléphone</label>
+                                <input type="text" name="telephone" class="form-control" value="{{ current_user.etudiant_profile.telephone or '' }}">
+                            </div>
+                            {% endif %}
+
+                            <div class="col-12"><hr class="my-2"></div>
+
+                            <div class="col-md-12">
+                                <h5 class="text-danger mb-3"><i class="fas fa-lock me-2"></i>Sécurité</h5>
+                                <div class="alert alert-light border small">
+                                    Laissez vide si vous ne voulez pas changer de mot de passe.
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Nouveau mot de passe</label>
+                                <input type="password" name="password" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Confirmer mot de passe</label>
+                                <input type="password" name="confirm_password" class="form-control">
+                            </div>
+
+                        </div>
+
+                        <div class="text-end mt-5">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-save me-2"></i> Enregistrer les modifications
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Petit script pour voir l'image dès qu'on la sélectionne
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                document.querySelector('img.rounded-circle').src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
+{% endblock %}

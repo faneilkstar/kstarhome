@@ -1,0 +1,41 @@
+{% extends "enseignant/base.html" %}
+
+{% block content %}
+<div class="mb-4">
+    <h2 class="fw-bold">Mes Unités d'Enseignement</h2>
+    <p class="text-muted">Année Académique : {{ config.ANNEE_ACADEMIQUE_ACTUELLE }}</p>
+</div>
+
+<div class="row g-4">
+    {% for ue in ues %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card-custom h-100 border-start border-4 border-accent">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <span class="badge bg-light text-primary fw-bold">{{ ue.code_ue }}</span>
+                <span class="badge bg-soft-success">{{ ue.credits }} Crédits</span>
+            </div>
+            <h5 class="fw-bold mb-1">{{ ue.intitule }}</h5>
+            <p class="text-muted small mb-3">
+                <i class="fas fa-users me-1"></i> {{ ue.classe.nom_classe }}
+            </p>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('enseignant.detail_ue', ue_id=ue.id) }}" class="btn btn-sm btn-accent flex-grow-1">
+                    <i class="fas fa-edit me-1"></i> Gérer les notes
+                </a>
+                <a href="{{ url_for('enseignant.documents', ue_id=ue.id) }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-folder"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <div class="card-custom bg-white">
+            <i class="fas fa-book-reader fa-3x text-muted mb-3"></i>
+            <h5>Aucune UE attribuée</h5>
+            <p class="text-muted">Veuillez contacter le Directeur Académique pour vos attributions.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

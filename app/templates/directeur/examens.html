@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Programmation des Examens{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">📅 Gestion des Examens</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExamModal">
+            <i class="fas fa-plus"></i> Programmer un examen
+        </button>
+    </div>
+
+    <div class="card-pro">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Horaire</th>
+                    <th>Classe</th>
+                    <th>Matière</th>
+                    <th>Salle</th>
+                    <th>Surveillant</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exam in examens %}
+                <tr>
+                    <td class="fw-bold">{{ exam.date_examen.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ exam.heure_debut.strftime('%H:%M') }} - {{ exam.heure_fin.strftime('%H:%M') }}</td>
+                    <td><span class="badge bg-info">{{ exam.classe.code_classe }}</span></td>
+                    <td>{{ exam.ue.code_ue }} - {{ exam.ue.intitule }}</td>
+                    <td><span class="badge bg-warning text-dark">{{ exam.salle }}</span></td>
+                    <td>{{ exam.surveillant.nom if exam.surveillant else 'Non assigné' }}</td>
+                    <td>
+                        <a href="{{ url_for('directeur.supprimer_examen', exam_id=exam.id) }}" 
+                           class="btn btn-sm btn-outline-danger"
+                           onclick="return confirm('Annuler cet examen ?')">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted">Aucun examen programmé.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="addExamModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('directeur.ajouter_examen') }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Programmer un Partiel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Classe</label>
+                        <select name="classe_id" class="form-select" required>
+                            {% for c in classes %}
+                            <option value="{{ c.id }}">{{ c.nom_classe }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Matière (UE)</label>
+                        <select name="ue_id" class="form-select" required>
+                            {% for u in ues %}
+                            <option value="{{ u.id }}">{{ u.code_ue }} - {{ u.intitule }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label>Date</label>
+                            <input type="date" name="date" class="form-control" required>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label>Salle</label>
+                            <input type="text" name="salle" class="form-control" placeholder="Ex: Salle 102" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label>Heure Début</label>
+                            <input type="time" name="heure_debut" class="form-control" required>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label>Heure Fin</label>
+                            <input type="time" name="heure_fin" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label>Surveillant (Optionnel)</label>
+                        <select name="surveillant_id" class="form-select">
+                            <option value="">-- Aucun --</option>
+                            {% for p in enseignants %}
+                            <option value="{{ p.id }}">{{ p.nom }} {{ p.prenom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

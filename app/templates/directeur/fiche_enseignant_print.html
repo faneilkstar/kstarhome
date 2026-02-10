@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700;800&display=swap');
+
+        body { background: #525659; margin: 0; padding: 0; }
+
+        .A4-page {
+            background: white;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 25mm 20mm;
+            margin: 20px auto;
+            position: relative;
+            color: #000;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+
+        /* En-tête de la State */
+        .header-institution {
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .school-identity { text-align: left; }
+        .school-identity h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 20px;
+            margin: 0;
+            color: #1a1a1a;
+            letter-spacing: 1px;
+        }
+        .republique { font-size: 11px; font-weight: 800; letter-spacing: 3px; margin-top: 5px; }
+
+        .reference-box { text-align: right; font-size: 12px; line-height: 1.4; }
+
+        /* Titre du Document */
+        .doc-title {
+            text-align: center;
+            font-family: 'Libre Baskerville', serif;
+            font-size: 22px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 50px 0;
+            text-decoration: underline;
+            letter-spacing: 1px;
+        }
+
+        .salutations { font-family: 'Libre Baskerville', serif; font-style: italic; margin-bottom: 25px; }
+
+        /* Tableau des UE Style Administratif */
+        .ue-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            font-size: 13px;
+        }
+        .ue-table th { background: #f2f2f2; border: 1px solid #000; padding: 10px; text-transform: uppercase; }
+        .ue-table td { border: 1px solid #000; padding: 10px; }
+
+        /* Bloc des Accès - Look Sécurisé */
+        .security-frame {
+            border: 2px solid #000;
+            padding: 20px;
+            margin: 40px 0;
+            background: #fafafa;
+        }
+        .security-frame h5 { margin-top: 0; text-decoration: underline; font-size: 14px; }
+        .id-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .id-label { font-size: 11px; font-weight: 800; color: #555; }
+        .id-value { font-family: monospace; font-size: 18px; font-weight: bold; }
+
+        /* ZONE DE SIGNATURES REDRESSÉE ET EMBELLIE */
+        .signature-area {
+            margin-top: 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .sign-box {
+            width: 45%;
+            text-align: center;
+        }
+
+        .sign-title { font-weight: 800; text-transform: uppercase; font-size: 13px; margin-bottom: 60px; }
+
+        .sign-line { border-top: 1.5px solid #000; width: 80%; margin: 0 auto 10px; }
+
+        .sign-name { font-family: 'Libre Baskerville', serif; font-weight: 700; font-size: 14px; }
+
+        .seal-circle {
+            width: 110px;
+            height: 110px;
+            border: 1px dashed #999;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: #999;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        @media print {
+            body { background: none; }
+            .A4-page { margin: 0; box-shadow: none; border: none; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="no-print" style="text-align:center; padding: 20px;">
+    <button onclick="window.print()" style="padding: 15px 30px; background: #000; color: #fff; cursor: pointer; font-weight: bold; border-radius: 5px;">
+        GÉNÉRER LE DOCUMENT OFFICIEL
+    </button>
+</div>
+
+<div class="A4-page">
+
+    <div class="header-institution">
+        <div class="school-identity">
+            <h1>ÉCOLE POLYTECHNIQUE DE LA STATE</h1>
+            <div class="republique">RÉPUBLIQUE DU TOGO</div>
+            <div style="font-size: 10px; font-weight: 700; margin-top: 10px;">TRAVAIL - DISCIPLINE - SUCCÈS</div>
+        </div>
+        <div class="reference-box">
+            <b>DIRECTION DES ÉTUDES</b><br>
+            N° Ref : {{ enseignant.id }}/EPS/DA/2026<br>
+            Lomé, le {{ date_edition }}
+        </div>
+    </div>
+
+    <div class="doc-title">Notification de Recrutement & Lettre de Mission</div>
+
+    <p class="salutations">À l'attention de M/Mme <b>{{ enseignant.nom }} {{ enseignant.prenom }}</b>,</p>
+
+    <p style="text-align: justify; font-size: 14px;">
+        Par la présente, la Direction de l'<b>École Polytechnique de la State</b> a l'honneur de vous confirmer votre recrutement en qualité de membre du corps professoral. En vertu de cette nomination, les unités d'enseignement suivantes vous sont officiellement attribuées :
+    </p>
+
+    <table class="ue-table">
+        <thead>
+            <tr>
+                <th>Code UE</th>
+                <th>Intitulé du Module</th>
+                <th>Classe d'Intervention</th>
+                <th>Crédits</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ue in enseignant.ues %}
+            <tr>
+                <td style="font-weight:bold;">{{ ue.code_ue }}</td>
+                <td>{{ ue.intitule }}</td>
+                <td>{{ ue.classe.nom_classe if ue.classe else 'N/A' }}</td>
+                <td style="text-align:center;">{{ ue.credits }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" style="text-align:center;">Aucune affectation enregistrée</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="security-frame">
+        <h5>PARAMÈTRES D'ACCÈS AU PORTAIL ACADÉMIQUE</h5>
+        <div class="id-grid">
+            <div>
+                <div class="id-label">NOM D'UTILISATEUR</div>
+                <div class="id-value">{{ user.username }}</div>
+            </div>
+            <div>
+                <div class="id-label">MOT DE PASSE PROVISOIRE</div>
+                <div class="id-value">{{ password }}</div>
+            </div>
+        </div>
+    </div>
+
+    <p style="font-size: 12px; font-style: italic; color: #444;">
+        * Ce document est strictement personnel. L'utilisateur est tenu de modifier son mot de passe dès sa première connexion sécurisée.
+    </p>
+
+    <div class="signature-area">
+
+        <div class="sign-box">
+            <div class="sign-title">L'Enseignant</div>
+            <div class="sign-line"></div>
+            <div class="sign-name">{{ enseignant.prenom }} {{ enseignant.nom }}</div>
+        </div>
+
+        <div class="seal-circle">
+            EMPLACEMENT<br>DU CACHET<br>OFFICIEL
+        </div>
+
+        <div class="sign-box">
+            <div class="sign-title">Le Directeur Général</div>
+            <div class="sign-line"></div>
+            <div class="sign-name">M. le Directeur de la State</div>
+            <div style="font-size: 10px; margin-top: 5px; font-weight: bold;">(Signataire Autorisé)</div>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

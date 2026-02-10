@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}PV de Délibération - {{ classe.nom_classe }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Procès-Verbal : {{ classe.nom_classe }}</h2>
+            <p class="text-muted">Année Académique en cours</p>
+        </div>
+        <button onclick="window.print()" class="btn btn-dark">
+            <i class="fas fa-print me-2"></i> Imprimer le PV
+        </button>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white p-3">
+                <h3>{{ stats.taux }}%</h3>
+                <small>Taux de Réussite</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-light p-3">
+                <h3>{{ stats.admis }} / {{ stats.total }}</h3>
+                <small>Étudiants Admis</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-pro">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Rang</th>
+                    <th>Matricule</th>
+                    <th>Nom & Prénom</th>
+                    <th>Moyenne Annuelle</th>
+                    <th>Mention</th>
+                    <th>Décision Jury</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in deliberations %}
+                <tr class="{% if d.decision == 'ADMIS' %}table-success{% elif d.decision == 'RATTRAPAGE' %}table-warning{% else %}table-danger{% endif %}">
+                    <td class="fw-bold text-center">
+                        {% if d.rang == 1 %}🥇{% elif d.rang == 2 %}🥈{% elif d.rang == 3 %}🥉{% else %}{{ d.rang }}{% endif %}
+                    </td>
+                    <td>{{ d.etudiant.id }}</td> <td class="fw-bold">{{ d.etudiant.nom }} {{ d.etudiant.prenom }}</td>
+                    <td class="fs-5">{{ d.moyenne_annuelle }}/20</td>
+                    <td>{{ d.mention }}</td>
+                    <td>
+                        {% if d.decision == 'ADMIS' %}
+                            <span class="badge bg-success">ADMIS</span>
+                        {% elif d.decision == 'RATTRAPAGE' %}
+                            <span class="badge bg-warning text-dark">RATTRAPAGE</span>
+                        {% else %}
+                            <span class="badge bg-danger">REDOUBLEMENT</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center">Aucune délibération calculée.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

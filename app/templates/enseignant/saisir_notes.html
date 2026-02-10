@@ -1,0 +1,53 @@
+{% extends "enseignant/base.html" %}
+{% block title %}Saisie des Notes - {{ ue.code_ue }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark">{{ ue.intitule }}</h2>
+        <span class="badge bg-primary-subtle text-primary">{{ ue.code_ue }}</span>
+        <span class="ms-2 text-muted"><i class="fas fa-graduation-cap"></i> {{ ue.classe.nom_classe }}</span>
+    </div>
+    <div class="text-end">
+        <button form="form-notes" type="submit" class="btn btn-accent shadow">
+            <i class="fas fa-save me-2"></i>Enregistrer les modifications
+        </button>
+    </div>
+</div>
+
+<div class="card-custom">
+    <form method="POST" id="form-notes" action="{{ url_for('enseignant.saisir_notes', ue_id=ue.id) }}">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Étudiant</th>
+                        <th>Matricule</th>
+                        <th style="width: 150px;">Note / 20</th>
+                        <th>Commentaire</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in etudiants_notes %}
+                    <tr>
+                        <td class="ps-4 fw-bold">{{ item.etudiant.nom }} {{ item.etudiant.prenom }}</td>
+                        <td><small class="text-muted">{{ item.etudiant.matricule }}</small></td>
+                        <td>
+                            <input type="number" step="0.25" min="0" max="20"
+                                   name="note_{{ item.etudiant.id }}"
+                                   class="form-control form-control-sm border-primary-subtle"
+                                   value="{{ item.note or '' }}" placeholder="--">
+                        </td>
+                        <td>
+                            <input type="text" name="obs_{{ item.etudiant.id }}"
+                                   class="form-control form-control-sm border-0 bg-light"
+                                   placeholder="Observation...">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+{% endblock %}

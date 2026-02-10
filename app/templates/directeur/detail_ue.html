@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Détails UE - {{ ue.code_ue }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{{ url_for('directeur.liste_ues') }}" class="btn btn-outline-secondary rounded-circle me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h2 class="fw-bold mb-0">{{ ue.intitule }}</h2>
+            <span class="badge bg-primary-subtle text-primary px-3 rounded-pill">{{ ue.code_ue }}</span>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h5 class="fw-bold mb-4">Informations Générales</h5>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="text-muted small text-uppercase fw-bold">Classe</label>
+                        <p class="fw-bold text-dark">{{ ue.classe.nom_classe }}</p>
+                    </div>
+                    <div class="col-6">
+                        <label class="text-muted small text-uppercase fw-bold">Crédits / Coef</label>
+                        <p class="fw-bold text-dark">{{ ue.credits }} ECTS / Coeff {{ ue.coefficient }}</p>
+                    </div>
+                    <div class="col-12">
+                        <label class="text-muted small text-uppercase fw-bold">Filière</label>
+                        <p class="fw-bold text-dark">{{ ue.classe.filiere.nom_filiere }} ({{ ue.classe.filiere.cycle }})</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 p-4 mt-4">
+                <h5 class="fw-bold mb-3">Enseignants Responsables</h5>
+                <div class="list-group list-group-flush">
+                    {% for prof in ue.enseignants %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm bg-light rounded-circle p-2 me-3 text-primary text-center" style="width: 40px;">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">{{ prof.nom }} {{ prof.prenom }}</h6>
+                                <small class="text-muted">{{ prof.specialite }}</small>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('directeur.supprimer_affectation', ue_id=ue.id, ens_id=prof.id) }}"
+                           class="btn btn-sm btn-outline-danger border-0 rounded-pill"
+                           onclick="return confirm('Retirer {{ prof.nom }} de cette UE ?');">
+                            <i class="fas fa-user-times"></i>
+                        </a>
+                    </div>
+                    {% else %}
+                    <p class="text-muted py-3 mb-0">Aucun enseignant affecté à cette UE.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 p-4 border-top border-primary border-5">
+                <h5 class="fw-bold mb-3">Attribuer un Enseignant</h5>
+                <p class="text-muted small">Sélectionnez un enseignant dans la liste des profs disponibles.</p>
+
+                <form method="POST" action="{{ url_for('directeur.affecter_ue_a_prof', ue_id=ue.id, enseignant_id=0) }}" id="assignForm">
+                    <div class="mb-3">
+                        <select name="enseignant_id" id="enseignant_select" class="form-select border-0 bg-light py-2" required onchange="updateFormAction(this.value)">
+                            <option value="" selected disabled>Choisir un enseignant...</option>
+                            {% for ens in enseignants %}
+                                {% if ens not in ue.enseignants %}
+                                <option value="{{ ens.id }}">{{ ens.nom }} {{ ens.prenom }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-sm">
+                        <i class="fas fa-plus-circle me-2"></i>Confirmer l'attribution
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Script pour mettre à jour l'URL avec l'ID de l'enseignant choisi
+function updateFormAction(ensId) {
+    const form = document.getElementById('assignForm');
+    const ueId = {{ ue.id }};
+    // Construction de l'URL correcte avec les deux paramètres
+    form.action = `/directeur/ue/${ueId}/affecter/${ensId}`;
+}
+</script>
+{% endblock %}

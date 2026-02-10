@@ -1,0 +1,254 @@
+{% extends "enseignant/base.html" %}
+
+{% block title %}Configuration des Notes - {{ ue.code_ue }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">⚙️ Configuration des Notes</h2>
+            <p class="text-muted">{{ ue.code_ue }} - {{ ue.intitule }}</p>
+        </div>
+        <a href="{{ url_for('enseignant.detail_ue', ue_id=ue.id) }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card-pro">
+                <h5 class="mb-3">📊 Définir les composantes d'évaluation</h5>
+                <p class="text-muted mb-4">
+                    Configurez les différentes composantes de notes (Examen, Devoir, TP, etc.) et leur pondération.
+                    <strong>La somme des pondérations doit être égale à 100%.</strong>
+                </p>
+
+                <form method="POST" id="formComposantes">
+                    <div id="composantesContainer">
+                        {% if composantes %}
+                            {% for comp in composantes %}
+                            <div class="composante-item mb-3 p-3 border rounded">
+                                <div class="row align-items-center">
+                                    <div class="col-md-5">
+                                        <label class="form-label">Nom de la composante</label>
+                                        <input type="text" class="form-control" name="nom_{{ loop.index0 }}"
+                                               value="{{ comp.nom }}" placeholder="Ex: Examen Final" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Pondération (%)</label>
+                                        <input type="number" class="form-control ponderation-input"
+                                               name="ponderation_{{ loop.index0 }}"
+                                               value="{{ comp.ponderation }}"
+                                               min="1" max="100" step="0.1" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button type="button" class="btn btn-danger w-100 btn-remove-composante">
+                                            <i class="fas fa-trash"></i> Supprimer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Template par défaut : Examen 100% -->
+                            <div class="composante-item mb-3 p-3 border rounded">
+                                <div class="row align-items-center">
+                                    <div class="col-md-5">
+                                        <label class="form-label">Nom de la composante</label>
+                                        <input type="text" class="form-control" name="nom_0"
+                                               value="Examen Final" placeholder="Ex: Examen Final" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Pondération (%)</label>
+                                        <input type="number" class="form-control ponderation-input"
+                                               name="ponderation_0" value="100"
+                                               min="1" max="100" step="0.1" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button type="button" class="btn btn-danger w-100 btn-remove-composante">
+                                            <i class="fas fa-trash"></i> Supprimer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <button type="button" class="btn btn-outline-primary mb-3" id="btnAjouterComposante">
+                        <i class="fas fa-plus"></i> Ajouter une composante
+                    </button>
+
+                    <div class="alert alert-info mt-3">
+                        <strong>Total de la pondération : <span id="totalPonderation">0</span>%</strong>
+                        <span id="alertPonderation" class="text-danger ms-2" style="display:none;">
+                            ⚠️ Le total doit être exactement 100%
+                        </span>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('enseignant.detail_ue', ue_id=ue.id) }}" class="btn btn-secondary">
+                            Annuler
+                        </a>
+                        <button type="submit" class="btn btn-success" id="btnSauvegarder">
+                            <i class="fas fa-save"></i> Enregistrer la configuration
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card-pro">
+                <h6 class="fw-bold mb-3">💡 Exemples de configurations</h6>
+
+                <div class="mb-3 p-2 border-start border-primary border-3 bg-light">
+                    <strong>Configuration 1 : Simple</strong>
+                    <ul class="mb-0 mt-2 small">
+                        <li>Examen Final : 100%</li>
+                    </ul>
+                </div>
+
+                <div class="mb-3 p-2 border-start border-success border-3 bg-light">
+                    <strong>Configuration 2 : Mixte</strong>
+                    <ul class="mb-0 mt-2 small">
+                        <li>Devoirs : 30%</li>
+                        <li>Examen : 70%</li>
+                    </ul>
+                </div>
+
+                <div class="mb-3 p-2 border-start border-info border-3 bg-light">
+                    <strong>Configuration 3 : Équilibrée</strong>
+                    <ul class="mb-0 mt-2 small">
+                        <li>Devoirs : 25%</li>
+                        <li>TP : 25%</li>
+                        <li>Examen : 50%</li>
+                    </ul>
+                </div>
+
+                <div class="p-2 border-start border-warning border-3 bg-light">
+                    <strong>Configuration 4 : Complète</strong>
+                    <ul class="mb-0 mt-2 small">
+                        <li>Participation : 10%</li>
+                        <li>Devoirs : 20%</li>
+                        <li>TP : 20%</li>
+                        <li>Contrôle continu : 20%</li>
+                        <li>Examen Final : 30%</li>
+                    </ul>
+                </div>
+            </div>
+
+            {% if composantes %}
+            <div class="card-pro mt-3 bg-danger text-white">
+                <h6 class="fw-bold mb-2">🗑️ Supprimer la configuration</h6>
+                <p class="small mb-3">Revenir au système de notation classique (une seule note par UE)</p>
+                <form method="POST" action="{{ url_for('enseignant.supprimer_composantes', ue_id=ue.id) }}"
+                      onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette configuration ? Les notes saisies seront conservées.');">
+                    <button type="submit" class="btn btn-light w-100">
+                        <i class="fas fa-trash"></i> Supprimer la configuration
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.composante-item {
+    transition: all 0.3s ease;
+}
+.composante-item:hover {
+    background-color: #f8f9fa;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let composanteIndex = {{ composantes|length if composantes else 1 }};
+
+    // Calculer le total des pondérations
+    function calculerTotal() {
+        let total = 0;
+        document.querySelectorAll('.ponderation-input').forEach(input => {
+            const val = parseFloat(input.value) || 0;
+            total += val;
+        });
+
+        const totalElement = document.getElementById('totalPonderation');
+        const alertElement = document.getElementById('alertPonderation');
+        const btnSauvegarder = document.getElementById('btnSauvegarder');
+
+        totalElement.textContent = total.toFixed(1);
+
+        if (Math.abs(total - 100) < 0.1) {
+            totalElement.classList.remove('text-danger');
+            totalElement.classList.add('text-success');
+            alertElement.style.display = 'none';
+            btnSauvegarder.disabled = false;
+        } else {
+            totalElement.classList.remove('text-success');
+            totalElement.classList.add('text-danger');
+            alertElement.style.display = 'inline';
+            btnSauvegarder.disabled = true;
+        }
+    }
+
+    // Écouter les changements de pondération
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('ponderation-input')) {
+            calculerTotal();
+        }
+    });
+
+    // Ajouter une composante
+    document.getElementById('btnAjouterComposante').addEventListener('click', function() {
+        const container = document.getElementById('composantesContainer');
+        const newItem = document.createElement('div');
+        newItem.className = 'composante-item mb-3 p-3 border rounded';
+        newItem.innerHTML = `
+            <div class="row align-items-center">
+                <div class="col-md-5">
+                    <label class="form-label">Nom de la composante</label>
+                    <input type="text" class="form-control" name="nom_${composanteIndex}"
+                           placeholder="Ex: Devoir Surveillé" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Pondération (%)</label>
+                    <input type="number" class="form-control ponderation-input"
+                           name="ponderation_${composanteIndex}" value="0"
+                           min="1" max="100" step="0.1" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn btn-danger w-100 btn-remove-composante">
+                        <i class="fas fa-trash"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+        `;
+        container.appendChild(newItem);
+        composanteIndex++;
+        calculerTotal();
+    });
+
+    // Supprimer une composante
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-remove-composante')) {
+            const items = document.querySelectorAll('.composante-item');
+            if (items.length > 1) {
+                e.target.closest('.composante-item').remove();
+                calculerTotal();
+            } else {
+                alert('Vous devez conserver au moins une composante.');
+            }
+        }
+    });
+
+    // Calculer le total au chargement
+    calculerTotal();
+});
+</script>
+{% endblock %}
+

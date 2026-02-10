@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Détails TP - {{ tp.titre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    
+    <!-- En-tête -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">{{ tp.titre }}</h3>
+                    <small>{{ tp.ue.code_ue }} - {{ tp.ue.intitule }}</small>
+                </div>
+                <div>
+                    <a href="{{ url_for('laboratoire.editer_tp', tp_id=tp.id) }}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Éditer
+                    </a>
+                    <a href="{{ url_for('laboratoire.lancer_tp', tp_id=tp.id) }}" class="btn btn-success">
+                        <i class="fas fa-play"></i> Tester
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Description :</strong></p>
+                    <p class="text-muted">{{ tp.description }}</p>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li><strong>Type :</strong> <span class="badge bg-info">{{ tp.type_simulation }}</span></li>
+                        <li><strong>IA :</strong> 
+                            <span class="badge" style="background: {% if tp.ia_nom == 'ETA' %}#e74c3c{% elif tp.ia_nom == 'ALPHA' %}#2ecc71{% else %}#f1c40f{% endif %}">
+                                {{ tp.ia_nom }}
+                            </span>
+                        </li>
+                        <li><strong>Note sur :</strong> {{ tp.note_sur }}</li>
+                        <li><strong>Deadline :</strong> {{ tp.date_limite.strftime('%d/%m/%Y') if tp.date_limite else 'Aucune' }}</li>
+                        <li><strong>Actif :</strong> 
+                            {% if tp.actif %}
+                                <span class="badge bg-success">Oui</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Non</span>
+                            {% endif %}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center bg-light">
+                <div class="card-body">
+                    <h2 class="text-primary">{{ nb_etudiants }}</h2>
+                    <p class="text-muted mb-0">Étudiants</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center bg-light">
+                <div class="card-body">
+                    <h2 class="text-success">{{ nb_termines }}</h2>
+                    <p class="text-muted mb-0">Sessions terminées</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center bg-light">
+                <div class="card-body">
+                    <h2 class="text-warning">{{ sessions|length - nb_termines }}</h2>
+                    <p class="text-muted mb-0">En cours</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center bg-light">
+                <div class="card-body">
+                    <h2 class="text-info">
+                        {% if sessions %}
+                            {{ "%.1f"|format((sessions|selectattr('note_finale')|map(attribute='note_finale')|sum) / (sessions|selectattr('note_finale')|list|length or 1)) }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </h2>
+                    <p class="text-muted mb-0">Moyenne</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des sessions -->
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0"><i class="fas fa-users"></i> Sessions des étudiants</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Étudiant</th>
+                            <th>Date</th>
+                            <th>Durée</th>
+                            <th>Mesures</th>
+                            <th>Statut</th>
+                            <th>Note IA</th>
+                            <th>Note Finale</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in sessions %}
+                        <tr>
+                            <td>{{ session.etudiant.prenom }} {{ session.etudiant.nom }}</td>
+                            <td>{{ session.date_debut.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>{{ session.duree_minutes or '-' }} min</td>
+                            <td>{{ session.nb_mesures }}</td>
+                            <td>
+                                <span class="badge bg-{% if session.statut == 'évalué' %}success{% elif session.statut == 'terminé' %}warning{% else %}secondary{% endif %}">
+                                    {{ session.statut }}
+                                </span>
+                            </td>
+                            <td>{{ session.note_ia or '-' }}/20</td>
+                            <td>
+                                {% if session.note_finale %}
+                                    <strong class="text-success">{{ session.note_finale }}/20</strong>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('laboratoire.resultat_tp', session_id=session.id) }}" 
+                                   class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">Aucune session encore</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

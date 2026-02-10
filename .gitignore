@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Flask
+instance/*.db
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (optionnel - commentez si vous voulez versionner les uploads)
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+app/static/exports/*
+!app/static/exports/.gitkeep
+
+# Secrets
+.env
+config_local.py

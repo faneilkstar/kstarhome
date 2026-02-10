@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block title %}Mon Bulletin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .bulletin-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+    .bulletin-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        padding: 3rem;
+        margin-bottom: 2rem;
+    }
+    .stat-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    .stat-box h2 {
+        font-size: 3rem;
+        margin: 0;
+        font-weight: bold;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin: 2rem 0;
+    }
+    .bar-chart {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        height: 250px;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+    }
+    .bar {
+        flex: 1;
+        margin: 0 5px;
+        background: linear-gradient(to top, #667eea, #764ba2);
+        border-radius: 5px 5px 0 0;
+        position: relative;
+        transition: all 0.3s;
+        min-height: 20px;
+    }
+    .bar:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.5);
+    }
+    .bar-label {
+        position: absolute;
+        bottom: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.8rem;
+        font-weight: bold;
+        color: #666;
+        white-space: nowrap;
+    }
+    .bar-value {
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-weight: bold;
+        color: #667eea;
+        font-size: 1.1rem;
+    }
+    .note-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+    .note-excellent { background: #10b981; color: white; }
+    .note-bien { background: #3b82f6; color: white; }
+    .note-moyen { background: #f59e0b; color: white; }
+    .note-faible { background: #ef4444; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bulletin-container">
+    <div class="container">
+        <div class="bulletin-card mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-4 fw-bold mb-0">📊 Mon Bulletin</h1>
+                    <p class="text-muted">{{ etudiant.nom_complet }} - {{ etudiant.classe.nom_classe if etudiant.classe else 'Sans classe' }}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="{{ url_for('etudiant.telecharger_bulletin') }}" class="btn btn-lg btn-primary">
+                        <i class="fas fa-download me-2"></i>Télécharger PDF
+                    </a>
+                    <a href="{{ url_for('etudiant.telecharger_observations') }}" class="btn btn-lg btn-success mt-2">
+                        <i class="fas fa-chart-line me-2"></i>Rapport Observations
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="stat-box">
+                    <div class="small mb-2">MOYENNE GÉNÉRALE</div>
+                    <h2>{{ moyenne_generale }}/20</h2>
+                    {% if moyenne_generale >= 16 %}
+                        <span class="badge bg-success">Excellent</span>
+                    {% elif moyenne_generale >= 14 %}
+                        <span class="badge bg-info">Très Bien</span>
+                    {% elif moyenne_generale >= 12 %}
+                        <span class="badge bg-warning">Bien</span>
+                    {% elif moyenne_generale >= 10 %}
+                        <span class="badge bg-secondary">Passable</span>
+                    {% else %}
+                        <span class="badge bg-danger">Insuffisant</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="small mb-2">MATIÈRES</div>
+                    <h2>{{ ues_stats|length }}</h2>
+                    <span class="badge bg-white text-dark">UE Évaluées</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <div class="small mb-2">ABSENCES</div>
+                    <h2>{{ absences }}</h2>
+                    <span class="badge bg-white text-dark">{{ absences_justifiees }} justifiées</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-box" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                    <div class="small mb-2">VALIDATION</div>
+                    <h2>{{ ((ues_stats.values()|selectattr('note', 'ge', 10)|list|length / ues_stats|length * 100) if ues_stats else 0)|round }}%</h2>
+                    <span class="badge bg-white text-dark">UE Réussies</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bulletin-card">
+            <h3 class="fw-bold mb-4"><i class="fas fa-chart-bar text-primary me-2"></i>Histogramme des Notes par UE</h3>
+            <div class="chart-container">
+                <div class="bar-chart">
+                    {% for ue_nom, stats in ues_stats.items() %}
+                    <div class="bar" style="height: {{ (stats.note / 20 * 100) }}%;">
+                        <div class="bar-value">{{ stats.note }}</div>
+                        <div class="bar-label">{{ stats.code }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="bulletin-card">
+            <h3 class="fw-bold mb-4"><i class="fas fa-chart-pie text-success me-2"></i>Répartition des Notes</h3>
+            <div class="row">
+                {% for range, count in distribution.items() %}
+                <div class="col">
+                    <div class="text-center p-3 bg-light rounded">
+                        <h4 class="mb-0">{{ count }}</h4>
+                        <small class="text-muted">{{ range }}</small>
+                        <div class="progress mt-2" style="height: 10px;">
+                            <div class="progress-bar bg-primary" style="width: {{ (count / notes|length * 100) if notes else 0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="bulletin-card">
+            <h3 class="fw-bold mb-4"><i class="fas fa-list text-info me-2"></i>Détail des Notes</h3>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Code UE</th>
+                            <th>Intitulé</th>
+                            <th>Crédits</th>
+                            <th>Coefficient</th>
+                            <th>Note</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for note in notes %}
+                        <tr>
+                            <td><strong>{{ note.ue.code_ue }}</strong></td>
+                            <td>{{ note.ue.intitulé }}</td>
+                            <td><span class="badge bg-secondary">{{ note.ue.credits }} ECTS</span></td>
+                            <td>{{ note.ue.coefficient }}</td>
+                            <td>
+                                {% if note.note is not none %}
+                                    <span class="note-badge {% if note.note >= 16 %}note-excellent{% elif note.note >= 14 %}note-bien{% elif note.note >= 10 %}note-moyen{% else %}note-faible{% endif %}">
+                                        {{ note.note }}/20
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">En attente</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if note.note is not none %}
+                                    {% if note.note >= 10 %}
+                                        <span class="badge bg-success">✓ Validé</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">✗ Non validé</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-warning">⏳ En cours</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

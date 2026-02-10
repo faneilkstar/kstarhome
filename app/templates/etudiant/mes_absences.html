@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Mes Absences | Suivi{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="fas fa-user-clock me-2"></i>Mes Absences</h2>
+        <span class="text-muted">Année en cours</span>
+    </div>
+
+    {% if total_non_justifiees >= 3 %}
+    <div class="alert alert-danger shadow-sm border-start border-5 border-danger fade show">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-exclamation-circle fa-2x me-3"></i>
+            <div>
+                <h5 class="alert-heading fw-bold">Attention : Seuil critique atteint</h5>
+                <p class="mb-0">Vous cumulez <strong>{{ total_non_justifiees }} absences non justifiées</strong>. Veuillez régulariser votre situation au plus vite.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row mb-4 g-3">
+        <div class="col-md-4">
+            <div class="card-pro bg-primary bg-opacity-10 border-0 p-3 text-center h-100">
+                <h1 class="display-4 fw-bold text-primary">{{ total_absences }}</h1>
+                <p class="text-uppercase fw-bold text-muted small"><i class="fas fa-calendar-times me-2"></i>Total Absences</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-pro bg-success bg-opacity-10 border-0 p-3 text-center h-100">
+                <h1 class="display-4 fw-bold text-success">{{ total_justifiees }}</h1>
+                <p class="text-uppercase fw-bold text-muted small"><i class="fas fa-check-circle me-2"></i>Justifiées</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-pro bg-danger bg-opacity-10 border-0 p-3 text-center h-100">
+                <h1 class="display-4 fw-bold text-danger">{{ total_non_justifiees }}</h1>
+                <p class="text-uppercase fw-bold text-muted small"><i class="fas fa-exclamation-triangle me-2"></i>Non Justifiées</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card-pro h-100">
+                <h5 class="fw-bold mb-3"><i class="fas fa-chart-pie me-2"></i>Répartition par Matière</h5>
+                {% if absences_par_ue %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Matière</th>
+                                <th class="text-center">Total</th>
+                                <th class="text-end">État</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for code, data in absences_par_ue.items() %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ code }}</div>
+                                    <small class="text-muted">{{ data.ue.intitule }}</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border">{{ data.total }}</span>
+                                </td>
+                                <td class="text-end">
+                                    {% if data.non_justifiees >= 3 %}
+                                        <span class="badge bg-danger">Critique</span>
+                                    {% elif data.non_justifiees >= 1 %}
+                                        <span class="badge bg-warning text-dark">Attention</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Parfait</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <p class="text-muted text-center py-5">Aucune absence enregistrée par matière.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card-pro h-100">
+                <h5 class="fw-bold mb-3"><i class="fas fa-history me-2"></i>Historique Chronologique</h5>
+                {% if absences %}
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-sm table-hover">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Date</th>
+                                <th>UE</th>
+                                <th>Motif</th>
+                                <th class="text-end">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for absence in absences %}
+                            <tr>
+                                <td class="fw-bold">{{ absence.date_absence.strftime('%d/%m') }}</td>
+                                <td><span class="badge bg-secondary">{{ absence.ue.code_ue }}</span></td>
+                                <td class="small text-muted">{{ absence.motif or '-' }}</td>
+                                <td class="text-end">
+                                    {% if absence.justifiee %}
+                                        <i class="fas fa-check text-success" title="Justifiée"></i>
+                                    {% else %}
+                                        <i class="fas fa-times text-danger" title="Non justifiée"></i>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-smile-beam fa-3x text-success mb-3"></i>
+                        <p class="text-muted">Aucune absence dans l'historique.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

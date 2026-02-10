@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Gestion des Diplômes{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4"><i class="fas fa-graduation-cap me-2 text-primary"></i>Édition des Diplômes</h2>
+    
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Étudiant</th>
+                        <th class="text-center">Moyenne</th>
+                        <th class="text-center">Statut</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in diplomables %}
+                    <tr>
+                        <td>
+                            <div class="fw-bold">{{ item.etudiant.nom.upper() }} {{ item.etudiant.prenom.title() }}</div>
+                            <small class="text-muted">Matricule: {{ item.etudiant.id }}</small>
+                        </td>
+                        <td class="text-center fw-bold">{{ item.moyenne }} / 20</td>
+                        <td class="text-center">
+                            {% if item.deja_delivre %}
+                                <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Délivré</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">En attente</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('directeur.generer_diplome', etudiant_id=item.etudiant.id) }}" 
+                               class="btn btn-sm {{ 'btn-outline-dark' if item.deja_delivre else 'btn-primary' }}">
+                                <i class="fas fa-print me-1"></i> Imprimer Diplôme
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4">Aucun étudiant n'est éligible au diplôme pour le moment.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

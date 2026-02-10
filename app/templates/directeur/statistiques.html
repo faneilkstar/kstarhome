@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Audit Académique Complet{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark">Pilotage & Performances</h2>
+            <p class="text-muted">Analyse globale de l'année 2025-2026</p>
+        </div>
+        <a href="{{ url_for('directeur.telecharger_rapport_statistique') }}" class="btn btn-danger shadow-sm rounded-pill px-4">
+            <i class="fas fa-file-pdf me-2"></i>Télécharger l'Audit Complet (PDF)
+        </a>
+    </div>
+
+    <div class="alert alert-light border-start border-5 border-primary shadow-sm rounded-3 mb-5 p-4">
+        <h5 class="fw-bold text-primary"><i class="fas fa-robot me-2"></i>Analyse Automatique</h5>
+        <p class="mb-0 fs-5 text-dark" style="font-family: 'Georgia', serif; line-height: 1.6;">
+            {{ interpretation }}
+        </p>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 d-flex flex-row align-items-center bg-primary text-white h-100">
+                <div class="p-3 me-3"><i class="fas fa-user-graduate fa-2x"></i></div>
+                <div>
+                    <h2 class="fw-bold mb-0">{{ total_etudiants }}</h2>
+                    <small class="opacity-75">Étudiants Inscrits</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 d-flex flex-row align-items-center bg-white h-100">
+                <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3 text-success"><i class="fas fa-check-circle fa-2x"></i></div>
+                <div>
+                    <h2 class="fw-bold mb-0">{{ taux_reussite }}%</h2>
+                    <small class="text-muted">Taux de Réussite</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 d-flex flex-row align-items-center bg-white h-100">
+                <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3 text-warning"><i class="fas fa-chart-bar fa-2x"></i></div>
+                <div>
+                    <h2 class="fw-bold mb-0">{{ moyenne_ecole }}</h2>
+                    <small class="text-muted">Moyenne École</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 d-flex flex-row align-items-center bg-white h-100">
+                <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3 text-info"><i class="fas fa-book-reader fa-2x"></i></div>
+                <div>
+                    <h2 class="fw-bold mb-0">{{ total_ues }}</h2>
+                    <small class="text-muted">Modules Enseignés</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4"><h6 class="fw-bold">Comparatif des Classes (Moyenne)</h6></div>
+                <div class="card-body">
+                    <canvas id="classesChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4"><h6 class="fw-bold">Proportion Admis / Ajournés</h6></div>
+                <div class="card-body d-flex justify-content-center">
+                    <canvas id="reussiteChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-5">
+        <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0"><i class="fas fa-list-ol me-2"></i>Classement Général par Mérite</h5>
+            <span class="badge bg-light text-dark">{{ total_etudiants }} Élèves classés</span>
+        </div>
+
+        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light sticky-top" style="z-index: 1;">
+                    <tr>
+                        <th class="text-center" style="width: 80px;">Rang</th>
+                        <th>Étudiant</th>
+                        <th>Classe</th>
+                        <th class="text-center">Moyenne</th>
+                        <th class="text-end pe-4">Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in liste_complete_etudiants %}
+                    <tr class="{{ 'bg-success bg-opacity-10' if loop.index <= 3 else '' }}">
+                        <td class="text-center fw-bold text-muted">
+                            {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ e.nom_complet }}</div>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">{{ e.classe }}</span></td>
+                        <td class="text-center fw-bold fs-5">
+                            {{ "%.2f"|format(e.moyenne) }}
+                        </td>
+                        <td class="text-end pe-4">
+                            {% if e.moyenne >= 16 %}
+                                <span class="badge bg-success">TRÈS BIEN</span>
+                            {% elif e.moyenne >= 14 %}
+                                <span class="badge bg-info text-dark">BIEN</span>
+                            {% elif e.moyenne >= 12 %}
+                                <span class="badge bg-primary">ASSEZ BIEN</span>
+                            {% elif e.moyenne >= 10 %}
+                                <span class="badge bg-secondary">PASSABLE</span>
+                            {% else %}
+                                <span class="badge bg-danger">AJOURNÉ</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-danger-subtle border-danger border-start border-4">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-exclamation-triangle fa-2x text-danger me-3"></i>
+            <div>
+                <h6 class="fw-bold text-danger mb-1">Point de vigilance académique</h6>
+                <p class="mb-0 small text-dark">
+                    Le module <strong>{{ worst_ues[0].nom if worst_ues else 'N/A' }}</strong> enregistre la moyenne la plus basse ({{ worst_ues[0].moy if worst_ues else 0 }}/20). Une réunion pédagogique est conseillée.
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // 1. REUSSITE
+    const ctxReussite = document.getElementById('reussiteChart').getContext('2d');
+    new Chart(ctxReussite, {
+        type: 'doughnut',
+        data: {
+            labels: ['Admis', 'Ajournés'],
+            datasets: [{
+                data: [{{ admis }}, {{ ajournes }}],
+                backgroundColor: ['#10b981', '#ef4444'],
+                borderWidth: 0
+            }]
+        }
+    });
+
+    // 2. CLASSES
+    const ctxClasses = document.getElementById('classesChart').getContext('2d');
+    new Chart(ctxClasses, {
+        type: 'bar',
+        data: {
+            labels: {{ data_classes_noms | safe }},
+            datasets: [{
+                label: 'Moyenne / 20',
+                data: {{ data_classes_moyennes | safe }},
+                backgroundColor: '#3b82f6',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            scales: { y: { beginAtZero: true, max: 20 } }
+        }
+    });
+</script>
+{% endblock %}

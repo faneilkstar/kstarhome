@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Pilotage du Corps Enseignant{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --accent-color: #4361ee;
+        --glass-bg: rgba(255, 255, 255, 0.9);
+    }
+
+    body { background-color: #f0f2f5; }
+
+    /* Style des cartes statistiques (KPIs) */
+    .stat-mini-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.25rem;
+        border: none;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        transition: transform 0.3s ease;
+    }
+    .stat-mini-card:hover { transform: translateY(-5px); }
+
+    .icon-circle {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    /* Style Table Pilotage */
+    .glass-panel {
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+    }
+
+    .prof-row { transition: all 0.2s; }
+    .prof-row:hover { background-color: #f8faff !important; }
+
+    .badge-ue {
+        background-color: #eef2ff;
+        color: #4361ee;
+        border: 1px solid #dbe2fe;
+        font-size: 0.75rem;
+        padding: 5px 10px;
+        border-radius: 8px;
+        display: inline-block;
+    }
+
+    .search-pill {
+        border-radius: 50px;
+        padding-left: 45px;
+        border: 1px solid #dee2e6;
+        background: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Pilotage des Enseignants</h2>
+            <p class="text-muted"><i class="fas fa-users-cog me-2"></i>Affectation et gestion des charges de cours</p>
+        </div>
+        <a href="{{ url_for('directeur.ajouter_enseignant') }}" class="btn btn-primary rounded-pill px-4 shadow">
+            <i class="fas fa-plus-circle me-2"></i>Nouveau Enseignant
+        </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="stat-mini-card d-flex align-items-center">
+                <div class="icon-circle bg-primary-subtle text-primary me-3"><i class="fas fa-chalkboard-teacher"></i></div>
+                <div>
+                    <h6 class="text-muted small mb-0">Total Enseignants</h6>
+                    <h4 class="fw-bold mb-0">{{ enseignants|length }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-mini-card d-flex align-items-center">
+                <div class="icon-circle bg-warning-subtle text-warning me-3"><i class="fas fa-user-clock"></i></div>
+                <div>
+                    <h6 class="text-muted small mb-0">Sans UE Affectée</h6>
+                    <h4 class="fw-bold mb-0 text-warning">
+                        {{ enseignants|rejectattr('ues')|list|length }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-mini-card d-flex align-items-center">
+                <div class="icon-circle bg-success-subtle text-success me-3"><i class="fas fa-check-double"></i></div>
+                <div>
+                    <h6 class="text-muted small mb-0">Taux d'Occupation</h6>
+                    <h4 class="fw-bold mb-0">85%</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-panel p-4">
+        <div class="row align-items-center mb-4">
+            <div class="col-md-6">
+                <h5 class="fw-bold mb-0">Liste du Personnel Académique</h5>
+            </div>
+            <div class="col-md-6">
+                <div class="position-relative">
+                    <i class="fas fa-search position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                    <input type="text" id="profSearch" class="form-control search-pill" placeholder="Chercher un nom, une spécialité...">
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table align-middle border-0" id="profTable">
+                <thead>
+                    <tr class="text-muted small text-uppercase">
+                        <th class="border-0 ps-3">Enseignant</th>
+                        <th class="border-0">Spécialité / Grade</th>
+                        <th class="border-0">UE Attribuées</th>
+                        <th class="border-0 text-center" style="width: 250px;">Action d'Affectation</th>
+                        <th class="border-0 text-end pe-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enseignant in enseignants %}
+                    <tr class="prof-row border-bottom">
+                        <td class="ps-3 py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-light rounded-circle p-2 me-3 text-center" style="width: 40px;">
+                                    {{ enseignant.nom[0] }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ enseignant.nom }} {{ enseignant.prenom }}</div>
+                                    <div class="small text-muted">{{ enseignant.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">{{ enseignant.specialite }}</div>
+                            <span class="badge bg-light text-dark border small">{{ enseignant.grade }}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% for ue in enseignant.ues %}
+                                    <span class="badge-ue" title="{{ ue.intitule }}">
+                                        {{ ue.code_ue }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-danger small italic"><i class="fas fa-exclamation-circle me-1"></i>Aucune</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td>
+                            <form method="POST" action="{{ url_for('directeur.affecter_ue_a_prof', enseignant_id=enseignant.id) }}" class="d-flex gap-1">
+                                <select name="ue_id" class="form-select form-select-sm border-0 bg-light rounded-pill" required>
+                                    <option value="" disabled selected>Choisir UE...</option>
+                                    {% for ue in toutes_les_ues %}
+                                        {% if ue not in enseignant.ues %}
+                                        <option value="{{ ue.id }}">{{ ue.code_ue }} - {{ ue.classe.nom_classe }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                                <button class="btn btn-sm btn-success rounded-circle shadow-sm">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </form>
+                        </td>
+                        <td class="text-end pe-3">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                    <li><a class="dropdown-item" href="{{ url_for('directeur.detail_enseignant', enseignant_id=enseignant.id) }}"><i class="fas fa-eye me-2 text-primary"></i>Profil complet</a></li>
+                                    <li><a class="dropdown-item" href="#"><i class="fas fa-edit me-2 text-info"></i>Modifier</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-trash me-2"></i>Supprimer</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Script de recherche en temps réel
+    document.getElementById('profSearch').addEventListener('keyup', function() {
+        let value = this.value.toLowerCase();
+        let rows = document.querySelectorAll('#profTable tbody tr');
+        rows.forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(value) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}

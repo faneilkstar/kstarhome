@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Statut Candidature | Polytech{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --poly-gold: #d97706;
+        --poly-blue: #1e3a8a;
+        --poly-blue-dark: #1e1b4b;
+    }
+
+    body {
+        background: radial-gradient(circle at 0% 0%, #f1f5f9 0%, #e2e8f0 100%);
+        min-height: 100vh;
+    }
+
+    .wait-container {
+        max-width: 850px;
+        margin: 80px auto;
+        animation: revealContainer 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes revealContainer {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .glass-status-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        border-radius: 50px;
+        padding: 60px 80px;
+        box-shadow: 0 40px 100px rgba(15, 23, 42, 0.1);
+    }
+
+    /* --- RADAR ANIMÉ --- */
+    .radar-box {
+        position: relative;
+        width: 110px;
+        height: 110px;
+        margin: 0 auto 35px;
+    }
+    .radar-circle {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        border: 3px solid var(--poly-gold);
+        border-radius: 50%;
+        animation: pulseRadar 2.5s infinite;
+    }
+    @keyframes pulseRadar {
+        0% { transform: scale(0.7); opacity: 1; }
+        100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    /* --- BADGE DE STATUT --- */
+    .status-badge {
+        display: inline-block;
+        background: #fffbeb;
+        color: var(--poly-gold);
+        padding: 10px 25px;
+        border-radius: 100px;
+        font-weight: 800;
+        font-size: 0.75rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        border: 1px solid #fef3c7;
+        box-shadow: 0 5px 15px rgba(217, 119, 6, 0.1);
+    }
+
+    /* --- ÉTAPES --- */
+    .step-item {
+        background: white;
+        border-radius: 25px;
+        padding: 22px 30px;
+        margin-bottom: 18px;
+        transition: 0.4s;
+        border: 1px solid rgba(0,0,0,0.03);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    }
+    .step-item:hover {
+        transform: translateX(12px);
+        border-color: var(--poly-gold);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.05);
+    }
+
+    .step-number {
+        width: 40px; height: 40px;
+        background: var(--poly-blue);
+        color: white;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800;
+        flex-shrink: 0;
+    }
+
+    /* --- BOUTONS --- */
+    .btn-prestige {
+        padding: 18px 35px;
+        border-radius: 20px;
+        font-weight: 700;
+        transition: all 0.3s;
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .btn-download {
+        background: var(--poly-blue-dark);
+        color: white;
+        box-shadow: 0 10px 20px rgba(30, 27, 75, 0.2);
+    }
+    .btn-download:hover {
+        background: #000;
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(30, 27, 75, 0.3);
+        color: white;
+    }
+
+    .btn-logout {
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+    .btn-logout:hover {
+        background: #ef4444;
+        color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px rgba(239, 68, 68, 0.2);
+    }
+</style>
+
+<div class="container wait-container">
+    <div class="glass-status-card text-center">
+
+        <div class="radar-box">
+            <div class="radar-circle"></div>
+            <div class="position-relative bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="width:100%; height:100%;">
+                <i class="fas fa-shield-check fa-2x text-warning"></i>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <span class="status-badge">Analyse de candidature</span>
+        </div>
+
+        <h1 class="fw-900 text-dark mb-3">Bonjour, {{ etudiant.prenom }}</h1>
+        <p class="text-muted mb-5">
+            Votre dossier est actuellement en cours de révision par le pôle académique pour la filière
+            <span class="text-primary fw-bold">{{ etudiant.filiere_objet.nom_filiere if etudiant.filiere_objet else "Sélectionnée" }}</span>.
+        </p>
+
+        <div class="text-start mb-5">
+            <div class="step-item d-flex align-items-center">
+                <div class="step-number me-3">1</div>
+                <div>
+                    <h6 class="mb-0 fw-bold">Vérification Administrative</h6>
+                    <small class="text-muted">Authentification des documents et moyennes.</small>
+                </div>
+            </div>
+            <div class="step-item d-flex align-items-center">
+                <div class="step-number me-3">2</div>
+                <div>
+                    <h6 class="mb-0 fw-bold">Validation du Directeur</h6>
+                    <small class="text-muted">Décision finale et affectation à une promotion.</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-center gap-3">
+            <a href="{{ url_for('etudiant.telecharger_lettre') }}" class="btn-prestige btn-download">
+                <i class="fas fa-file-pdf"></i> TELECHARGER RECEPISSE
+            </a>
+
+            <a href="{{ url_for('auth.logout') }}" class="btn-prestige btn-logout">
+                <i class="fas fa-sign-out-alt"></i> DECONNEXION
+            </a>
+        </div>
+
+    </div>
+
+    <div class="text-center mt-4">
+        <p class="small text-muted fw-bold opacity-50 text-uppercase ls-2">Polytech Management System v2.0</p>
+    </div>
+</div>
+
+<script>
+    // Effet de parallaxe sur la carte pour le côté "Premium"
+    document.addEventListener('mousemove', (e) => {
+        const card = document.querySelector('.glass-status-card');
+        const x = (window.innerWidth / 2 - e.pageX) / 50;
+        const y = (window.innerHeight / 2 - e.pageY) / 50;
+        card.style.transform = `rotateX(${y}deg) rotateY(${x}deg)`;
+    });
+</script>
+{% endblock %}

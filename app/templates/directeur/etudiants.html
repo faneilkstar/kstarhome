@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block title %}Gestion des Étudiants | Polytech{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- Styles Personnalisés --- */
+    .avatar-circle {
+        width: 48px; height: 48px;
+        background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+        color: white;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 14px; font-weight: 800;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+    }
+
+    .table-hover tbody tr { transition: all 0.2s ease-in-out; }
+    .table-hover tbody tr:hover {
+        background-color: #f8fafc;
+        transform: scale(1.005);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        z-index: 10; position: relative;
+    }
+
+    .badge-filiere {
+        background: #eef2ff; color: #4338ca;
+        padding: 5px 10px; border-radius: 6px;
+        font-size: 0.75rem; font-weight: 700; border: 1px solid #e0e7ff;
+    }
+
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .fw-900 { font-weight: 900 !important; }
+
+    /* Boutons d'action */
+    .btn-action {
+        width: 32px; height: 32px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 8px; transition: 0.2s;
+    }
+    .btn-action:hover { transform: translateY(-2px); }
+</style>
+{% endblock %}
+
+{% block sidebar %}
+<div class="p-3">
+    <h6 class="text-muted small fw-bold text-uppercase mb-3 px-3">Administration</h6>
+    <nav class="nav nav-pills flex-column">
+        <a class="nav-link mb-2 py-3 px-4 border-0 text-dark" href="{{ url_for('directeur.dashboard') }}">
+            <i class="fas fa-chart-line me-3 text-primary"></i> Dashboard
+        </a>
+        <a class="nav-link active mb-2 py-3 px-4 shadow-sm bg-primary text-white rounded-3" href="{{ url_for('directeur.liste_etudiants') }}">
+            <i class="fas fa-user-graduate me-3"></i> Étudiants
+        </a>
+        <a class="nav-link mb-2 py-3 px-4 text-dark" href="{{ url_for('directeur.liste_enseignants') }}">
+            <i class="fas fa-chalkboard-teacher me-3 text-success"></i> Enseignants
+        </a>
+    </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="row align-items-center mb-5">
+        <div class="col">
+            <h2 class="fw-900 text-dark mb-1">Candidatures & Inscriptions</h2>
+            <p class="text-muted small mb-0">
+                <i class="fas fa-clock me-1 text-warning"></i> Session Académique 2025-2026
+            </p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('directeur.export_etudiants') }}" class="btn btn-outline-dark rounded-pill px-4 py-2 fw-bold shadow-sm bg-white">
+                <i class="fas fa-file-csv me-2 text-success"></i>Exporter la liste
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-body p-2 d-flex align-items-center">
+            <div class="me-auto d-flex gap-2 p-1">
+                <a href="?statut=tous" class="btn btn-sm rounded-pill px-4 fw-bold {% if statut_filtre == 'tous' or not statut_filtre %}btn-dark{% else %}btn-light text-muted{% endif %}">
+                    Tous
+                </a>
+                <a href="?statut=en_attente" class="btn btn-sm rounded-pill px-4 fw-bold {% if statut_filtre == 'en_attente' %}btn-warning text-white shadow-sm{% else %}btn-light text-muted{% endif %}">
+                    En Attente
+                </a>
+                <a href="?statut=accepté" class="btn btn-sm rounded-pill px-4 fw-bold {% if statut_filtre == 'accepté' %}btn-success text-white shadow-sm{% else %}btn-light text-muted{% endif %}">
+                    Admis
+                </a>
+                <a href="?statut=refusé" class="btn btn-sm rounded-pill px-4 fw-bold {% if statut_filtre == 'refusé' %}btn-danger text-white shadow-sm{% else %}btn-light text-muted{% endif %}">
+                    Refusés
+                </a>
+            </div>
+            <div class="pe-3 small fw-bold text-muted text-uppercase ls-1">
+                <i class="fas fa-users me-2"></i>{{ etudiants|length }} Dossiers
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 table-hover">
+                <thead class="bg-light border-bottom">
+                    <tr>
+                        <th class="ps-4 py-3 text-uppercase small fw-800 text-secondary">Candidat</th>
+                        <th class="text-uppercase small fw-800 text-secondary">Niveau & Résultats</th>
+                        <th class="text-uppercase small fw-800 text-secondary">Filière Demandée</th>
+                        <th class="text-center text-uppercase small fw-800 text-secondary">Statut</th>
+                        <th class="text-end pe-4 text-uppercase small fw-800 text-secondary">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for etudiant in etudiants %}
+                    <tr>
+                        <td class="ps-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle me-3">
+                                    {{ (etudiant.nom[0]|upper) if etudiant.nom else '?' }}{{ (etudiant.prenom[0]|upper) if etudiant.prenom else '' }}
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0 text-dark">{{ etudiant.nom_complet }}</h6>
+                                    <small class="text-muted d-block">{{ etudiant.user.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="d-flex flex-column gap-1 align-items-start">
+                                <span class="badge bg-white border text-dark shadow-sm" style="font-weight: 600;">
+                                    BAC: <span class="text-primary">{{ etudiant.moyenne_bac if etudiant.moyenne_bac else '--' }}</span>
+                                </span>
+                                {% if etudiant.moyenne_licence %}
+                                <span class="badge bg-white border text-dark shadow-sm" style="font-weight: 600;">
+                                    LIC: <span class="text-primary">{{ etudiant.moyenne_licence }}</span>
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td>
+                            <div class="fw-bold text-dark">{{ etudiant.filiere_objet.nom_filiere if etudiant.filiere_objet else 'Non spécifiée' }}</div>
+                            <span class="badge-filiere mt-1 d-inline-block">{{ etudiant.filiere_objet.cycle if etudiant.filiere_objet else '' }}</span>
+                            {% if etudiant.classe %}
+                                <div class="mt-1 small text-success fw-bold"><i class="fas fa-check-circle me-1"></i>Affecté: {{ etudiant.classe.nom_classe }}</div>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center">
+                            {% if etudiant.statut_inscription == 'accepté' %}
+                                <span class="badge rounded-pill bg-success-subtle text-success px-3 py-2 fw-bold border border-success-subtle">
+                                    <span class="status-dot bg-success"></span>ADMIS
+                                </span>
+                            {% elif etudiant.statut_inscription == 'en_attente' %}
+                                <span class="badge rounded-pill bg-warning-subtle text-warning px-3 py-2 fw-bold border border-warning-subtle">
+                                    <span class="status-dot bg-warning"></span>EN ATTENTE
+                                </span>
+                            {% else %}
+                                <span class="badge rounded-pill bg-danger-subtle text-danger px-3 py-2 fw-bold border border-danger-subtle">
+                                    <span class="status-dot bg-danger"></span>REFUSÉ
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-end pe-4">
+                            {% if etudiant.statut_inscription == 'en_attente' %}
+                                <button class="btn btn-success btn-sm fw-bold shadow-sm rounded-pill px-3 me-1"
+                                        data-bs-toggle="modal" data-bs-target="#modalValider{{ etudiant.id }}">
+                                    <i class="fas fa-check me-1"></i> Valider
+                                </button>
+
+                                <button class="btn btn-outline-danger btn-sm fw-bold rounded-pill px-3"
+                                        data-bs-toggle="modal" data-bs-target="#modalRefuser{{ etudiant.id }}">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            {% else %}
+                                <a href="{{ url_for('directeur.detail_etudiant', etudiant_id=etudiant.id) }}" class="btn btn-light border btn-sm rounded-pill px-3 fw-bold">
+                                    <i class="fas fa-eye me-2"></i>Détails
+                                </a>
+                            {% endif %}
+
+                            <div class="modal fade" id="modalValider{{ etudiant.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content border-0 shadow-lg rounded-4 text-start">
+                                        <div class="modal-header border-0 p-4 pb-0">
+                                            <h5 class="fw-900 text-success"><i class="fas fa-check-circle me-2"></i>Admission Définitive</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="POST" action="{{ url_for('directeur.valider_etudiant', etudiant_id=etudiant.id) }}">
+                                            <div class="modal-body p-4">
+                                                <p class="text-muted">Vous êtes sur le point d'accepter <strong>{{ etudiant.nom_complet }}</strong>.</p>
+
+                                                <label class="form-label fw-bold small text-uppercase text-primary">Affecter à la classe :</label>
+                                                <select name="classe_id" class="form-select form-select-lg bg-light border-0" required>
+                                                    <option value="" disabled selected>-- Choisir une classe --</option>
+                                                    {% for classe in classes %}
+                                                        {% if etudiant.filiere_id == classe.filiere_id %}
+                                                            <option value="{{ classe.id }}">{{ classe.nom_classe }}</option>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="modal-footer border-0 p-4 pt-0">
+                                                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Annuler</button>
+                                                <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow">Confirmer l'Admission</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="modal fade" id="modalRefuser{{ etudiant.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content border-0 shadow-lg rounded-4 text-start">
+                                        <div class="modal-header border-0 p-4 pb-0">
+                                            <h5 class="fw-900 text-danger"><i class="fas fa-times-circle me-2"></i>Refuser le dossier</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="POST" action="{{ url_for('directeur.valider_etudiant', etudiant_id=etudiant.id) }}?action=refuser">
+                                            <div class="modal-body p-4">
+                                                <div class="alert alert-danger bg-danger-subtle border-0 text-danger rounded-3">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i> Cette action est irréversible.
+                                                </div>
+                                                <p>Voulez-vous vraiment rejeter la candidature de <strong>{{ etudiant.nom_complet }}</strong> ?</p>
+                                                <p class="small text-muted">L'étudiant recevra une notification de refus sur son espace.</p>
+                                            </div>
+                                            <div class="modal-footer border-0 p-4 pt-0">
+                                                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Annuler</button>
+                                                <button type="submit" name="refuser" value="true" class="btn btn-danger rounded-pill px-4 fw-bold shadow">Confirmer le Refus</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if not etudiants %}
+        <div class="text-center py-5">
+            <div class="mb-3 opacity-25">
+                <i class="fas fa-folder-open fa-4x text-primary"></i>
+            </div>
+            <h5 class="fw-bold text-muted">Aucun dossier trouvé</h5>
+            <p class="text-muted small">Essayez de changer les filtres ou attendez de nouvelles inscriptions.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

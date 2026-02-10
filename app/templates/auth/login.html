@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Connexion Sécurisée | Polytech{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 85vh;">
+    <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="max-width: 900px; width: 100%;">
+        <div class="row g-0">
+
+            <div class="col-lg-6 d-none d-lg-flex flex-column justify-content-center align-items-center text-white p-5 position-relative"
+                 style="background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 20px 20px; opacity: 0.3;"></div>
+
+                <i class="fas fa-university fa-5x mb-4 position-relative"></i>
+                <h2 class="fw-bold position-relative">POLYTECH</h2>
+                <p class="text-center opacity-75 position-relative">
+                    Plateforme de gestion académique unifiée<br>pour l'excellence éducative.
+                </p>
+            </div>
+
+            <div class="col-lg-6 p-5 bg-white">
+                <div class="text-center mb-4">
+                    <h3 class="fw-bold text-dark">Espace Membre</h3>
+                    <p class="text-muted small">Veuillez vous identifier pour continuer</p>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show small shadow-sm" role="alert">
+                                <i class="fas fa-info-circle me-2"></i>{{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('auth.login') }}">
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-uppercase text-secondary">Identifiant</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-user"></i></span>
+                            <input type="text" class="form-control bg-light border-start-0 ps-0 fs-6"
+                                   name="username" placeholder="Ex: votre_matricule" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-label small fw-bold text-uppercase text-secondary">Mot de passe</label>
+                        </div>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-lock"></i></span>
+                            <input type="password" class="form-control bg-light border-start-0 ps-0 fs-6"
+                                   name="password" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mb-4">
+                        <button type="submit" class="btn btn-primary py-3 fw-bold shadow-sm rounded-3">
+                            Se connecter <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+
+                </form>
+
+                <div class="text-center pt-3 border-top">
+                    <p class="small text-muted mb-2">Vous êtes un nouvel étudiant ?</p>
+
+                    <a href="{{ url_for('auth.inscription') }}" class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-bold">
+                        <i class="fas fa-user-plus me-2"></i>Créer mon dossier
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

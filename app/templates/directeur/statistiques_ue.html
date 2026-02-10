@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Statistiques {{ ue.code_ue }}{% endblock %}
+
+{% block sidebar %}
+<ul class="nav flex-column">
+  <li class="nav-item"><a class="nav-link" href="{{ url_for('directeur.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+  <li class="nav-item"><a class="nav-link" href="{{ url_for('directeur.statistiques') }}"><i class="fas fa-chart-bar"></i> Statistiques</a></li>
+  <li class="nav-item"><a class="nav-link active" href="{{ url_for('directeur.liste_ues') }}"><i class="fas fa-book"></i> UE</a></li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between mb-4">
+  <h2><i class="fas fa-chart-bar"></i> Statistiques - {{ ue.code_ue }}</h2>
+  <a href="{{ url_for('directeur.detail_ue', ue_id=ue.id) }}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Retour
+  </a>
+</div>
+
+<!-- Informations UE -->
+<div class="card mb-4">
+  <div class="card-header"><i class="fas fa-info-circle"></i> Informations UE</div>
+  <div class="card-body">
+    <p><strong>Code :</strong> {{ ue.code_ue }}</p>
+    <p><strong>Intitulé :</strong> {{ ue.intitule }}</p>
+    <p><strong>Crédits :</strong> {{ ue.credits }}</p>
+    <p><strong>Coefficient :</strong> {{ ue.coefficient }}</p>
+    <p><strong>Classe :</strong> {{ ue.classe.nom_classe }} ({{ ue.classe.grade }})</p>
+    <p><strong>Filière :</strong> {{ ue.classe.filiere.nom_filiere }} ({{ ue.classe.filiere.cycle }})</p>
+  </div>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="stat-card blue">
+      <h3>{% if moyenne_ue %}{{ moyenne_ue }}{% else %}<span class="badge bg-secondary">N/A</span>{% endif %}</h3>
+      <p><i class="fas fa-chart-line"></i> Moyenne UE</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card green">
+      <h3>{{ taux_reussite }}%</h3>
+      <p><i class="fas fa-check"></i> Taux Réussite</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card orange">
+      <h3>{% if note_max %}{{ note_max }}{% else %}<span class="badge bg-secondary">N/A</span>{% endif %}</h3>
+      <p><i class="fas fa-arrow-up"></i> Note Max</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card red">
+      <h3>{% if note_min %}{{ note_min }}{% else %}<span class="badge bg-secondary">N/A</span>{% endif %}</h3>
+      <p><i class="fas fa-arrow-down"></i> Note Min</p>
+    </div>
+  </div>
+</div>
+
+<!-- Distribution des notes -->
+<div class="card">
+  <div class="card-header"><i class="fas fa-list"></i> Distribution des Notes</div>
+  <div class="card-body">
+    {% if distribution %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Étudiant</th>
+            <th>Note</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in distribution %}
+          <tr>
+            <td>{{ item.etudiant }}</td>
+            <td>
+              {% if item.note is not none %}
+                <strong {% if item.valide %}class="text-success"{% else %}class="text-danger"{% endif %}>
+                  {{ item.note }}/20
+                </strong>
+              {% else %}
+                <span class="badge bg-secondary">Pas de note</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if item.valide %}
+              <span class="badge bg-success"><i class="fas fa-check"></i> Validé</span>
+              {% else %}
+              <span class="badge bg-danger"><i class="fas fa-times"></i> Non validé</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-center py-4">Aucune note disponible</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

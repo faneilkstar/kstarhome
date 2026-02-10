@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Délibérations Annuelles{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <h2 class="fw-bold mb-4">⚖️ Délibérations Annuelles</h2>
+    <div class="row">
+        {% for classe in classes %}
+        <div class="col-md-4 mb-4">
+            <div class="card-pro text-center">
+                <div class="card-body">
+                    <h4 class="fw-bold">{{ classe.nom_classe }}</h4>
+                    <p class="text-muted">{{ classe.etudiants.count() }} Étudiants</p>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('directeur.calculer_deliberation', classe_id=classe.id) }}" class="btn btn-primary">
+                            <i class="fas fa-calculator me-2"></i> Lancer le Calcul
+                        </a>
+                        <a href="{{ url_for('directeur.voir_pv', classe_id=classe.id) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-file-alt me-2"></i> Voir PV Existant
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des Enseignants | Polytech{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark">Corps Professoral</h2>
+            <p class="text-muted">Gestion des enseignants et affectations</p>
+        </div>
+        <a href="{{ url_for('directeur.ajouter_enseignant') }}" class="btn btn-primary">
+            <i class="fas fa-plus-circle me-2"></i> Nouvel Enseignant
+        </a>
+    </div>
+
+    <div class="card-pro">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Matricule</th>
+                        <th>Identité</th>
+                        <th>Grade</th>
+                        <th>Spécialité</th>
+                        <th>Email</th>
+                        <th>Statut</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enseignant in enseignants %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-light text-dark border">
+                                ENS-{{ "%04d" % enseignant.id }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle bg-primary text-white me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border-radius: 50%;">
+                                    {{ enseignant.prenom[0] }}{{ enseignant.nom[0] }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ enseignant.nom }} {{ enseignant.prenom }}</div>
+                                    <small class="text-muted">ID: {{ enseignant.id }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ enseignant.grade or 'Non défini' }}</td>
+                        <td><span class="badge bg-info bg-opacity-10 text-info">{{ enseignant.specialite or 'Généraliste' }}</span></td>
+                        <td>{{ enseignant.user.email }}</td>
+                        <td>
+                            {% if enseignant.actif %}
+                                <span class="badge bg-success">Actif</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactif</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('directeur.detail_enseignant', enseignant_id=enseignant.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fas fa-chalkboard-teacher fa-3x mb-3"></i><br>
+                            Aucun enseignant enregistré pour le moment.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

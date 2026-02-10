@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Direction - Command Center{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --bg-ultra: #f1f5f9;
+        --accent-glow: 0 0 20px rgba(99, 102, 241, 0.4);
+        --glass-dark: rgba(15, 23, 42, 0.95);
+        --grad-premium: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    }
+
+    body { background-color: var(--bg-body); }
+
+    .stat-card {
+        border: none;
+        border-radius: 30px;
+        background: #ffffff;
+        padding: 2rem;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+        border: 1px solid rgba(255,255,255,0.8);
+    }
+    .icon-box {
+        width: 65px;
+        height: 65px;
+        border-radius: 22px;
+        font-size: 1.8rem;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .action-btn-custom {
+        background: white;
+        border: none;
+        border-radius: 24px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.04);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        text-align: center;
+    }
+    .action-btn-custom:hover {
+        transform: translateY(-10px) scale(1.03);
+        box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15);
+        background: var(--grad-primary, #6366f1);
+        color: white !important;
+    }
+
+    .custom-table tr {
+        background: white;
+        transition: 0.3s;
+    }
+    .custom-table tr:hover {
+        transform: scale(1.005);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+
+    .btn-terminal {
+        position: fixed;
+        bottom: 40px;
+        right: 40px;
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: #6366f1;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        box-shadow: 0 10px 20px rgba(99, 102, 241, 0.4);
+        cursor: pointer;
+        z-index: 1000;
+    }
+
+    .terminal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(8px);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+    }
+    .terminal-window {
+        width: 500px;
+        background: #1e293b;
+        border-radius: 20px;
+        overflow: hidden;
+        color: #10b981;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-5 mt-2">
+        <div>
+            <h1 class="fw-900 text-dark display-5 mb-0" style="letter-spacing: -1.5px;">Polytech Command Center</h1>
+            <p class="text-muted">Direction Générale — <span class="badge bg-dark rounded-pill">Live Monitor</span></p>
+        </div>
+        <div class="p-3 bg-white shadow-sm rounded-4 border-0 d-flex align-items-center">
+            <div class="stat-badge bg-primary bg-opacity-10 p-2 rounded-circle me-3 text-primary">
+                <i class="fas fa-microchip"></i>
+            </div>
+            <div>
+                <div class="small text-muted fw-bold">SYSTEM STATUS</div>
+                <div class="fw-bold text-success">OPTIMAL 2026</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-primary bg-opacity-10 text-primary"><i class="fas fa-user-graduate"></i></div>
+                <div class="text-muted small fw-bold mt-3">TOTAL ÉTUDIANTS</div>
+                <h2 class="fw-bold mb-0">{{ nb_etudiants }}</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-success bg-opacity-10 text-success"><i class="fas fa-chalkboard-teacher"></i></div>
+                <div class="text-muted small fw-bold mt-3">CORPS PROFESSORAL</div>
+                <h2 class="fw-bold mb-0">{{ nb_enseignants }}</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="icon-box bg-warning bg-opacity-10 text-warning"><i class="fas fa-book-open"></i></div>
+                <div class="text-muted small fw-bold mt-3">UNITÉS DE COURS</div>
+                <h2 class="fw-bold mb-0">{{ nb_ues }}</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-dark text-white">
+                <div class="icon-box bg-white bg-opacity-10 text-white"><i class="fas fa-bolt"></i></div>
+                <div class="text-white-50 small fw-bold mt-3">FILIÈRES ACTIVES</div>
+                <h2 class="fw-bold mb-0">{{ nb_filieres }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <h5 class="fw-bold mb-4 px-2 text-secondary">> NAVIGATION SYSTÈME</h5>
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <a href="{{ url_for('directeur.ajouter_ue') }}" class="action-btn-custom text-decoration-none d-block">
+                <i class="fas fa-plus-circle fa-2x mb-2 text-primary"></i>
+                <div class="fw-bold">Ajouter une UE</div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('directeur.ajouter_enseignant') }}" class="action-btn-custom text-decoration-none d-block">
+                <i class="fas fa-user-plus fa-2x mb-2 text-success"></i>
+                <div class="fw-bold">Nouveau Prof</div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('directeur.affectations') }}" class="action-btn-custom text-decoration-none d-block">
+                <i class="fas fa-link fa-2x mb-2 text-warning"></i>
+                <div class="fw-bold">Affectations</div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('directeur.liste_etudiants') }}" class="action-btn-custom text-decoration-none d-block">
+                <i class="fas fa-id-card-clip fa-2x mb-2 text-info"></i>
+                <div class="fw-bold">Valider Dossiers</div>
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold mb-0">Registre des Promotions</h4>
+            <a href="{{ url_for('directeur.liste_classes') }}" class="btn btn-outline-dark btn-sm rounded-pill px-3">Tout voir</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table custom-table align-middle">
+                <thead class="text-muted small">
+                    <tr>
+                        <th class="ps-3">NOM CLASSE</th>
+                        <th>CYCLE</th>
+                        <th>EFFECTIF</th>
+                        <th>STATUS</th>
+                        <th class="text-end pe-3">ANALYSE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cl in classes_recentes %}
+                    <tr class="border-bottom">
+                        <td class="ps-3 fw-bold">{{ cl.nom_classe }}</td>
+                        <td><span class="badge bg-light text-primary border">{{ cl.cycle }}</span></td>
+                        <td>
+                            <div class="fw-bold">{{ cl.etudiants.count() }} <small class="text-muted">Inscrits</small></div>
+                        </td>
+                        <td><span class="badge bg-success bg-opacity-10 text-success">ACTIF</span></td>
+                        <td class="text-end pe-3">
+                            <a href="{{ url_for('directeur.detail_classe', classe_id=cl.id) }}" class="btn btn-sm btn-primary rounded-circle">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="btn-terminal" onclick="toggleTerminal()">
+        <i class="fas fa-paper-plane"></i>
+    </div>
+
+    <div class="terminal-overlay" id="terminalOverlay">
+        <div class="terminal-window shadow-lg">
+            <div class="p-3 border-bottom border-secondary d-flex justify-content-between align-items-center">
+                <span class="small fw-bold">> BROADCAST_SYSTEM_V2.0</span>
+                <button class="btn-close btn-close-white" onclick="toggleTerminal()"></button>
+            </div>
+            <div class="p-4">
+                <form action="{{ url_for('directeur.publier_annonce') }}" method="POST">
+                    <input type="text" name="titre" class="form-control mb-3 bg-dark border-secondary text-success" placeholder="TITRE_LOG" required style="font-family: monospace;">
+                    <textarea name="message" class="form-control mb-3 bg-dark border-secondary text-success" rows="5" placeholder="CORPS_DU_MESSAGE_DIFFUSION..." required style="font-family: monospace;"></textarea>
+                    <button type="submit" class="btn btn-success w-100 fw-bold">EXÉCUTER DIFFUSION</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function toggleTerminal() {
+        const overlay = document.getElementById('terminalOverlay');
+        overlay.style.display = (overlay.style.display === 'flex') ? 'none' : 'flex';
+    }
+</script>
+{% endblock %}

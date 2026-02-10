@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Détails Étudiant{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">{{ etudiant.nom }} {{ etudiant.prenom }} <small class="text-muted">({{ etudiant.matricule }})</small></h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-striped">
+              <thead>
+                  <tr><th>UE</th><th>Note</th><th>Validée</th></tr>
+              </thead>
+              <tbody>
+              {% for item in notes %}
+              <tr>
+                <td>
+                    <strong>{{ item.ue.code_ue }}</strong> - {{ item.ue.intitule }}
+                </td>
+                <td>
+                    {% if item.note is not none %}
+                        {{ item.note }} / 20
+                    {% else %}
+                        <span class="text-muted font-italic">Non noté</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.validee %}
+                        <span class="badge bg-success">Oui</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Non</span>
+                    {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

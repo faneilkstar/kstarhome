@@ -1,0 +1,163 @@
+{% extends "enseignant/base.html" %}
+
+{% block title %}Saisir Notes - {{ composante.nom }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">📝 Saisie des Notes</h2>
+            <p class="text-muted mb-0">{{ ue.code_ue }} - {{ ue.intitule }}</p>
+            <span class="badge bg-primary">{{ composante.nom }} ({{ composante.ponderation }}%)</span>
+        </div>
+        <a href="{{ url_for('enseignant.detail_ue', ue_id=ue.id) }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+    </div>
+
+    <div class="card-pro">
+        <form method="POST">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="50">#</th>
+                            <th>Matricule</th>
+                            <th>Nom</th>
+                            <th>Prénom</th>
+                            <th width="200">Note / 20</th>
+                            <th width="100">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in etudiants_notes %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td><span class="badge bg-secondary">{{ item.etudiant.numero_inscription or 'ETU-' + item.etudiant.id|string }}</span></td>
+                            <td>{{ item.etudiant.nom }}</td>
+                            <td>{{ item.etudiant.prenom }}</td>
+                            <td>
+                                <input type="number"
+                                       class="form-control note-input"
+                                       name="note_{{ item.etudiant.id }}"
+                                       value="{{ item.note if item.note is not none else '' }}"
+                                       min="0"
+                                       max="20"
+                                       step="0.25"
+                                       placeholder="0.00">
+                            </td>
+                            <td>
+                                {% if item.note is not none %}
+                                    {% if item.note >= 10 %}
+                                        <span class="badge bg-success">✓ Validé</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">✗ Ajourné</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-secondary">En attente</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">Aucun étudiant inscrit</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div>
+                    <button type="button" class="btn btn-outline-secondary" onclick="remplirAleatoire()">
+                        🎲 Remplir avec notes aléatoires (Test)
+                    </button>
+                </div>
+                <div>
+                    <a href="{{ url_for('enseignant.detail_ue', ue_id=ue.id) }}" class="btn btn-secondary me-2">
+                        Annuler
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Enregistrer les notes
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="alert alert-info mt-3">
+        <i class="fas fa-info-circle"></i>
+        <strong>Informations :</strong>
+        <ul class="mb-0 mt-2">
+            <li>Les notes doivent être comprises entre 0 et 20</li>
+            <li>Vous pouvez utiliser des décimales (ex: 15.5, 12.25)</li>
+            <li>La note finale sera calculée automatiquement en fonction des pondérations configurées</li>
+            <li>Les étudiants verront uniquement leur note finale (et non les détails des composantes)</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+.note-input {
+    font-weight: bold;
+    text-align: center;
+}
+.note-input:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+</style>
+
+<script>
+// Fonction pour remplir avec des notes aléatoires (pour les tests)
+function remplirAleatoire() {
+    if (confirm('Voulez-vous remplir toutes les notes avec des valeurs aléatoires ? (Utile pour les tests)')) {
+        document.querySelectorAll('.note-input').forEach(input => {
+            const note = (Math.random() * 10 + 5).toFixed(2); // Entre 5 et 15
+            input.value = note;
+        });
+    }
+}
+
+// Coloration automatique selon la note
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('note-input')) {
+        const note = parseFloat(e.target.value);
+        const row = e.target.closest('tr');
+
+        if (!isNaN(note)) {
+            if (note >= 10) {
+                row.style.backgroundColor = '#d1e7dd';
+            } else {
+                row.style.backgroundColor = '#f8d7da';
+            }
+        } else {
+            row.style.backgroundColor = '';
+        }
+    }
+});
+
+// Navigation au clavier
+document.querySelectorAll('.note-input').forEach((input, index, inputs) => {
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (index > 0) {
+                inputs[index - 1].focus();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+

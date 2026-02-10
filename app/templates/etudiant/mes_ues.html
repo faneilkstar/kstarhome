@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Mon Programme d'Études{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --poly-blue: #1e3a8a;
+        --poly-indigo: #4338ca;
+    }
+    body { background-color: #f8fafc; }
+
+    /* Cartes Statistiques */
+    .stat-card-mini {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        border: 1px solid #e2e8f0;
+        transition: transform 0.3s ease;
+    }
+    .stat-card-mini:hover { transform: translateY(-5px); }
+    .icon-circle {
+        width: 50px; height: 50px;
+        border-radius: 15px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    /* Table Design */
+    .ue-container {
+        background: white;
+        border-radius: 30px;
+        overflow: hidden;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.04);
+        border: 1px solid #f1f5f9;
+    }
+    .table thead th {
+        background-color: #fcfdfe;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 1.5px;
+        color: #94a3b8;
+        padding: 20px;
+        border-bottom: 2px solid #f8fafc;
+    }
+    .ue-row { transition: background 0.2s; }
+    .ue-row:hover { background-color: #fcfdfe; }
+
+    /* Badges */
+    .ects-badge {
+        background: #eff6ff;
+        color: #2563eb;
+        font-weight: 800;
+        padding: 6px 15px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+    }
+    .note-circle {
+        width: 45px; height: 45px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 900;
+        margin: 0 auto;
+    }
+    .note-pass { background: #ecfdf5; color: #10b981; border: 2px solid #d1fae5; }
+    .note-fail { background: #fef2f2; color: #ef4444; border: 2px solid #fee2e2; }
+    .note-wait { background: #f1f5f9; color: #64748b; font-size: 0.7rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="fw-900 text-dark mb-1">Mon Cursus Pédagogique</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{url_for('etudiant.dashboard')}}" class="text-decoration-none">Tableau de bord</a></li>
+                    <li class="breadcrumb-item active">Unités d'Enseignement</li>
+                </ol>
+            </nav>
+        </div>
+        <a href="{{url_for('etudiant.choisir_ues')}}" class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold">
+            <i class="fas fa-sync-alt me-2"></i>Ajuster mes modules
+        </a>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="stat-card-mini d-flex align-items-center shadow-sm">
+                <div class="icon-circle bg-primary-subtle text-primary me-3"><i class="fas fa-layer-group"></i></div>
+                <div>
+                    <h4 class="fw-900 mb-0">{{ ues_avec_notes|length }}</h4>
+                    <small class="text-muted text-uppercase fw-bold ls-1">Modules inscrits</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card-mini d-flex align-items-center shadow-sm">
+                <div class="icon-circle bg-success-subtle text-success me-3"><i class="fas fa-award"></i></div>
+                <div>
+                    <h4 class="fw-900 mb-0">{{ total_credits_valides|default(0) }} / 60</h4>
+                    <small class="text-muted text-uppercase fw-bold ls-1">ECTS Cumulés</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card-mini d-flex align-items-center shadow-sm">
+                <div class="icon-circle bg-warning-subtle text-warning me-3"><i class="fas fa-star"></i></div>
+                <div>
+                    <h4 class="fw-900 mb-0">{{ moyenne_actuelle|default('--') }}</h4>
+                    <small class="text-muted text-uppercase fw-bold ls-1">Moyenne pondérée</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ue-container">
+        {% if ues_avec_notes %}
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Code & Désignation</th>
+                        <th class="text-center">Valeur ECTS</th>
+                        <th class="text-center">Évaluation /20</th>
+                        <th class="text-end pe-4">Statut Académique</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in ues_avec_notes %}
+                    <tr class="ue-row border-bottom">
+                        <td class="ps-4 py-4">
+                            <div class="d-flex align-items-center">
+                                <div class="p-2 bg-light rounded-3 me-3 text-center" style="width: 45px;">
+                                    <i class="fas fa-bookmark text-primary"></i>
+                                </div>
+                                <div>
+                                    <span class="fw-900 d-block text-dark">{{item.ue.code_ue}}</span>
+                                    <span class="text-muted small">{{item.ue.intitule}}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="ects-badge">{{item.ue.credits}} <small>ECTS</small></span>
+                        </td>
+                        <td class="text-center">
+                            {% if item.note is not none %}
+                                <div class="note-circle {{ 'note-pass' if item.note >= 10 else 'note-fail' }}">
+                                    {{ "%0.1f"|format(item.note) }}
+                                </div>
+                            {% else %}
+                                <div class="note-circle note-wait">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            {% if item.validee %}
+                                <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                                    <i class="fas fa-check-circle me-1"></i> VALIDÉ
+                                </span>
+                            {% elif item.note is not none %}
+                                <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-3 py-2">
+                                    <i class="fas fa-times-circle me-1"></i> RATTRAPAGE
+                                </span>
+                            {% else %}
+                                <span class="badge rounded-pill bg-light text-muted border px-3 py-2">
+                                    <i class="fas fa-spinner fa-spin me-1"></i> EN ATTENTE
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-folder-open fa-5x text-light opacity-50"></i>
+            </div>
+            <h4 class="fw-bold text-dark">Votre registre est vide</h4>
+            <p class="text-muted mb-4">Vous devez finaliser votre inscription pédagogique pour voir vos modules.</p>
+            <a href="{{url_for('etudiant.choisir_ues')}}" class="btn btn-primary btn-lg rounded-pill px-5 shadow-lg fw-bold">
+                Commencer mon inscription
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="mt-4 text-center">
+        <p class="small text-muted fw-bold text-uppercase ls-1">
+            <i class="fas fa-shield-alt me-1"></i> Système de Gestion Académique Certifié — 2026
+        </p>
+    </div>
+</div>
+{% endblock %}

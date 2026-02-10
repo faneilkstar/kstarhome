@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Direction - Gestion des Classes{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --accent-color: #4361ee;
+        --bg-light: #f8f9fe;
+    }
+
+    body { background-color: var(--bg-light); }
+
+    /* Card Style */
+    .glass-panel {
+        background: white;
+        border-radius: 24px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+        padding: 2rem;
+    }
+
+    /* Table Customization */
+    .table-modern thead th {
+        background-color: transparent;
+        border: none;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        color: #8898aa;
+        padding-bottom: 20px;
+    }
+
+    .table-modern tbody tr {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid #f1f4f8;
+    }
+
+    .table-modern tbody tr:hover {
+        background-color: #fbfcfe;
+        transform: scale(1.005);
+    }
+
+    .table-modern td {
+        padding: 1.5rem 0.75rem;
+        vertical-align: middle;
+    }
+
+    /* Badges & UI Elements */
+    .grade-badge {
+        background: #eef2ff;
+        color: #4361ee;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+    }
+
+    .count-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: #32325d;
+    }
+
+    .count-indicator i {
+        width: 32px;
+        height: 32px;
+        background: #f6f9fc;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+
+    .btn-action {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        border: 1px solid #e9ecef;
+        color: var(--accent-color);
+        transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+        background: var(--accent-color);
+        color: white;
+        box-shadow: 0 4px 11px rgba(67, 97, 238, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="fw-bolder text-dark mb-1" style="letter-spacing: -1px;">Unités Pédagogiques</h2>
+            <p class="text-muted fw-medium mb-0">Gestion centralisée des {{ classes|length }} classes</p>
+        </div>
+        <div class="d-flex gap-2">
+             <button class="btn btn-white shadow-sm rounded-pill px-4 fw-bold">
+                <i class="fas fa-file-download me-2 text-muted"></i>Listing
+            </button>
+            <a href="#" class="btn btn-primary rounded-pill px-4 shadow-lg fw-bold">
+                <i class="fas fa-plus me-2"></i>Nouvelle Classe
+            </a>
+        </div>
+    </div>
+
+    <div class="glass-panel">
+        {% if classes %}
+        <div class="table-responsive">
+            <table class="table table-modern align-middle">
+                <thead>
+                    <tr>
+                        <th class="ps-0">Classe / Identifiant</th>
+                        <th>Cycle & Niveau</th>
+                        <th>Filière Rattachement</th>
+                        <th>Effectif</th>
+                        <th>Modules (UE)</th>
+                        <th class="text-end pe-0">Accès</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for classe in classes %}
+                    <tr>
+                        <td class="ps-0">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px; font-weight: 800; font-size: 0.8rem;">
+                                    {{ classe.nom_classe[:2]|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ classe.nom_classe }}</div>
+                                    <div class="text-muted small">Grade: {{ classe.grade }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="grade-badge d-inline-block">{{ classe.cycle }}</div>
+                            <div class="small text-muted mt-1">{{ classe.annee }}e Année</div>
+                        </td>
+                        <td>
+                            {% if classe.filiere %}
+                                <span class="fw-bold text-dark" style="font-size: 0.9rem;">{{ classe.filiere.nom_filiere }}</span>
+                            {% else %}
+                                <span class="badge bg-light text-muted fw-normal rounded-pill">Non assignée</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="count-indicator">
+                                <i class="fas fa-user-graduate text-primary"></i>
+                                <span>{{ classe.get_nombre_etudiants() }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="count-indicator">
+                                <i class="fas fa-book-open text-info"></i>
+                                <span>{{ classe.ues.count() }}</span>
+                            </div>
+                        </td>
+                        <td class="text-end pe-0">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ url_for('directeur.detail_classe', classe_id=classe.id) }}" class="btn-action" title="Détails">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <img src="https://illustrations.popsy.co/amber/empty-states.svg" alt="Vide" style="width: 200px;" class="mb-4">
+            <h5 class="text-dark fw-bold">Aucune classe n'est répertoriée</h5>
+            <p class="text-muted">Commencez par créer une filière puis générez ses classes.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

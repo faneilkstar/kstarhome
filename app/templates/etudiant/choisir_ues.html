@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Inscription Pédagogique | Polytech{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --sidebar-width: 280px;
+        --poly-blue: #0f172a;
+    }
+    body { background-color: #f1f5f9; }
+
+    /* Layout alignement avec le dashboard */
+    .sidebar-pilotage {
+        width: var(--sidebar-width); height: 100vh; position: fixed;
+        left: 0; top: 0; background: white; border-right: 1px solid #e2e8f0;
+        display: flex; flex-direction: column; z-index: 1000;
+    }
+    .main-wrapper { margin-left: var(--sidebar-width); min-height: 100vh; }
+
+    .top-pilotage {
+        background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px);
+        height: 70px; display: flex; align-items: center; padding: 0 30px;
+        border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 900;
+    }
+
+    /* Design des composants */
+    .selection-header { background: white; border-radius: 20px; padding: 30px; border: 1px solid #e2e8f0; }
+    .credit-progress-container { height: 12px; background: #e2e8f0; border-radius: 10px; margin: 20px 0; overflow: hidden; }
+    #progress-bar { height: 100%; width: 0%; background: var(--poly-blue); transition: 0.4s; }
+    .ue-row.selected { background-color: #eff6ff !important; border-left: 4px solid #3b82f6; }
+
+    .floating-summary {
+        position: sticky; bottom: 20px; background: white; border-radius: 20px;
+        padding: 20px 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        border: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<aside class="sidebar-pilotage shadow-sm">
+    <div class="p-4 text-center">
+        <h4 class="fw-800 text-primary mb-0">POLYTECH</h4>
+    </div>
+    <nav class="mt-4 flex-grow-1">
+        <a href="{{url_for('etudiant.dashboard')}}" class="nav-link px-4 py-3 text-dark"><i class="fas fa-th-large me-3"></i>Dashboard</a>
+        <a href="{{url_for('etudiant.choisir_ues')}}" class="nav-link px-4 py-3 fw-bold text-primary bg-light"><i class="fas fa-book-medical me-3"></i>Inscription UE</a>
+    </nav>
+    <div class="p-4 border-top">
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger w-100 rounded-pill small fw-bold">Déconnexion</a>
+    </div>
+</aside>
+
+<main class="main-wrapper">
+    <header class="top-pilotage d-flex justify-content-between">
+        <h5 class="fw-bold mb-0">Inscription Pédagogique</h5>
+        <div class="d-flex align-items-center">
+            <span class="me-3 fw-bold small">{{ etudiant.prenom }} {{ etudiant.nom }}</span>
+            <img src="https://ui-avatars.com/api/?name={{ etudiant.nom }}+{{ etudiant.prenom }}&background=1e3a8a&color=fff" class="rounded-circle" width="35">
+        </div>
+    </header>
+
+    <div class="p-4">
+        <div class="selection-header mb-4 shadow-sm">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h2 class="fw-800 text-dark mb-1">Choix des Modules</h2>
+                    <p class="text-muted mb-0">Limite autorisée : <strong>{{credits_max}} ECTS</strong>.</p>
+                </div>
+                <div class="col-md-5 text-md-end">
+                    <h3 class="fw-800 mb-0"><span id="total-affiche">0</span> / {{credits_max}} <small class="fs-6">ECTS</small></h3>
+                </div>
+            </div>
+            <div class="credit-progress-container">
+                <div id="progress-bar"></div>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('etudiant.choisir_ues') }}" id="form-ues">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <table class="table align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="text-center" style="width: 80px;">Choix</th>
+                            <th>Code</th>
+                            <th>Intitulé du Module</th>
+                            <th class="text-center">ECTS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ue in ues_disponibles %}
+                        <tr class="ue-row {% if ue.id in ues_inscrites_ids %}selected{% endif %}" onclick="toggleRow(this)" style="cursor: pointer;">
+                            <td class="text-center py-3">
+                                <input type="checkbox" name="ues" value="{{ue.id}}"
+                                       data-credits="{{ue.credits}}"
+                                       class="form-check-input ue-checkbox"
+                                       {% if ue.id in ues_inscrites_ids %}checked{% endif %}
+                                       onclick="event.stopPropagation();">
+                            </td>
+                            <td><span class="badge bg-light text-dark border fw-bold">{{ue.code_ue}}</span></td>
+                            <td class="fw-bold text-dark">{{ue.intitule}}</td>
+                            <td class="text-center fw-bold text-primary">{{ue.credits}}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="floating-summary">
+                <div class="d-flex align-items-center">
+                    <div id="status-icon" class="me-3 fs-3 text-success"><i class="fas fa-check-circle"></i></div>
+                    <div>
+                        <span class="small text-muted d-block fw-bold">TOTAL SÉLECTIONNÉ</span>
+                        <strong class="text-dark fs-5" id="summary-credits">0 ECTS</strong>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-lg" id="btn-valider">
+                    Confirmer l'inscription <i class="fas fa-save ms-2"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script>
+function toggleRow(row) {
+    const cb = row.querySelector('.ue-checkbox');
+    if (event.target !== cb) {
+        cb.checked = !cb.checked;
+        cb.dispatchEvent(new Event('change'));
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.ue-checkbox');
+    const totalSpan = document.getElementById('total-affiche');
+    const summaryCredits = document.getElementById('summary-credits');
+    const btnValider = document.getElementById('btn-valider');
+    const progressBar = document.getElementById('progress-bar');
+    const statusIcon = document.getElementById('status-icon');
+    const maxCredits = parseInt("{{ credits_max|default(60) }}");
+
+    function updateUI() {
+        let total = 0;
+        checkboxes.forEach(cb => {
+            const row = cb.closest('.ue-row');
+            if (cb.checked) {
+                total += parseInt(cb.dataset.credits) || 0;
+                row.classList.add('selected');
+            } else {
+                row.classList.remove('selected');
+            }
+        });
+
+        totalSpan.textContent = total;
+        summaryCredits.textContent = total + " ECTS";
+        let percentage = (total / maxCredits) * 100;
+        progressBar.style.width = Math.min(percentage, 100) + "%";
+
+        if (total > maxCredits) {
+            progressBar.style.background = "#ef4444";
+            btnValider.disabled = true;
+            btnValider.textContent = "Capacité dépassée";
+            btnValider.classList.replace('btn-primary', 'btn-danger');
+            statusIcon.innerHTML = '<i class="fas fa-times-circle text-danger"></i>';
+        } else {
+            progressBar.style.background = "#3b82f6";
+            btnValider.disabled = false; // On permet de soumettre même à 0 pour réinitialiser
+            btnValider.innerHTML = 'Confirmer l\'inscription <i class="fas fa-save ms-2"></i>';
+            btnValider.classList.replace('btn-danger', 'btn-primary');
+            statusIcon.innerHTML = '<i class="fas fa-check-circle text-success"></i>';
+        }
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', updateUI));
+    updateUI();
+});
+</script>
+{% endblock %}

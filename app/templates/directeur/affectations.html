@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}Affectations Stratégiques{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --glass-bg: #ffffff;
+        --border-color: rgba(226, 232, 240, 0.8);
+    }
+
+    /* Animation d'entrée */
+    .fade-in { animation: fadeIn 0.5s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .glass-card {
+        background: var(--glass-bg);
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        margin-bottom: 2rem;
+    }
+
+    .form-label-pro {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: #64748b;
+        font-weight: 800;
+        margin-bottom: 0.8rem;
+        display: block;
+    }
+
+    /* Custom Select Styling */
+    .pro-input {
+        border-radius: 12px !important;
+        border: 2px solid #f1f5f9 !important;
+        padding: 12px 15px !important;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .pro-input:focus {
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
+    }
+
+    .table-pro thead th {
+        background: #f8fafc;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 1px;
+        color: #475569;
+        padding: 1.2rem;
+        border: none;
+    }
+
+    .table-pro tbody td {
+        padding: 1.2rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .badge-filiere {
+        background: #1e293b;
+        color: #60a5fa;
+        font-weight: 800;
+        font-size: 0.65rem;
+        padding: 4px 8px;
+        border-radius: 6px;
+        margin-right: 8px;
+    }
+
+    .badge-classe {
+        background: #f1f5f9;
+        color: #475569;
+        font-weight: 700;
+        font-size: 0.75rem;
+        padding: 5px 10px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .ue-title {
+        color: #1e293b;
+        font-weight: 700;
+        display: block;
+    }
+
+    .btn-unlink {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        background: #f8fafc;
+        transition: 0.3s;
+    }
+    .btn-unlink:hover {
+        background: #fee2e2;
+        color: #ef4444;
+        transform: rotate(90deg);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 fade-in">
+
+    <div class="d-flex align-items-center mb-5">
+        <div class="stat-badge bg-primary text-white p-3 rounded-4 me-3 shadow-primary">
+            <i class="fas fa-link fa-xl"></i>
+        </div>
+        <div>
+            <h1 class="fw-900 text-dark mb-0">Affectations Académiques</h1>
+            <p class="text-muted fw-500 mb-0">Maillage entre le corps professoral et les modules d'enseignement</p>
+        </div>
+    </div>
+
+    <div class="glass-card p-4 p-md-5">
+        <h5 class="fw-800 text-dark mb-4"><i class="fas fa-plus-square text-primary me-2"></i>Établir une nouvelle liaison</h5>
+
+        <form action="{{ url_for('directeur.creer_affectation') }}" method="POST" class="row g-4 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label-pro">Expert Enseignant</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-0"><i class="fas fa-user-tie"></i></span>
+                    <select name="enseignant_id" class="form-select pro-input" required>
+                        <option value="" disabled selected>Sélectionner un professeur...</option>
+                        {% for ens in enseignants %}
+                        <option value="{{ ens.id }}">{{ ens.nom }} {{ ens.prenom }} — [{{ ens.specialite }}]</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-5">
+                <label class="form-label-pro">Module (Filière > Classe > UE)</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-0"><i class="fas fa-graduation-cap"></i></span>
+                    <select name="ue_id" class="form-select pro-input" required>
+                        <option value="" disabled selected>Identifier l'Unité d'Enseignement...</option>
+                        {% for ue in ues %}
+                        <option value="{{ ue.id }}">
+                            [{{ ue.classe.filiere.code_filiere }}] {{ ue.classe.nom_classe }} — {{ ue.intitule }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100 py-3 fw-800 rounded-4">
+                    CONFIRMER
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="glass-card overflow-hidden">
+        <div class="p-4 bg-light bg-opacity-30 d-flex justify-content-between align-items-center">
+            <h6 class="fw-800 text-dark mb-0">REGISTRE DES AFFECTATIONS ACTIVES</h6>
+            <span class="badge bg-primary rounded-pill px-3">{{ ues|length }} Unités mappées</span>
+        </div>
+
+
+
+        <div class="table-responsive">
+            <table class="table table-pro table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Enseignant Responsable</th>
+                        <th>Unité d'Enseignement</th>
+                        <th>Parcours & Promotion</th>
+                        <th class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ue in ues %}
+                        {% for prof in ue.enseignants %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm me-3 bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px;">
+                                        {{ prof.nom[0] }}
+                                    </div>
+                                    <div>
+                                        <span class="fw-800 text-dark d-block">{{ prof.nom }} {{ prof.prenom }}</span>
+                                        <small class="text-muted fw-bold">{{ prof.grade }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge-filiere">{{ ue.code_ue }}</span>
+                                <span class="ue-title">{{ ue.intitule }}</span>
+                            </td>
+                            <td>
+                                <span class="badge-classe">
+                                    <i class="fas fa-layer-group me-1 small"></i> {{ ue.classe.nom_classe }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <a href="{{ url_for('directeur.supprimer_affectation', ue_id=ue.id, ens_id=prof.id) }}"
+                                   class="btn-unlink mx-auto"
+                                   onclick="return confirm('Attention : Rompre cette liaison affectera le suivi des notes. Confirmer ?')">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <i class="fas fa-database fa-3x text-light mb-3"></i>
+                            <h5 class="text-muted">Aucune donnée d'affectation disponible</h5>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

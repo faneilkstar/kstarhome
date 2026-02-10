@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Inscription - Polytech Academy{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --poly-blue: #1e3a8a;
+        --poly-green: #10b981;
+        --glass-bg: rgba(255, 255, 255, 0.98);
+    }
+
+    body {
+        background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
+        min-height: 100vh;
+    }
+
+    .inscription-container {
+        max-width: 950px;
+        margin: 40px auto;
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    .card-inscription {
+        background: var(--glass-bg);
+        border: none;
+        border-radius: 35px;
+        box-shadow: 0 50px 100px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .form-header {
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+        padding: 50px;
+        color: white;
+        text-align: center;
+        border-bottom: 5px solid var(--poly-green);
+    }
+
+    .form-section-title {
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: var(--poly-blue);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin: 40px 0 20px 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .icon-circle {
+        width: 40px; height: 40px;
+        background: rgba(30, 58, 138, 0.1);
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 12px; color: var(--poly-blue);
+    }
+
+    .custom-input {
+        border-radius: 15px !important;
+        border: 2px solid #e2e8f0 !important;
+        padding: 12px 20px !important;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+
+    .custom-input:focus {
+        border-color: var(--poly-blue) !important;
+        transform: translateY(-2px);
+    }
+
+    /* Styles pour les blocs dynamiques */
+    .academic-box {
+        transition: all 0.5s ease;
+        border-radius: 25px;
+        padding: 25px;
+        margin-top: 20px;
+    }
+
+    .btn-submit-prestige {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none; border-radius: 20px;
+        padding: 20px; color: white; font-weight: 800;
+        text-transform: uppercase; letter-spacing: 2px;
+        box-shadow: 0 20px 40px rgba(16, 185, 129, 0.3);
+        transition: 0.4s;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<div class="inscription-container">
+    <div class="card card-inscription">
+        <div class="form-header">
+            <i class="fas fa-file-signature fa-3x mb-3"></i>
+            <h2>Dossier d'Inscription</h2>
+            <p>Polytech Academy - Portail de Candidature 2026</p>
+        </div>
+
+        <div class="p-5">
+            <form method="POST" action="{{ url_for('auth.inscription') }}">
+
+                <div class="form-section-title"><div class="icon-circle"><i class="fas fa-key"></i></div> Identifiants</div>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Username *</label>
+                        <input type="text" name="username" class="form-control custom-input" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Email *</label>
+                        <input type="email" name="email" class="form-control custom-input" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Mot de passe *</label>
+                        <input type="password" name="password" class="form-control custom-input" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Confirmer *</label>
+                        <input type="password" name="confirm_password" class="form-control custom-input" required>
+                    </div>
+                </div>
+
+                <div class="form-section-title"><div class="icon-circle"><i class="fas fa-id-card"></i></div> État Civil</div>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Nom *</label>
+                        <input type="text" name="nom" class="form-control custom-input" required style="text-transform: uppercase;">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Prénom *</label>
+                        <input type="text" name="prenom" class="form-control custom-input" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Téléphone *</label>
+                        <input type="text" name="telephone" class="form-control custom-input" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Sexe</label>
+                        <select name="sexe" class="form-select custom-input">
+                            <option value="M">Masculin</option>
+                            <option value="F">Féminin</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Urgence (N°)</label>
+                        <input type="text" name="contact_urgence" class="form-control custom-input">
+                    </div>
+                </div>
+
+                <div class="form-section-title"><div class="icon-circle"><i class="fas fa-users"></i></div> Parents</div>
+                <div class="row g-3">
+                    <div class="col-md-6"><input type="text" name="nom_pere" class="form-control custom-input" placeholder="Nom du Père"></div>
+                    <div class="col-md-6"><input type="text" name="nom_mere" class="form-control custom-input" placeholder="Nom de la Mère"></div>
+                </div>
+
+                <div class="form-section-title"><div class="icon-circle"><i class="fas fa-graduation-cap"></i> Cursus Académique</div></div>
+                <div class="row g-4">
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Filière souhaitée *</label>
+                        <select name="filiere_id" id="filiereSelect" class="form-select custom-input border-primary" required onchange="adapterCursus()">
+                            <option value="" disabled selected>-- Choisir votre parcours --</option>
+                            {% for f in filieres %}
+                                <option value="{{ f.id }}" data-cycle="{{ f.cycle }}">{{ f.nom_filiere }} ({{ f.cycle }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12" id="sectionBac" style="display:none;">
+                        <div class="academic-box bg-success bg-opacity-10 border border-success border-opacity-25">
+                            <h6 class="fw-bold text-success mb-3"><i class="fas fa-award"></i> Détails du BAC</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Moyenne au BAC *</label>
+                                    <input type="number" step="0.01" name="moyenne_bac" class="form-control custom-input">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Série du BAC (C, D, E, TI...)</label>
+                                    <input type="text" name="serie_bac" class="form-control custom-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12" id="sectionLicence" style="display:none;">
+                        <div class="academic-box bg-primary bg-opacity-10 border border-primary border-opacity-25">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fas fa-user-graduate"></i> Détails de la Licence</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Moyenne Licence *</label>
+                                    <input type="number" step="0.01" name="moyenne_licence" class="form-control custom-input">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Diplôme obtenu</label>
+                                    <input type="text" name="diplome_licence" class="form-control custom-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-submit-prestige w-100 mt-5">
+                    Soumettre mon dossier d'inscription <i class="fas fa-paper-plane ms-2"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function adapterCursus() {
+    const select = document.getElementById('filiereSelect');
+    const option = select.options[select.selectedIndex];
+    const cycle = option.getAttribute('data-cycle');
+
+    const secBac = document.getElementById('sectionBac');
+    const secLic = document.getElementById('sectionLicence');
+
+    // On affiche toujours le BAC dès qu'une filière est choisie
+    secBac.style.display = 'block';
+
+    // Si Master, on affiche AUSSI la Licence. Sinon on cache.
+    if (cycle === 'Master') {
+        secLic.style.display = 'block';
+    } else {
+        secLic.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,194 @@
+{% extends "enseignant/base.html" %}
+{% block title %}Saisie des notes - {{ ue.code_ue }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a href="{{ url_for('enseignant.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('enseignant.mes_ues') }}">Mes UE</a></li>
+                <li class="breadcrumb-item active">{{ ue.code_ue }}</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold mb-0">{{ ue.intitule }}</h2>
+        <p class="text-muted"><i class="fas fa-graduation-cap me-2"></i>{{ ue.classe.nom_classe }} | {{ ue.credits }} Crédits ECTS</p>
+    </div>
+    <div class="col-md-6 text-md-end">
+        <a href="{{ url_for('enseignant.configurer_composantes', ue_id=ue.id) }}" class="btn btn-outline-primary me-2">
+            <i class="fas fa-cog"></i> Configurer les notes
+        </a>
+        {% if not ue.has_composantes() %}
+        <button form="form-notes" type="submit" class="btn btn-accent px-4 shadow">
+            <i class="fas fa-save me-2"></i>Enregistrer les notes
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card-custom p-3 bg-white shadow-sm border-bottom border-4 border-primary">
+            <div class="small text-muted text-uppercase">Moyenne Classe</div>
+            <div class="h4 mb-0 fw-bold">{{ ue.get_moyenne_ue() or 'N/A' }}/20</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-custom p-3 bg-white shadow-sm border-bottom border-4 border-success">
+            <div class="small text-muted text-uppercase">Taux de Réussite</div>
+            <div class="h4 mb-0 fw-bold">{{ ue.get_taux_reussite() }}%</div>
+        </div>
+    </div>
+</div>
+
+<!-- Affichage selon le mode de notation -->
+{% if ue.has_composantes() %}
+<!-- Mode avec composantes -->
+<div class="card-custom bg-white shadow-sm mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0 fw-bold">📊 Composantes d'évaluation</h5>
+        <span class="badge bg-info">Mode pondération active</span>
+    </div>
+
+    <div class="row g-3">
+        {% for composante in ue.get_composantes_actives() %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-start border-primary border-3 h-100">
+                <div class="card-body">
+                    <h6 class="card-title">{{ composante.nom }}</h6>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-primary">{{ composante.ponderation }}%</span>
+                        <a href="{{ url_for('enseignant.saisir_notes_composantes', ue_id=ue.id, composante_id=composante.id) }}"
+                           class="btn btn-sm btn-primary">
+                            <i class="fas fa-edit"></i> Saisir notes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Tableau récapitulatif des notes finales -->
+<div class="card-custom bg-white shadow-sm">
+    <h5 class="mb-3 fw-bold">📝 Notes finales calculées</h5>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 py-3 border-0 text-muted small">ÉTUDIANT</th>
+                    <th class="py-3 border-0 text-muted small">MATRICULE</th>
+                    {% for composante in ue.get_composantes_actives() %}
+                    <th class="py-3 border-0 text-muted small text-center">
+                        {{ composante.nom }}<br>
+                        <small class="text-primary">({{ composante.ponderation }}%)</small>
+                    </th>
+                    {% endfor %}
+                    <th class="py-3 border-0 text-muted small text-center fw-bold">NOTE FINALE</th>
+                    <th class="py-3 border-0 text-muted small">STATUT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in etudiants_notes %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="fw-bold text-dark">{{ item.etudiant.nom }} {{ item.etudiant.prenom }}</div>
+                    </td>
+                    <td><code class="text-primary fw-bold">{{ item.etudiant.get_matricule() }}</code></td>
+                    {% for composante in ue.get_composantes_actives() %}
+                    <td class="text-center">
+                        {% set note_comp = item.etudiant.notes.filter_by(ue_id=ue.id, composante_id=composante.id).first() %}
+                        {% if note_comp and note_comp.note is not none %}
+                            <span class="badge bg-secondary">{{ note_comp.note }}/20</span>
+                        {% else %}
+                            <span class="text-muted">--</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    <td class="text-center">
+                        {% set note_finale = ue.calculer_note_finale_etudiant(item.etudiant.id) %}
+                        {% if note_finale is not none %}
+                            <strong class="{% if note_finale < 10 %}text-danger{% else %}text-success{% endif %}">
+                                {{ note_finale }}/20
+                            </strong>
+                        {% else %}
+                            <span class="text-muted">--</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set note_finale = ue.calculer_note_finale_etudiant(item.etudiant.id) %}
+                        {% if note_finale is none %}
+                            <span class="badge bg-secondary-subtle text-secondary rounded-pill fw-normal">En attente</span>
+                        {% elif note_finale < 10 %}
+                            <span class="badge bg-danger-subtle text-danger rounded-pill fw-normal">Ajourné</span>
+                        {% else %}
+                            <span class="badge bg-success-subtle text-success rounded-pill fw-normal">Validé</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% else %}
+<!-- Mode classique (une seule note) -->
+<div class="card-custom bg-white shadow-sm">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0 fw-bold">📝 Saisie des notes</h5>
+        <span class="badge bg-secondary">Mode classique</span>
+    </div>
+    <form method="POST" action="{{ url_for('enseignant.saisir_notes', ue_id=ue.id) }}" id="form-notes">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4 py-3 border-0 text-muted small">ÉTUDIANT</th>
+                        <th class="py-3 border-0 text-muted small">MATRICULE</th>
+                        <th class="py-3 border-0 text-muted small text-center" style="width: 180px;">NOTE / 20</th>
+                        <th class="py-3 border-0 text-muted small">STATUT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in etudiants_notes %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark">{{ item.etudiant.nom }} {{ item.etudiant.prenom }}</div>
+                        </td>
+                        <td><code class="text-primary fw-bold">{{ item.etudiant.get_matricule() }}</code></td>
+                        <td>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="0.25" min="0" max="20"
+                                       name="note_{{ item.etudiant.id }}"
+                                       class="form-control text-center fw-bold {% if item.note and item.note < 10 %}text-danger border-danger{% endif %}"
+                                       value="{{ item.note if item.note != None else '' }}"
+                                       placeholder="--">
+                                <span class="input-group-text bg-white">/ 20</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if item.note == None %}
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill fw-normal">Non saisi</span>
+                            {% elif item.note < 10 %}
+                                <span class="badge bg-danger-subtle text-danger rounded-pill fw-normal">Ajourné</span>
+                            {% else %}
+                                <span class="badge bg-success-subtle text-success rounded-pill fw-normal">Validé</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+<div class="mt-4">
+    <a href="{{ url_for('enseignant.mes_ues') }}" class="btn btn-light border">
+        <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+    </a>
+</div>
+{% endblock %}

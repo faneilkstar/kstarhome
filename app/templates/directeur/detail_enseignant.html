@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Profil Enseignant | {{ enseignant.nom }} {{ enseignant.prenom }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('directeur.liste_enseignants') }}">Enseignants</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ enseignant.nom }} {{ enseignant.prenom }}</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold text-dark">Dossier Enseignant</h2>
+        </div>
+        <div>
+            <a href="{{ url_for('directeur.imprimer_fiche_enseignant', enseignant_id=enseignant.id) }}" class="btn btn-outline-dark me-2">
+                <i class="fas fa-print me-2"></i>Imprimer Fiche
+            </a>
+            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                <i class="fas fa-edit me-2"></i>Modifier
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card-pro h-100 text-center p-4">
+                <div class="avatar-circle bg-primary text-white mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 100px; height: 100px; border-radius: 50%; font-size: 2rem;">
+                    {{ enseignant.prenom[0] }}{{ enseignant.nom[0] }}
+                </div>
+                <h3 class="fw-bold mb-1">{{ enseignant.nom }} {{ enseignant.prenom }}</h3>
+                <p class="text-muted mb-3">{{ enseignant.grade or 'Grade non défini' }}</p>
+                
+                <div class="d-flex justify-content-center gap-2 mb-4">
+                    <span class="badge bg-primary bg-opacity-10 text-primary">{{ enseignant.specialite or 'Généraliste' }}</span>
+                    <span class="badge {{ 'bg-success' if enseignant.actif else 'bg-danger' }}">
+                        {{ 'Actif' if enseignant.actif else 'Inactif' }}
+                    </span>
+                </div>
+
+                <div class="text-start border-top pt-4">
+                    <div class="mb-3">
+                        <label class="small text-muted fw-bold">MATRICULE INTERNE</label>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-id-card text-muted me-2"></i>
+                            <span>ENS-{{ "%04d" % enseignant.id }}</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small text-muted fw-bold">EMAIL DE CONTACT</label>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-envelope text-muted me-2"></i>
+                            <span>{{ enseignant.user.email if enseignant.user else 'Non renseigné' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card-pro h-100">
+                <h4 class="mb-4 fw-bold"><i class="fas fa-chalkboard-teacher me-2 text-primary"></i>Unités d'Enseignement Affectées</h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Code UE</th>
+                                <th>Intitulé</th>
+                                <th>Classe</th>
+                                <th>Volume H.</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ue in ues %} 
+                            <tr>
+                                <td class="fw-bold text-primary">{{ ue.code_ue }}</td>
+                                <td>{{ ue.intitule }}</td>
+                                <td>
+                                    {% if ue.classe %}
+                                        <span class="badge bg-secondary">{{ ue.classe.code_classe }}</span>
+                                    {% else %}
+                                        <span class="text-muted fst-italic">--</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ ue.heures }}h</td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('directeur.detail_ue', ue_id=ue.id) }}" class="btn btn-sm btn-outline-secondary">
+                                        Voir
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    Cet enseignant n'a pas encore de cours affectés.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Modifier Enseignant</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">Fonctionnalité à implémenter...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Détails Classe{% endblock %}
+
+{% block sidebar %}
+<ul class="nav flex-column">
+  <li class="nav-item"><a class="nav-link" href="{{ url_for('directeur.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+  <li class="nav-item"><a class="nav-link active" href="{{ url_for('directeur.liste_classes') }}"><i class="fas fa-door-open"></i> Classes</a></li>
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between mb-4">
+  <h2><i class="fas fa-door-open"></i> Classe {{ classe.nom_classe }}</h2>
+  <a href="{{ url_for('directeur.liste_classes') }}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Retour
+  </a>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">Informations sur la classe</div>
+  <div class="card-body">
+    <p><strong>Nom :</strong> {{ classe.nom_classe }}</p>
+    <p><strong>Grade :</strong> {{ classe.grade }}</p>
+    <p><strong>Cycle :</strong> {{ classe.cycle }}</p>
+    <p><strong>Filière :</strong> {{ classe.filiere.nom_filiere }}</p>
+    <p><strong>Nombre d'étudiants :</strong> {{ etudiants|length }}</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Étudiants inscrits ({{ etudiants|length }})</div>
+  <div class="card-body">
+    {% if etudiants %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Matricule</th>
+            <th>Nom</th>
+            <th>Prénom</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for etudiant in etudiants %}
+          <tr>
+            <td>{{ etudiant.get_matricule() }}</td>
+            <td>{{ etudiant.nom }}</td>
+            <td>{{ etudiant.prenom }}</td>
+            <td>{{ etudiant.statut_inscription }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">Aucun étudiant inscrit dans cette classe.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Éditer TP - {{ tp.titre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0"><i class="fas fa-edit"></i> Éditer le TP</h4>
+                    <small>{{ tp.ue.code_ue }} - {{ tp.titre }}</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+
+                        <!-- Titre -->
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Titre du TP</strong></label>
+                            <input type="text" name="titre" class="form-control" value="{{ tp.titre }}" required>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Description</strong></label>
+                            <textarea name="description" class="form-control" rows="4">{{ tp.description }}</textarea>
+                        </div>
+
+                        <!-- Statut actif -->
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="actif" id="actif"
+                                       {% if tp.actif %}checked{% endif %}>
+                                <label class="form-check-label" for="actif">
+                                    <strong>TP actif</strong> (visible par les étudiants)
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Infos non modifiables -->
+                        <div class="alert alert-info">
+                            <p class="mb-1"><strong>Type de simulation :</strong> {{ tp.type_simulation }}</p>
+                            <p class="mb-1"><strong>IA assignée :</strong> {{ tp.ia_nom }}</p>
+                            <p class="mb-0"><strong>Sessions créées :</strong> {{ tp.sessions.count() }}</p>
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('laboratoire.detail_tp', tp_id=tp.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Retour
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-save"></i> Enregistrer les modifications
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --glass-bg: rgba(255, 255, 255, 0.9);
+        --primary-grad: linear-gradient(135deg, #6366f1 0%, #4361ee 100%);
+        --success-grad: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+        --warning-grad: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        --info-grad: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+    }
+
+    /* Animation d'entrée */
+    .fade-up {
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cartes de statistiques */
+    .stat-card-pro {
+        background: white;
+        border-radius: 24px;
+        border: 1px solid rgba(0,0,0,0.05);
+        padding: 1.5rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-card-pro:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .icon-shape-pro {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-right: 1.2rem;
+        color: white;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.2rem;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 0;
+    }
+
+    /* Tableau Styling */
+    .card-table {
+        background: white;
+        border-radius: 28px;
+        border: none;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    .table thead th {
+        background-color: #f8fafc;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        color: #64748b;
+        padding: 1.2rem;
+        border: none;
+    }
+
+    .table tbody td {
+        padding: 1.2rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        font-weight: 500;
+    }
+
+    .badge-ue-code {
+        background: #eef2ff;
+        color: #4361ee;
+        padding: 0.5rem 0.8rem;
+        border-radius: 10px;
+        font-family: 'Monaco', monospace;
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+
+    .btn-check-pro {
+        border-radius: 12px;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+    }
+
+    .select-pro {
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+        background-color: #f8fafc;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 fade-up">
+
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="fw-800 text-dark mb-1" style="font-family: 'Manrope', sans-serif;">Console de Direction</h1>
+            <p class="text-muted fw-500 mb-0">Bienvenue. Voici l'état global de l'établissement aujourd'hui.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-white shadow-sm rounded-pill px-4 fw-bold border">
+                <i class="fas fa-download me-2 text-primary"></i> Rapport
+            </button>
+        </div>
+    </div>
+
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="stat-card-pro">
+                <div class="icon-shape-pro" style="background: var(--primary-grad)">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Étudiants</div>
+                    <h3 class="stat-value">{{ etudiants|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card-pro">
+                <div class="icon-shape-pro" style="background: var(--success-grad)">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Enseignants</div>
+                    <h3 class="stat-value">{{ enseignants|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card-pro">
+                <div class="icon-shape-pro" style="background: var(--warning-grad)">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Unités (UE)</div>
+                    <h3 class="stat-value">{{ ues|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card-pro">
+                <div class="icon-shape-pro" style="background: var(--info-grad)">
+                    <i class="fas fa-shapes"></i>
+                </div>
+                <div>
+                    <div class="stat-label">Filières</div>
+                    <h3 class="stat-value">{{ filieres|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-table fade-up" style="animation-delay: 0.2s;">
+        <div class="card-header bg-white border-0 p-4 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-dark"><i class="fas fa-list-ul me-2 text-primary"></i>Affectation des Unités d'Enseignement</h5>
+            <span class="badge bg-light text-primary rounded-pill px-3">{{ ues|length }} Total</span>
+        </div>
+        <div class="card-body p-0">
+            {% if ues %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Module</th>
+                            <th>Crédits / Heures</th>
+                            <th>Classe</th>
+                            <th>Responsable Actuel</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ue in ues %}
+                        <tr>
+                            <td>
+                                <div class="badge-ue-code mb-1">{{ ue.code_ue }}</div>
+                                <div class="fw-bold">{{ ue.intitule }}</div>
+                            </td>
+                            <td>
+                                <div class="small fw-bold">{{ ue.credits }} ECTS</div>
+                                <div class="text-muted small">{{ ue.heures }}h volume</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-outline-secondary border text-dark fw-bold">{{ ue.classe.nom_classe }}</span>
+                            </td>
+                            <td>
+                                {% if ue.enseignant %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary text-white me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.7rem;">
+                                            {{ ue.enseignant.nom[0] }}{% if ue.enseignant.prenom %}{{ ue.enseignant.prenom[0] }}{% endif %}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold">{{ ue.enseignant.nom }} {% if ue.enseignant.prenom %}{{ ue.enseignant.prenom }}{% endif %}</div>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="text-danger small fw-bold"><i class="fas fa-exclamation-triangle me-1"></i> Non assigné</div>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <form method="POST" action="{{ url_for('directeur.attribuer_ue', ue_id=ue.id) }}" class="d-flex gap-2 justify-content-center">
+                                    <select name="enseignant_id" class="form-select select-pro w-auto" required>
+                                        <option value="" disabled selected>Attribuer...</option>
+                                        {% for e in enseignants %}
+                                        <option value="{{ e.id }}">{{ e.nom }} {{ e.prenom }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-primary btn-check-pro">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-light mb-3"></i>
+                <p class="text-muted">Aucune unité d'enseignement enregistrée dans la base.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

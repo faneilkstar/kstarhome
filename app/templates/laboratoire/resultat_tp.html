@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Résultats - {{ session.tp.titre }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    
+    <!-- En-tête -->
+    <div class="card mb-4">
+        <div class="card-header {% if session.statut == 'évalué' %}bg-success{% else %}bg-warning{% endif %} text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">📊 Résultats du TP</h3>
+                    <small>{{ session.tp.titre }} - {{ session.etudiant.prenom }} {{ session.etudiant.nom }}</small>
+                </div>
+                <div>
+                    <span class="badge bg-light text-dark fs-5">
+                        Session #{{ session.id }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li><strong>Date :</strong> {{ session.date_debut.strftime('%d/%m/%Y %H:%M') }}</li>
+                        <li><strong>Durée :</strong> {{ session.duree_minutes or 0 }} minutes</li>
+                        <li><strong>Mesures effectuées :</strong> {{ session.nb_mesures }}</li>
+                        <li><strong>Statut :</strong> 
+                            <span class="badge bg-{% if session.statut == 'évalué' %}success{% elif session.statut == 'terminé' %}warning{% else %}secondary{% endif %}">
+                                {{ session.statut }}
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h5>📈 Notes</h5>
+                            <div class="row">
+                                <div class="col-6">
+                                    <h3 class="text-primary">{{ session.note_ia or '-' }}</h3>
+                                    <small class="text-muted">Note IA</small>
+                                </div>
+                                <div class="col-6">
+                                    <h3 class="{% if session.note_finale %}text-success{% else %}text-muted{% endif %}">
+                                        {{ session.note_finale or '-' }}
+                                    </h3>
+                                    <small class="text-muted">Note Finale</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        
+        <!-- Évaluation IA -->
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-robot"></i> Évaluation automatique ({{ session.tp.ia_nom }})
+                </div>
+                <div class="card-body">
+                    {% if session.commentaire_ia %}
+                        <div style="white-space: pre-wrap;">{{ session.commentaire_ia }}</div>
+                    {% else %}
+                        <p class="text-muted">En attente d'évaluation...</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Commentaire enseignant -->
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-user-tie"></i> Évaluation enseignant
+                </div>
+                <div class="card-body">
+                    {% if session.commentaire_enseignant %}
+                        <p>{{ session.commentaire_enseignant }}</p>
+                    {% else %}
+                        <p class="text-muted">Pas encore évalué par l'enseignant.</p>
+                        
+                        {% if current_user.is_enseignant() %}
+                        <hr>
+                        <form method="POST" action="{{ url_for('laboratoire.noter_session', session_id=session.id) }}">
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Note finale (/{{ session.tp.note_sur }})</strong></label>
+                                <input type="number" name="note_finale" class="form-control" 
+                                       step="0.5" min="0" max="{{ session.tp.note_sur }}" 
+                                       value="{{ session.note_ia or '' }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Commentaire</strong></label>
+                                <textarea name="commentaire_enseignant" class="form-control" rows="4" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-check"></i> Valider la note
+                            </button>
+                        </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exports -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <i class="fas fa-download"></i> Téléchargements
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-6">
+                    {% if session.fichier_excel %}
+                        <a href="{{ url_for('laboratoire.telecharger_export', session_id=session.id, type_fichier='excel') }}" 
+                           class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-file-excel"></i> Télécharger Excel
+                        </a>
+                    {% else %}
+                        <button class="btn btn-secondary btn-lg w-100" disabled>
+                            <i class="fas fa-file-excel"></i> Excel non disponible
+                        </button>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    {% if session.fichier_pdf %}
+                        <a href="{{ url_for('laboratoire.telecharger_export', session_id=session.id, type_fichier='pdf') }}" 
+                           class="btn btn-danger btn-lg w-100">
+                            <i class="fas fa-file-pdf"></i> Télécharger PDF
+                        </a>
+                    {% else %}
+                        <button class="btn btn-secondary btn-lg w-100" disabled>
+                            <i class="fas fa-file-pdf"></i> PDF non disponible
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mesures -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <i class="fas fa-table"></i> Mesures enregistrées ({{ mesures|length }})
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Temps (s)</th>
+                            <th>Paramètres</th>
+                            <th>Résultats</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mesure in mesures %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ "%.1f"|format(mesure.temps_relatif) }}</td>
+                            <td><code class="small">{{ mesure.parametres[:50] }}...</code></td>
+                            <td><code class="small">{{ mesure.resultats[:50] }}...</code></td>
+                            <td>{{ mesure.timestamp.strftime('%H:%M:%S') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactions IA -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning">
+            <i class="fas fa-comments"></i> Historique des interactions IA ({{ interactions|length }})
+        </div>
+        <div class="card-body">
+            {% for interaction in interactions %}
+            <div class="card mb-2">
+                <div class="card-body">
+                    <p class="mb-1"><strong>👤 Étudiant :</strong> {{ interaction.question_etudiant }}</p>
+                    <p class="mb-0 text-muted"><strong>🤖 {{ interaction.ia_nom }} :</strong> {{ interaction.re

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="fw-bold mb-4">📢 Faire l'Appel</h2>
+    <div class="row">
+        {% for ue in ues %}
+        <div class="col-md-4 mb-3">
+            <div class="card-pro h-100 p-4 text-center">
+                <h4 class="text-primary">{{ ue.code_ue }}</h4>
+                <p>{{ ue.intitule }}</p>
+                <a href="{{ url_for('enseignant.faire_appel', ue_id=ue.id) }}" class="btn btn-outline-primary w-100">
+                    Sélectionner
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

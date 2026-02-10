@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5 text-center">
+    <div class="card-pro p-5" style="max-width: 600px; margin: 0 auto;">
+        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+        <h2>Attention</h2>
+        <p>Vous êtes sur le point de calculer les moyennes pour la classe <strong>{{ classe.nom_classe }}</strong>.</p>
+        <p class="text-danger small">Cela écrasera tout calcul précédent pour cette classe.</p>
+        
+        <form method="POST">
+            <a href="{{ url_for('directeur.deliberations') }}" class="btn btn-secondary me-2">Annuler</a>
+            <button type="submit" class="btn btn-primary">Confirmer et Calculer</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
