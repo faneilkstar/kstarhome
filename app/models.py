@@ -3,6 +3,7 @@ from flask_login import UserMixin
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import Enum
 
 # ============================================================
 # 1. TABLE D'ASSOCIATION (Enseignant <-> UE)

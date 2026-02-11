@@ -55,6 +55,10 @@ def create_app(config_name='default'):
     from app.routes.absences import bp as absences_bp
     app.register_blueprint(absences_bp, url_prefix='/absences')
 
+    # LABORATOIRE : Simulations et TPs virtuels
+    from app.routes.laboratoire import laboratoire_bp
+    app.register_blueprint(laboratoire_bp, url_prefix='/laboratoire')
+
     return app
 
 
