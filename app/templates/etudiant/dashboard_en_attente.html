@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}En attente d'admission | Polytech{% endblock %}
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --poly-blue: #0f172a;
+        --poly-accent: #3b82f6;
+    }
+    body { 
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family: 'Plus Jakarta Sans', sans-serif; 
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .container-wait {
+        max-width: 600px;
+        background: white;
+        border-radius: 24px;
+        padding: 3rem;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        text-align: center;
+    }
+    .icon-wait {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        margin: 0 auto 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    .icon-wait i {
+        font-size: 3rem;
+        color: white;
+    }
+    h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--poly-blue);
+        margin-bottom: 1rem;
+    }
+    .lead-text {
+        font-size: 1.1rem;
+        color: #64748b;
+        margin-bottom: 2rem;
+    }
+    .info-box {
+        background: #f8fafc;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin: 2rem 0;
+        text-align: left;
+    }
+    .info-item {
+        display: flex;
+        align-items: start;
+        margin-bottom: 1rem;
+    }
+    .info-item:last-child {
+        margin-bottom: 0;
+    }
+    .info-item i {
+        color: var(--poly-accent);
+        margin-right: 1rem;
+        margin-top: 0.2rem;
+    }
+    .btn-logout {
+        background: var(--poly-blue);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        margin-top: 1rem;
+        text-decoration: none;
+        display: inline-block;
+        transition: 0.2s;
+    }
+    .btn-logout:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(15, 23, 42, 0.2);
+    }
+    .contact-info {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #e2e8f0;
+        font-size: 0.9rem;
+        color: #94a3b8;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container-wait">
+    <div class="icon-wait">
+        <i class="fas fa-hourglass-half"></i>
+    </div>
+    <h1>Dossier en cours d'examen</h1>
+    <p class="lead-text">
+        Votre candidature est actuellement en cours d'évaluation par notre équipe administrative.
+    </p>
+    <div class="info-box">
+        <div class="info-item">
+            <i class="fas fa-check-circle"></i>
+            <div>
+                <strong>Dossier reçu</strong><br>
+                <small>Votre inscription a bien été enregistrée dans notre système.</small>
+            </div>
+        </div>
+        <div class="info-item">
+            <i class="fas fa-clock"></i>
+            <div>
+                <strong>Délai d'examen</strong><br>
+                <small>Comptez 2 à 5 jours ouvrables pour la validation de votre dossier.</small>
+            </div>
+        </div>
+        <div class="info-item">
+            <i class="fas fa-envelope"></i>
+            <div>
+                <strong>Notification par email</strong><br>
+                <small>Vous recevrez un email dès que votre statut sera mis à jour.</small>
+            </div>
+        </div>
+    </div>
+    <div class="alert alert-info" style="background: #dbeafe; border: none; border-radius: 12px; padding: 1rem; margin: 1.5rem 0;">
+        <i class="fas fa-info-circle"></i>
+        <strong>Besoin d'aide ?</strong> Contactez le secrétariat au <strong>+228 XX XX XX XX</strong>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="btn-logout">
+        <i class="fas fa-sign-out-alt"></i> Se déconnecter
+    </a>
+    <div class="contact-info">
+        <p>
+            <i class="fas fa-university"></i> 
+            <strong>Polytechnique de Lomé</strong><br>
+            Excellence - Innovation - Leadership
+        </p>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    // Animation de progression
+    let progress = 0;
+    setInterval(() => {
+        progress = (progress + 1) % 100;
+        console.log('Vérification du statut...');
+    }, 60000); // Vérifier toutes les minutes (optionnel)
+</script>
+{% endblock %}

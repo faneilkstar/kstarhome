@@ -69,9 +69,23 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     """Configuration pour le déploiement réel"""
     DEBUG = False
-    # En production, on utilise souvent PostgreSQL ou MySQL
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+
+    # Récupérer l'URL de la base de données depuis les variables d'environnement
+    database_url = os.environ.get('DATABASE_URL')
+
+    # Render utilise postgres:// mais SQLAlchemy 1.4+ nécessite postgresql://
+    if database_url and database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+    # En production sur Render, utiliser PostgreSQL. Sinon SQLite en fallback
+    SQLALCHEMY_DATABASE_URI = database_url or \
                               'sqlite:///' + os.path.join(basedir, 'instance', 'academique_prod.db')
+
+    # Paramètres optimisés pour PostgreSQL en production
+    SQLALCHEMY_POOL_SIZE = 10
+    SQLALCHEMY_POOL_RECYCLE = 3600  # Recycler les connexions toutes les heures
+    SQLALCHEMY_POOL_TIMEOUT = 30
+    SQLALCHEMY_MAX_OVERFLOW = 20
 
 
 # Dictionnaire pour choisir l'environnement facilement
