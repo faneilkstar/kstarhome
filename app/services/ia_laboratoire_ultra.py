@@ -3,21 +3,34 @@ Service IA Ultra-Avancé pour le Laboratoire Virtuel
 Version 3.0 - Intelligence Conversationnelle avec Mémoire
 Créé par : Ing. KOISSI-ZO Tonyi Constantin
 """
-import google.generativeai as genai
+
 import json
 import os
-import re
 from datetime import datetime, timedelta
 from collections import Counter
+
+# Import conditionnel de google.generativeai
+try:
+    import google.generativeai as genai
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
+    genai = None
+
 from app.models import (
     SessionTP, MesureSimulation, InteractionIA, TP,
     Badge, BadgeEtudiant, Etudiant
 )
 from app import db
+
 # Configuration Gemini
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+if GEMINI_API_KEY and GENAI_AVAILABLE:
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+    except Exception as e:
+        print(f"[IA Ultra] Erreur configuration Gemini: {e}")
+        GEMINI_API_KEY = None
 # ============================================================
 # ANALYSEUR COMPORTEMENTAL
 # ============================================================
@@ -417,13 +430,13 @@ class AssistantIAUltra:
         self.domaine = domaine
         self.couleur = couleur
         self.model = None
-        if GEMINI_API_KEY:
+        if GEMINI_API_KEY and GENAI_AVAILABLE and genai:
             try:
                 self.model = genai.GenerativeModel('gemini-1.5-flash')
-            except:
+            except Exception:
                 try:
                     self.model = genai.GenerativeModel('gemini-pro')
-                except:
+                except Exception:
                     self.model = None
     def _build_system_prompt(self, session_tp, historique, analyse):
         """Construit un prompt système ultra-enrichi"""
@@ -682,7 +695,7 @@ Peux-tu me préciser ta question ?
         max_points = sum(5 * poids[k] for k in poids)
         note = (total_points / max_points) * 20
         # Générer commentaire via IA si disponible
-        if self.model and GEMINI_API_KEY:
+        if self.model and GEMINI_API_KEY and GENAI_AVAILABLE:
             try:
                 commentaire = self._generer_commentaire_evaluation(session_tp, criteres, note, analyse)
             except:

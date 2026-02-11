@@ -10,13 +10,23 @@ from app.models import (
     User, Etudiant, Enseignant, TP, SessionTP, MesureSimulation,
     InteractionIA, UE
 )
-# Essayer d'utiliser l'IA avancée, sinon fallback sur l'IA basique
+
+# Hiérarchie d'IA : Ultra > Avancée > Basique (avec fallback robuste)
+IA_VERSION = 'basique'
 try:
-    from app.services.ia_laboratoire_avancee import IAFactoryAvancee as IAFactory
-    IA_AVANCEE_DISPONIBLE = True
-except:
-    from app.services.ia_laboratoire import IAFactory
-    IA_AVANCEE_DISPONIBLE = False
+    from app.services.ia_laboratoire_ultra import IAFactoryUltra as IAFactory
+    IA_VERSION = 'ultra'
+except Exception as e:
+    print(f"[LABO] IA Ultra non disponible: {e}")
+    try:
+        from app.services.ia_laboratoire_avancee import IAFactoryAvancee as IAFactory
+        IA_VERSION = 'avancee'
+    except Exception as e2:
+        print(f"[LABO] IA Avancée non disponible: {e2}")
+        from app.services.ia_laboratoire import IAFactory
+        IA_VERSION = 'basique'
+
+print(f"[LABORATOIRE] IA chargée: version {IA_VERSION}")
 
 from datetime import datetime
 import json

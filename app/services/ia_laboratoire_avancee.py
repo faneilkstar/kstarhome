@@ -3,17 +3,29 @@ Service IA Avancé avec Google Gemini
 Vraie IA conversationnelle pour le laboratoire
 """
 
-import google.generativeai as genai
 import json
 import os
 from datetime import datetime
+
+# Import conditionnel de google.generativeai
+try:
+    import google.generativeai as genai
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
+    genai = None
+
 from app.models import SessionTP, MesureSimulation, InteractionIA, TP
 from app import db
 
 # Configuration Gemini
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')  # À mettre dans .env
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+if GEMINI_API_KEY and GENAI_AVAILABLE and genai:
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+    except Exception as e:
+        print(f"[IA Avancée] Erreur configuration Gemini: {e}")
+        GEMINI_API_KEY = None
 
 
 class AssistantIAAvance:
@@ -23,7 +35,12 @@ class AssistantIAAvance:
         self.nom = nom
         self.domaine = domaine
         self.couleur = couleur
-        self.model = genai.GenerativeModel('gemini-pro') if GEMINI_API_KEY else None
+        self.model = None
+        if GEMINI_API_KEY and GENAI_AVAILABLE and genai:
+            try:
+                self.model = genai.GenerativeModel('gemini-pro')
+            except Exception:
+                self.model = None
         self.system_prompt = self._build_system_prompt()
 
     def _build_system_prompt(self):
