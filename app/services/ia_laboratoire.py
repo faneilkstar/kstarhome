@@ -805,4 +805,15 @@ class IAFactory:
         elif nom_ia == 'KAYT':
             return KAYT()
         else:
-            raise ValueError(f"IA inconnue : {nom_ia}")
+            # Fallback sur ETA par défaut
+            print(f"⚠️ IA '{nom_ia}' inconnue, utilisation de ETA par défaut")
+            return ETA()
+
+    @staticmethod
+    def get_tous_assistants():
+        """Retourne la liste de tous les assistants disponibles"""
+        return [
+            {'nom': 'ETA', 'domaine': 'Génie Civil', 'couleur': '#e74c3c'},
+            {'nom': 'ALPHA', 'domaine': 'Maths/Info/Logistique', 'couleur': '#2ecc71'},
+            {'nom': 'KAYT', 'domaine': 'Génie Électrique', 'couleur': '#f1c40f'}
+        ]
