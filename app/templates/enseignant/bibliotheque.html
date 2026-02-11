@@ -1,0 +1,177 @@
+{% extends "enseignant/base.html" %}
+{% block title %}Bibliothèque | Enseignant{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">
+                <i class="fas fa-infinity me-2 text-primary"></i>
+                Bibliothèque Numérique Infinie
+            </h2>
+            <p class="text-muted mb-0">Partager des ressources avec vos étudiants</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAjouterLivre">
+            <i class="fas fa-plus me-2"></i>Ajouter un livre
+        </button>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h3 class="fw-bold text-primary mb-0">{{ livres|length }}</h3>
+                <p class="text-muted small mb-0"><i class="fas fa-book me-1"></i>Livres</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h3 class="fw-bold text-success mb-0">PDF</h3>
+                <p class="text-muted small mb-0"><i class="fas fa-file-pdf me-1"></i>Format</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h3 class="fw-bold text-info mb-0">∞</h3>
+                <p class="text-muted small mb-0"><i class="fas fa-infinity me-1"></i>Collection</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h3 class="fw-bold text-warning mb-0">24/7</h3>
+                <p class="text-muted small mb-0"><i class="fas fa-clock me-1"></i>Accès</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des livres -->
+    <div class="row g-4">
+        {% for livre in livres %}
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div style="height: 200px; overflow: hidden;" class="position-relative">
+                    <div class="d-flex align-items-center justify-content-center h-100 bg-gradient"
+                         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fas fa-book fa-4x text-white opacity-50"></i>
+                    </div>
+                    {% if livre.categorie %}
+                    <span class="position-absolute top-0 end-0 m-2 badge bg-dark">
+                        {{ livre.categorie }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="card-body">
+                    <h5 class="card-title fw-bold mb-2">{{ livre.titre }}</h5>
+                    <p class="card-text text-muted small">
+                        <i class="fas fa-user me-1"></i>{{ livre.auteur }}
+                    </p>
+                    <p class="small text-muted">
+                        Ajouté le {{ livre.date_ajout.strftime('%d/%m/%Y') }}
+                    </p>
+                </div>
+
+                <div class="card-footer bg-white border-0 pb-3">
+                    <a href="{{ url_for('static', filename='library/pdf/' + livre.fichier_pdf) }}"
+                       class="btn btn-sm btn-primary w-100" target="_blank">
+                        <i class="fas fa-book-open me-1"></i> Lire le livre
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if livres|length == 0 %}
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-book-open fa-4x text-muted mb-3"></i>
+            <h4>Aucun livre pour le moment</h4>
+            <p class="text-muted">Cliquez sur "Ajouter un livre" pour commencer</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Ajouter Livre -->
+<div class="modal fade" id="modalAjouterLivre" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-book-medical me-2 text-primary"></i>
+                    Ajouter un livre à la bibliothèque
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('enseignant.ajouter_livre') }}" enctype="multipart/form-data">
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Titre du livre <span class="text-danger">*</span></label>
+                            <input type="text" name="titre" class="form-control" required
+                                   placeholder="Ex: Introduction à la Physique Quantique">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Auteur <span class="text-danger">*</span></label>
+                            <input type="text" name="auteur" class="form-control" required
+                                   placeholder="Ex: Richard Feynman">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Catégorie</label>
+                            <select name="categorie" class="form-select">
+                                <option value="">-- Choisir --</option>
+                                <option value="Mathématiques">Mathématiques</option>
+                                <option value="Physique">Physique</option>
+                                <option value="Chimie">Chimie</option>
+                                <option value="Électronique">Électronique</option>
+                                <option value="Informatique">Informatique</option>
+                                <option value="Génie Civil">Génie Civil</option>
+                                <option value="Mécanique">Mécanique</option>
+                                <option value="Roman">Roman</option>
+                                <option value="Science">Science</option>
+                                <option value="Histoire">Histoire</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Description</label>
+                            <textarea name="description" class="form-control" rows="3"
+                                      placeholder="Brève description du contenu du livre..."></textarea>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Fichier PDF <span class="text-danger">*</span></label>
+                            <input type="file" name="fichier_pdf" class="form-control" accept=".pdf" required>
+                            <small class="text-muted">Format: PDF uniquement</small>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Image de couverture (optionnel)</label>
+                            <input type="file" name="image_couverture" class="form-control" accept="image/*">
+                            <small class="text-muted">Format: JPG, PNG (optionnel)</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Ajouter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-card {
+    transition: all 0.3s ease;
+}
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+}
+</style>
+{% endblock %}
+

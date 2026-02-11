@@ -38,6 +38,20 @@
         border-radius: 8px; transition: 0.2s;
     }
     .btn-action:hover { transform: translateY(-2px); }
+
+    /* Bouton gradient pour validation IA */
+    .btn-gradient {
+        background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+        color: white;
+        border: none;
+        transition: all 0.3s;
+    }
+    .btn-gradient:hover {
+        background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+        color: white;
+    }
 </style>
 {% endblock %}
 
@@ -72,6 +86,13 @@
             <a href="{{ url_for('directeur.export_etudiants') }}" class="btn btn-outline-dark rounded-pill px-4 py-2 fw-bold shadow-sm bg-white">
                 <i class="fas fa-file-csv me-2 text-success"></i>Exporter la liste
             </a>
+        </div>
+        <div class="col-auto">
+            <form method="POST" action="{{ url_for('directeur.valider_inscriptions_auto') }}" onsubmit="return confirm('🤖 Lancer la validation automatique par l\'IA ?\n\n✅ Acceptés : moyenne ≥ 12/20\n❌ Refusés : moyenne < 12/20');">
+                <button type="submit" class="btn btn-gradient rounded-pill px-4 py-2 fw-bold shadow-sm">
+                    <i class="fas fa-robot me-2"></i>Validation IA Auto
+                </button>
+            </form>
         </div>
     </div>
 
@@ -189,12 +210,17 @@
                                             <div class="modal-body p-4">
                                                 <p class="text-muted">Vous êtes sur le point d'accepter <strong>{{ etudiant.nom_complet }}</strong>.</p>
 
-                                                <label class="form-label fw-bold small text-uppercase text-primary">Affecter à la classe :</label>
+                                                <div class="alert alert-info small mb-3">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    <strong>Important :</strong> Tous les nouveaux étudiants commencent en 1ère année.
+                                                </div>
+
+                                                <label class="form-label fw-bold small text-uppercase text-primary">Affecter à la classe (1ère année uniquement) :</label>
                                                 <select name="classe_id" class="form-select form-select-lg bg-light border-0" required>
-                                                    <option value="" disabled selected>-- Choisir une classe --</option>
+                                                    <option value="" disabled selected>-- Choisir une classe de 1ère année --</option>
                                                     {% for classe in classes %}
-                                                        {% if etudiant.filiere_id == classe.filiere_id %}
-                                                            <option value="{{ classe.id }}">{{ classe.nom_classe }}</option>
+                                                        {% if etudiant.filiere_id == classe.filiere_id and classe.annee == 1 %}
+                                                            <option value="{{ classe.id }}">{{ classe.nom_classe }} (1ère année)</option>
                                                         {% endif %}
                                                     {% endfor %}
                                                 </select>

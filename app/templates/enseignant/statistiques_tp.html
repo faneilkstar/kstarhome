@@ -1,0 +1,128 @@
+{% extends "enseignant/base.html" %}
+{% block title %}Statistiques TP | {{ tp.titre }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">
+                <i class="fas fa-flask me-2 text-success"></i>{{ tp.titre }}
+            </h2>
+            <p class="text-muted">Type: {{ tp.type_simulation }} | IA: {{ tp.ia_nom }}</p>
+        </div>
+        <a href="{{ url_for('laboratoire.hub_enseignant') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Retour
+        </a>
+    </div>
+    <!-- Stats globales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h6 class="text-muted">Sessions</h6>
+                <h3 class="fw-bold text-primary">{{ rapport.nb_sessions }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h6 class="text-muted">Taux réussite</h6>
+                <h3 class="fw-bold text-success">{{ rapport.taux_reussite|round(1) }}%</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h6 class="text-muted">Note moyenne</h6>
+                <h3 class="fw-bold">{{ rapport.note_moyenne|round(2) }}/20</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h6 class="text-muted">Durée moyenne</h6>
+                <h3 class="fw-bold text-info">{{ rapport.duree_moyenne|round(0) }} min</h3>
+            </div>
+        </div>
+    </div>
+    <!-- Analyse IA -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-robot me-2"></i>Analyse IA du TP</h5>
+        </div>
+        <div class="card-body">
+            {% if rapport.analyse_ia %}
+            <h6 class="fw-bold">Synthèse</h6>
+            <p>{{ rapport.analyse_ia.synthese }}</p>
+            {% if rapport.analyse_ia.points_positifs %}
+            <h6 class="fw-bold text-success mt-3">Points positifs</h6>
+            <ul>
+                {% for point in rapport.analyse_ia.points_positifs %}
+                <li>{{ point }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% if rapport.analyse_ia.difficultes %}
+            <h6 class="fw-bold text-warning mt-3">Difficultés observées</h6>
+            <ul>
+                {% for diff in rapport.analyse_ia.difficultes %}
+                <li>{{ diff }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% if rapport.analyse_ia.recommandations %}
+            <h6 class="fw-bold text-info mt-3">Recommandations</h6>
+            <ul>
+                {% for reco in rapport.analyse_ia.recommandations %}
+                <li>{{ reco }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% else %}
+            <p class="text-muted">Aucune analyse disponible.</p>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Liste des sessions -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Sessions terminées</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Étudiant</th>
+                        <th>Date</th>
+                        <th>Durée</th>
+                        <th>Mesures</th>
+                        <th>Note IA</th>
+                        <th>Note finale</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in sessions %}
+                    <tr>
+                        <td>{{ session.etudiant.nom_complet }}</td>
+                        <td>{{ session.date_debut.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>{{ session.duree_minutes or 0 }} min</td>
+                        <td>{{ session.nb_mesures or 0 }}</td>
+                        <td>
+                            {% if session.note_ia %}
+                            <span class="badge {% if session.note_ia >= 10 %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ session.note_ia }}/20
+                            </span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if session.note_finale %}
+                            <span class="fw-bold">{{ session.note_finale }}/20</span>
+                            {% else %}
+                            <span class="text-muted">Non notée</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

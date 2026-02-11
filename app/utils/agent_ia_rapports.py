@@ -380,3 +380,152 @@ class AgentIARapports:
         """Génère un rapport détaillé pour une filière spécifique"""
         # Logique similaire à implémenter si besoin
         pass
+
+
+def generer_rapport_pdf_ue(ue, rapport, enseignant):
+    """
+    Génère un rapport PDF détaillé pour une UE avec analyse IA
+
+    Args:
+        ue: Instance de l'UE
+        rapport: Dictionnaire avec les statistiques et l'analyse IA
+        enseignant: Instance de l'enseignant
+
+    Returns:
+        BytesIO: Buffer contenant le PDF
+    """
+    import io
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+    story = []
+    styles = getSampleStyleSheet()
+
+    # Style titre
+    style_titre = ParagraphStyle(
+        'Titre',
+        parent=styles['Heading1'],
+        fontSize=18,
+        textColor=colors.HexColor('#1a365d'),
+        spaceAfter=20,
+        alignment=TA_CENTER
+    )
+
+    style_sous_titre = ParagraphStyle(
+        'SousTitre',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#2b6cb0'),
+        spaceAfter=12
+    )
+
+    style_normal = ParagraphStyle(
+        'Normal2',
+        parent=styles['Normal'],
+        fontSize=11,
+        alignment=TA_JUSTIFY,
+        spaceAfter=8
+    )
+
+    # En-tête
+    story.append(Paragraph("📊 RAPPORT D'ANALYSE PÉDAGOGIQUE", style_titre))
+    story.append(Paragraph(f"UE : {ue.code_ue} - {ue.intitule}", style_sous_titre))
+    story.append(Paragraph(f"Enseignant : {enseignant.nom} {enseignant.prenom}", style_normal))
+    story.append(Paragraph(f"Date : {datetime.now().strftime('%d/%m/%Y')}", style_normal))
+    story.append(Spacer(1, 20))
+
+    # Statistiques descriptives
+    story.append(Paragraph("📈 STATISTIQUES DESCRIPTIVES", style_sous_titre))
+
+    desc = rapport['descriptives']
+    data_desc = [
+        ['Indicateur', 'Valeur'],
+        ['Nombre d\'étudiants', str(desc['nb_notes'])],
+        ['Moyenne', f"{desc['moyenne']}/20"],
+        ['Médiane', f"{desc['mediane']}/20"],
+        ['Écart-type', str(desc['ecart_type'])],
+        ['Note minimale', f"{desc['min']}/20"],
+        ['Note maximale', f"{desc['max']}/20"],
+        ['Taux de réussite', f"{desc['taux_reussite']}%"],
+        ['Réussis', str(desc['nb_reussis'])],
+        ['Ajournés', str(desc['nb_ajournes'])]
+    ]
+
+    table_desc = Table(data_desc, colWidths=[8*cm, 6*cm])
+    table_desc.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2b6cb0')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f0f5ff')),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#cbd5e0'))
+    ]))
+    story.append(table_desc)
+    story.append(Spacer(1, 20))
+
+    # Analyse IA
+    story.append(Paragraph("🤖 ANALYSE IA (Gemini)", style_sous_titre))
+
+    analyse = rapport.get('analyse_ia', {})
+
+    if analyse.get('synthese'):
+        story.append(Paragraph(f"<b>Synthèse :</b> {analyse['synthese']}", style_normal))
+        story.append(Spacer(1, 10))
+
+    if analyse.get('points_forts'):
+        story.append(Paragraph("<b>✅ Points forts :</b>", style_normal))
+        for point in analyse['points_forts']:
+            story.append(Paragraph(f"• {point}", style_normal))
+        story.append(Spacer(1, 10))
+
+    if analyse.get('axes_amelioration'):
+        story.append(Paragraph("<b>⚠️ Axes d'amélioration :</b>", style_normal))
+        for axe in analyse['axes_amelioration']:
+            story.append(Paragraph(f"• {axe}", style_normal))
+        story.append(Spacer(1, 10))
+
+    if analyse.get('recommandations'):
+        story.append(Paragraph("<b>💡 Recommandations :</b>", style_normal))
+        for reco in analyse['recommandations']:
+            story.append(Paragraph(f"• {reco}", style_normal))
+        story.append(Spacer(1, 10))
+
+    if analyse.get('pourquoi'):
+        story.append(Paragraph(f"<b>📊 Explication des résultats :</b> {analyse['pourquoi']}", style_normal))
+
+    story.append(Spacer(1, 20))
+
+    # Statistiques inférentielles
+    story.append(Paragraph("📐 STATISTIQUES INFÉRENTIELLES", style_sous_titre))
+
+    inf = rapport.get('inferentielles', {})
+
+    story.append(Paragraph(f"<b>Corrélation absences-notes :</b> {inf.get('correlation_absences_notes', 'N/A')}", style_normal))
+    story.append(Paragraph(f"<b>Interprétation :</b> {inf.get('interpretation_correlation', 'N/A')}", style_normal))
+    story.append(Paragraph(f"<b>Test de normalité :</b> {inf.get('normalite_interpretation', 'N/A')}", style_normal))
+
+    story.append(Spacer(1, 30))
+
+    # Pied de page
+    story.append(Paragraph("─" * 50, style_normal))
+    story.append(Paragraph(
+        f"Rapport généré automatiquement par KstarHome - {datetime.now().strftime('%d/%m/%Y à %H:%M')}",
+        ParagraphStyle('Footer', parent=styles['Normal'], fontSize=9, textColor=colors.gray, alignment=TA_CENTER)
+    ))
+    story.append(Paragraph(
+        "Créé par Ing. KOISSI-ZO Tonyi Constantin - Électronique de Puissance",
+        ParagraphStyle('Footer2', parent=styles['Normal'], fontSize=8, textColor=colors.gray, alignment=TA_CENTER)
+    ))
+
+    doc.build(story)
+    buffer.seek(0)
+
+    return buffer

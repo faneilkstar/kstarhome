@@ -6,8 +6,9 @@ import io
 import os
 from datetime import datetime
 from functools import wraps
+import numpy as np
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, Response, current_app, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, Response, current_app, jsonify, send_file
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
@@ -518,3 +519,75 @@ def faire_appel(ue_id):
             flash(f"Erreur : {str(e)}", "danger")
 
     return render_template('enseignant/feuille_appel.html', ue=ue, etudiants=etudiants)
+
+
+# =========================================================
+# ROUTE 13 : BIBLIOTHÈQUE (NOUVEAU)
+# =========================================================
+from app.models import Livre
+
+@bp.route('/bibliotheque')
+@enseignant_required
+def bibliotheque():
+    """Page de gestion de la bibliothèque pour l'enseignant"""
+    livres = Livre.query.order_by(Livre.date_ajout.desc()).all()
+    return render_template('enseignant/bibliotheque.html', livres=livres)
+
+
+@bp.route('/bibliotheque/ajouter', methods=['POST'])
+@enseignant_required
+def ajouter_livre():
+    """Ajouter un livre à la bibliothèque"""
+    from app.services.ia_bibliotheque import BibliothequeIA
+
+    try:
+        titre = request.form.get('titre')
+        auteur = request.form.get('auteur')
+        categorie = request.form.get('categorie')
+        description = request.form.get('description')
+
+        # 🤖 TRI AUTOMATIQUE PAR IA si pas de catégorie sélectionnée
+        if not categorie or categorie == "":
+            biblio_ia = BibliothequeIA()
+            categorie = biblio_ia.determiner_categorie(titre, auteur, description)
+
+            # Générer description si absente
+            if not description:
+                description = biblio_ia.generer_description(titre, auteur, categorie)
+
+        # Gestion des fichiers
+        pdf = request.files.get('fichier_pdf')
+        cover = request.files.get('image_couverture')
+
+        if pdf and titre:
+            # 1. Sauvegarde PDF
+            pdf_name = secure_filename(pdf.filename)
+            unique_pdf = f"book_{datetime.now().strftime('%Y%m%d%H%M')}_{pdf_name}"
+            path_pdf = os.path.join(current_app.root_path, 'static', 'library', 'pdf')
+            os.makedirs(path_pdf, exist_ok=True)
+            pdf.save(os.path.join(path_pdf, unique_pdf))
+
+            # 2. Sauvegarde Couverture (Optionnel)
+            cover_name = 'default_book.jpg'
+            if cover:
+                c_name = secure_filename(cover.filename)
+                unique_cover = f"cover_{datetime.now().strftime('%Y%m%d%H%M')}_{c_name}"
+                path_cover = os.path.join(current_app.root_path, 'static', 'library', 'covers')
+                os.makedirs(path_cover, exist_ok=True)
+                cover.save(os.path.join(path_cover, unique_cover))
+                cover_name = unique_cover
+
+            nouveau_livre = Livre(
+                titre=titre, auteur=auteur, categorie=categorie,
+                description=description,
+                fichier_pdf=unique_pdf, image_couverture=cover_name
+            )
+            db.session.add(nouveau_livre)
+            db.session.commit()
+            flash(f"✅ Livre ajouté dans la catégorie '{categorie}' !", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"❌ Erreur: {str(e)}", "danger")
+
+    return redirect(url_for('enseignant.bibliotheque'))

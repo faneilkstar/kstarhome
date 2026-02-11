@@ -10,6 +10,14 @@ from app.models import (
     User, Etudiant, Enseignant, TP, SessionTP, MesureSimulation,
     InteractionIA, UE
 )
+# Essayer d'utiliser l'IA avancée, sinon fallback sur l'IA basique
+try:
+    from app.services.ia_laboratoire_avancee import IAFactoryAvancee as IAFactory
+    IA_AVANCEE_DISPONIBLE = True
+except:
+    from app.services.ia_laboratoire import IAFactory
+    IA_AVANCEE_DISPONIBLE = False
+
 from datetime import datetime
 import json
 
@@ -72,6 +80,11 @@ def hub_directeur():
     total_tps = TP.query.count()
     total_sessions = SessionTP.query.count()
     tps_actifs = TP.query.filter_by(actif=True).count()
+    total_mesures = MesureSimulation.query.count()
+    total_interactions = InteractionIA.query.count()
+
+    # Tous les TPs
+    tps = TP.query.order_by(TP.date_creation.desc()).all()
 
     # TPs par type de simulation
     tps_par_type = db.session.query(
@@ -88,6 +101,9 @@ def hub_directeur():
                          total_tps=total_tps,
                          total_sessions=total_sessions,
                          tps_actifs=tps_actifs,
+                         total_mesures=total_mesures,
+                         total_interactions=total_interactions,
+                         tps=tps,
                          tps_par_type=tps_par_type,
                          sessions_recentes=sessions_recentes)
 
@@ -432,27 +448,42 @@ def poser_question_ia():
     if session.etudiant_id != current_user.etudiant_profile.id:
         return jsonify({'error': 'Non autorisé'}), 403
 
-    # Générer la réponse de l'IA (simulation simple)
-    reponse = generer_reponse_ia(question, contexte, ia_nom, session.tp)
+    try:
+        # Utiliser le vrai système d'IA
+        assistant = IAFactory.creer_assistant(ia_nom)
+        reponse_data = assistant.generer_reponse(question, contexte, session)
 
-    # Sauvegarder l'interaction
-    interaction = InteractionIA(
-        session_id=session.id,
-        question_etudiant=question,
-        reponse_ia=reponse,
-        contexte_simulation=json.dumps(contexte),
-        timestamp=datetime.utcnow(),
-        ia_nom=ia_nom
-    )
+        # Enregistrer l'interaction
+        assistant.enregistrer_interaction(session.id, question, reponse_data, contexte)
 
-    db.session.add(interaction)
-    db.session.commit()
+        return jsonify({
+            'success': True,
+            'reponse': reponse_data['reponse'],
+            'ia_nom': ia_nom,
+            'pertinence': reponse_data.get('pertinence_question', 3),
+            'aide_apportee': reponse_data.get('aide_apportee', True)
+        })
+    except Exception as e:
+        # Fallback sur l'ancienne méthode en cas d'erreur
+        reponse = generer_reponse_ia_fallback(question, contexte, ia_nom, session.tp)
 
-    return jsonify({
-        'success': True,
-        'reponse': reponse,
-        'ia_nom': ia_nom
-    })
+        # Sauvegarder l'interaction
+        interaction = InteractionIA(
+            session_id=session.id,
+            question_etudiant=question,
+            reponse_ia=reponse,
+            contexte_simulation=json.dumps(contexte),
+            timestamp=datetime.utcnow(),
+            ia_nom=ia_nom
+        )
+        db.session.add(interaction)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'reponse': reponse,
+            'ia_nom': ia_nom
+        })
 
 
 # ============================================================
@@ -478,9 +509,27 @@ def terminer_session(session_id):
         duree = (session.date_fin - session.date_debut).total_seconds() / 60
         session.duree_minutes = int(duree)
 
+    # Évaluation automatique par l'IA
+    try:
+        assistant = IAFactory.creer_assistant(session.tp.ia_nom)
+        evaluation = assistant.evaluer_session(session)
+
+        session.note_ia = evaluation['note']
+        session.commentaire_ia = evaluation['commentaire']
+        session.criteres_evaluation = json.dumps(evaluation.get('criteres', {}))
+
+        # Afficher les badges obtenus (si disponibles)
+        badges_obtenus = evaluation.get('badges_obtenus', [])
+        if badges_obtenus:
+            flash(f'🏆 Félicitations ! Tu as obtenu {len(badges_obtenus)} nouveau(x) badge(s) : {", ".join(badges_obtenus)}', 'success')
+
+        flash(f'✅ Session terminée ! Note automatique : {evaluation["note"]:.1f}/20', 'info')
+    except Exception as e:
+        print(f"Erreur évaluation IA : {e}")
+        flash('Session terminée ! L\'évaluation automatique sera faite plus tard.', 'info')
+
     db.session.commit()
 
-    flash('Session de TP terminée !', 'success')
     return redirect(url_for('laboratoire.resultat_tp', session_id=session.id))
 
 
@@ -522,16 +571,16 @@ def resultat_tp(session_id):
 
 
 # ============================================================
-# FONCTION HELPER - GÉNÉRATION DE RÉPONSE IA
+# FONCTION HELPER - GÉNÉRATION DE RÉPONSE IA FALLBACK
 # ============================================================
-def generer_reponse_ia(question, contexte, ia_nom, tp):
-    """Génère une réponse d'assistant IA (simulation simple)"""
+def generer_reponse_ia_fallback(question, contexte, ia_nom, tp):
+    """Génère une réponse d'assistant IA (fallback simple)"""
 
     # Personnalités des IAs
     personalities = {
-        'ETA': "Je suis ETA, votre assistant pédagogique.",
-        'ALPHA': "Je suis ALPHA, expert en électronique de puissance.",
-        'KAYT': "Je suis KAYT, spécialiste des simulations."
+        'ETA': "Je suis ETA, votre assistant pédagogique en Génie Civil.",
+        'ALPHA': "Je suis ALPHA, expert en Mathématiques, Informatique et Logistique.",
+        'KAYT': "Je suis KAYT, spécialiste en Génie Électrique."
     }
 
     intro = personalities.get(ia_nom, "Je suis votre assistant IA.")

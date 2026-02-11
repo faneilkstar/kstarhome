@@ -160,6 +160,7 @@ class Etudiant(db.Model):
     statut_inscription = db.Column(db.String(20), default='en_attente')
     date_inscription = db.Column(db.DateTime, default=datetime.utcnow)
     annee_academique = db.Column(db.String(20))
+    evaluation_ia = db.Column(db.Text)  # Résultat de l'évaluation automatique par l'IA
 
     # Clés étrangères
     classe_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='SET NULL'))
@@ -210,6 +211,7 @@ class Enseignant(db.Model):
     specialite = db.Column(db.String(100))
     date_embauche = db.Column(db.Date)
     actif = db.Column(db.Boolean, default=True)
+    mot_de_passe_initial = db.Column(db.String(255))  # Mot de passe en clair pour le PDF
 
     # Relations
     user = db.relationship('User', back_populates='enseignant_profile')
@@ -580,7 +582,8 @@ class TP(db.Model):
     # Type de simulation
     type_simulation = db.Column(
         Enum('buck', 'boost', 'chute_libre', 'rdm_poutre', 'signal_fourier',
-             'stock_flux', 'transport_routage', 'thermodynamique', name='type_sim_enum'),
+             'stock_flux', 'transport_routage', 'thermodynamique',
+             'pile_electrochimique', 'saponification', name='type_sim_enum'),
         nullable=False
     )
 
@@ -701,3 +704,194 @@ class InteractionIA(db.Model):
 
     def __repr__(self):
         return f'<InteractionIA Session:{self.session_id}>'
+
+
+class Badge(db.Model):
+    """Badges déblocables par les étudiants"""
+    __tablename__ = 'badges'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    icone = db.Column(db.String(50))  # Nom de l'icône Font Awesome
+    couleur = db.Column(db.String(20), default='#ffd700')
+
+    # Critères de déblocage (JSON)
+    criteres = db.Column(db.Text)  # Ex: {"nb_sessions": 10, "note_min": 15}
+
+    # Métadonnées
+    categorie = db.Column(db.String(50))  # 'performance', 'persévérance', 'exploration', 'aide'
+    points = db.Column(db.Integer, default=10)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Badge {self.nom}>'
+
+
+class BadgeEtudiant(db.Model):
+    """Association entre étudiants et badges débloqués"""
+    __tablename__ = 'badges_etudiants'
+
+    id = db.Column(db.Integer, primary_key=True)
+    etudiant_id = db.Column(db.Integer, db.ForeignKey('etudiants.id', ondelete='CASCADE'), nullable=False)
+    badge_id = db.Column(db.Integer, db.ForeignKey('badges.id', ondelete='CASCADE'), nullable=False)
+
+    date_obtention = db.Column(db.DateTime, default=datetime.utcnow)
+    session_id = db.Column(db.Integer,
+                           db.ForeignKey('sessions_tp.id', ondelete='SET NULL'))  # Session qui a déclenché le badge
+
+    # Relations
+    etudiant = db.relationship('Etudiant', backref=db.backref('badges_obtenus', lazy='dynamic'))
+    badge = db.relationship('Badge')
+
+    def __repr__(self):
+        return f'<BadgeEtudiant E:{self.etudiant_id} B:{self.badge_id}>'
+
+
+class SessionCollaborative(db.Model):
+    """Sessions de TP en mode collaboratif"""
+    __tablename__ = 'sessions_collaboratives'
+
+    id = db.Column(db.Integer, primary_key=True)
+    tp_id = db.Column(db.Integer, db.ForeignKey('tps.id', ondelete='CASCADE'), nullable=False)
+
+    # Créateur de la session
+    createur_id = db.Column(db.Integer, db.ForeignKey('etudiants.id', ondelete='CASCADE'), nullable=False)
+
+    # Nom de la session
+    nom_session = db.Column(db.String(200))
+    code_acces = db.Column(db.String(10), unique=True)  # Code pour rejoindre
+
+    # État
+    statut = db.Column(
+        Enum('ouverte', 'en_cours', 'terminee', name='statut_collab_enum'),
+        default='ouverte'
+    )
+
+    # Paramètres collaboratifs
+    max_participants = db.Column(db.Integer, default=4)
+    partage_mesures = db.Column(db.Boolean, default=True)  # Partager les mesures entre tous
+
+    # Données partagées (JSON)
+    donnees_partagees = db.Column(db.Text)  # Paramètres synchronisés
+
+    # Métadonnées
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+    date_debut = db.Column(db.DateTime)
+    date_fin = db.Column(db.DateTime)
+
+    # Relations
+    tp = db.relationship('TP', backref='sessions_collaboratives')
+    createur = db.relationship('Etudiant', foreign_keys=[createur_id])
+
+    def __repr__(self):
+        return f'<SessionCollaborative {self.nom_session}>'
+
+
+class ParticipantCollaboratif(db.Model):
+    """Participants d'une session collaborative"""
+    __tablename__ = 'participants_collaboratifs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_collab_id = db.Column(db.Integer, db.ForeignKey('sessions_collaboratives.id', ondelete='CASCADE'),
+                                  nullable=False)
+    etudiant_id = db.Column(db.Integer, db.ForeignKey('etudiants.id', ondelete='CASCADE'), nullable=False)
+
+    role = db.Column(
+        Enum('createur', 'participant', name='role_collab_enum'),
+        default='participant'
+    )
+
+    date_rejointe = db.Column(db.DateTime, default=datetime.utcnow)
+    actif = db.Column(db.Boolean, default=True)
+
+    # Contribution individuelle
+    nb_mesures_personnelles = db.Column(db.Integer, default=0)
+
+    # Relations
+    session_collab = db.relationship('SessionCollaborative', backref='participants')
+    etudiant = db.relationship('Etudiant')
+
+    def __repr__(self):
+        return f'<ParticipantCollab E:{self.etudiant_id} S:{self.session_collab_id}>'
+
+
+class VideoExplicative(db.Model):
+    """Vidéos explicatives pour les TPs"""
+    __tablename__ = 'videos_explicatives'
+
+    id = db.Column(db.Integer, primary_key=True)
+    titre = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+
+    # Lien vidéo (YouTube, Vimeo, etc.)
+    url_video = db.Column(db.String(500), nullable=False)
+    duree_minutes = db.Column(db.Integer)
+
+    # Association
+    type_simulation = db.Column(db.String(50))  # 'buck', 'rdm_poutre', etc.
+    tp_id = db.Column(db.Integer, db.ForeignKey('tps.id', ondelete='CASCADE'))
+
+    # Métadonnées
+    langue = db.Column(db.String(10), default='fr')
+    niveau = db.Column(
+        Enum('debutant', 'intermediaire', 'avance', name='niveau_video_enum'),
+        default='debutant'
+    )
+
+    nb_vues = db.Column(db.Integer, default=0)
+    date_ajout = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    tp = db.relationship('TP', backref='videos')
+
+    def __repr__(self):
+        return f'<VideoExplicative {self.titre}>'
+
+
+class VueVideo(db.Model):
+    """Suivi des vues de vidéos par étudiant"""
+    __tablename__ = 'vues_videos'
+
+    id = db.Column(db.Integer, primary_key=True)
+    video_id = db.Column(db.Integer, db.ForeignKey('videos_explicatives.id', ondelete='CASCADE'), nullable=False)
+    etudiant_id = db.Column(db.Integer, db.ForeignKey('etudiants.id', ondelete='CASCADE'), nullable=False)
+
+    date_vue = db.Column(db.DateTime, default=datetime.utcnow)
+    pourcentage_visionne = db.Column(db.Float, default=0)  # 0-100
+
+    # Relations
+    video = db.relationship('VideoExplicative')
+    etudiant = db.relationship('Etudiant')
+
+
+class ReactionChimique(db.Model):
+    """Base de données des réactions chimiques"""
+    __tablename__ = 'reactions_chimiques'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(200), nullable=False)
+    type_reaction = db.Column(
+        Enum('oxydoreduction', 'acide_base', 'saponification',
+             'esterification', 'hydrolyse', 'equilibre', name='type_reaction_enum'),
+        nullable=False
+    )
+
+    # Équation chimique
+    equation = db.Column(db.String(500))
+
+    # Réactifs et produits (JSON)
+    reactifs = db.Column(db.Text)  # [{"formule": "NaOH", "nom": "Soude", "quantite": 1}]
+    produits = db.Column(db.Text)
+
+    # Données thermodynamiques
+    delta_h = db.Column(db.Float)  # Enthalpie (kJ/mol)
+    delta_g = db.Column(db.Float)  # Énergie libre (kJ/mol)
+    constante_equilibre = db.Column(db.Float)  # K
+
+    # Cinétique
+    ordre_reaction = db.Column(db.Integer)
+    energie_activation = db.Column(db.Float)  # Ea (kJ/mol)
+
+    def __repr__(self):
+        return f'<ReactionChimique {self.nom}>'

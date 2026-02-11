@@ -30,25 +30,25 @@
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="stat-box text-center">
-                <h2 class="text-primary">{{ tps|length }}</h2>
-                <p class="text-muted mb-0">TPs actifs</p>
+                <h2 class="text-primary">{{ total_tps }}</h2>
+                <p class="text-muted mb-0">TPs totaux</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="stat-box text-center">
-                <h2 class="text-success">{{ SessionTP.query.count() }}</h2>
+                <h2 class="text-success">{{ total_sessions }}</h2>
                 <p class="text-muted mb-0">Sessions totales</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="stat-box text-center">
-                <h2 class="text-warning">{{ MesureSimulation.query.count() }}</h2>
+                <h2 class="text-warning">{{ total_mesures }}</h2>
                 <p class="text-muted mb-0">Mesures enregistrées</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="stat-box text-center">
-                <h2 class="text-info">{{ InteractionIA.query.count() }}</h2>
+                <h2 class="text-info">{{ total_interactions }}</h2>
                 <p class="text-muted mb-0">Interactions IA</p>
             </div>
         </div>
@@ -60,6 +60,7 @@
             <h5 class="mb-0"><i class="fas fa-list"></i> Tous les TPs du système</h5>
         </div>
         <div class="card-body">
+            {% if tps %}
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
@@ -78,15 +79,15 @@
                         {% for tp in tps %}
                         <tr>
                             <td><strong>{{ tp.titre }}</strong></td>
-                            <td>{{ tp.ue.code_ue }}</td>
-                            <td>{{ tp.enseignant.nom }}</td>
+                            <td>{{ tp.ue.code_ue if tp.ue else 'N/A' }}</td>
+                            <td>{{ tp.enseignant.nom if tp.enseignant else 'N/A' }}</td>
                             <td><span class="badge bg-info">{{ tp.type_simulation }}</span></td>
                             <td>
                                 <span class="badge" style="background: {% if tp.ia_nom == 'ETA' %}#e74c3c{% elif tp.ia_nom == 'ALPHA' %}#2ecc71{% else %}#f1c40f{% endif %}">
                                     {{ tp.ia_nom }}
                                 </span>
                             </td>
-                            <td>{{ tp.sessions.count() }}</td>
+                            <td>{{ tp.sessions|length }}</td>
                             <td>
                                 {% if tp.actif %}
                                     <span class="badge bg-success">Oui</span>
@@ -105,17 +106,24 @@
                     </tbody>
                 </table>
             </div>
+            {% else %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle"></i> Aucun TP créé pour le moment.
+                <br>Les enseignants peuvent créer des TPs depuis leur espace.
+            </div>
+            {% endif %}
         </div>
     </div>
 
     <!-- Activité récente -->
     <div class="card mt-4">
         <div class="card-header bg-info text-white">
-            <h5 class="mb-0"><i class="fas fa-clock"></i> Activité récente (24h)</h5>
+            <h5 class="mb-0"><i class="fas fa-clock"></i> Activité récente (10 dernières sessions)</h5>
         </div>
         <div class="card-body">
+            {% if sessions_recentes %}
             <ul class="list-group">
-                {% for session in SessionTP.query.order_by(SessionTP.date_debut.desc()).limit(15) %}
+                {% for session in sessions_recentes %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <div>
                         <strong>{{ session.etudiant.prenom }} {{ session.etudiant.nom }}</strong>
@@ -129,6 +137,9 @@
                 </li>
                 {% endfor %}
             </ul>
+            {% else %}
+            <p class="text-muted text-center">Aucune activité récente</p>
+            {% endif %}
         </div>
     </div>
 </div>

@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Analytics - Laboratoire{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        transition: transform 0.3s;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+    .chart-container {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2><i class="fas fa-chart-line"></i> Dashboard Analytics - Laboratoire Virtuel</h2>
+    
+    <div class="row mt-4">
+        <!-- Statistiques globales -->
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <div class="stat-value">{{ total_sessions }}</div>
+                <p class="mb-0">Sessions totales</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="stat-value">{{ sessions_actives }}</div>
+                <p class="mb-0">En cours maintenant</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="stat-value">{{ total_mesures }}</div>
+                <p class="mb-0">Mesures effectuées</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="stat-value">{{ sessions_recentes }}</div>
+                <p class="mb-0">Cette semaine</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <!-- Sessions actives en temps réel -->
+        <div class="col-lg-6">
+            <div class="chart-container">
+                <h5><i class="fas fa-users text-primary"></i> Sessions actives en ce moment</h5>
+                <div id="sessions-actives-container">
+                    <p class="text-muted">Chargement...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Activité 24h -->
+        <div class="col-lg-6">
+            <div class="chart-container">
+                <h5><i class="fas fa-clock text-success"></i> Activité des 24 dernières heures</h5>
+                <canvas id="chartActivite24h"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <!-- Progression par TP -->
+        <div class="col-12">
+            <div class="chart-container">
+                <h5><i class="fas fa-tasks text-warning"></i> Progression par TP</h5>
+                <canvas id="chartProgressionTPs"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let chartActivite, chartProgression;
+
+async function refreshStats() {
+    try {
+        const response = await fetch('/analytics-labo/api/stats-temps-reel');
+        const data = await response.json();
+        
+        // Afficher sessions actives
+        const container = document.getElementById('sessions-actives-container');
+        if (data.sessions_actives.length === 0) {
+            container.innerHTML = '<p class="text-muted">Aucune session active</p>';
+        } else {
+            let html = '<div class="list-group">';
+            data.sessions_actives.forEach(session => {
+                html += `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <strong>${session.etudiant}</strong>
+                            <span class="badge bg-success">${session.duree_minutes} min</span>
+                        </div>
+                        <small class="text-muted">${session.tp} - ${session.nb_mesures} mesures</small>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // Graphique activité 24h
+        updateChartActivite(data.activite_24h);
+        
+        // Graphique progression
+        updateChartProgression(data.progression_tps);
+        
+    } catch(e) {
+        console.error('Erreur refresh stats:', e);
+    }
+}
+
+function updateChartActivite(data) {
+    const ctx = document.getElementById('chartActivite24h').getContext('2d');
+    
+    if (chartActivite) chartActivite.destroy();
+    
+    const heures = Object.keys(data).sort();
+    const valeurs = heures.map(h => data[h]);
+    
+    chartActivite = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: heures.map(h => h + 'h'),
+            datasets: [{
+                label: 'Nombre de sessions',
+                data: valeurs,
+                backgroundColor: 'rgba(76, 175, 80, 0.6)',
+                borderColor: 'rgba(76, 175, 80, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+}
+
+function updateChartProgression(data) {
+    const ctx = document.getElementById('chartProgressionTPs').getContext('2d');
+    
+    if (chartProgression) chartProgression.destroy();
+    
+    chartProgression = new Chart(ctx, {
+        type: 'horizontalBar',
+        data: {
+            labels: data.map(d => d.tp),
+            datasets: [{
+                label: 'Sessions terminées (%)',
+                data: data.map(d => d.pourcentage),
+                backgroundColor: 'rgba(255, 152, 0, 0.6)',
+                borderColor: 'rgba(255, 152, 0, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { beginAtZero: true, max: 100 }
+            }
+        }
+    });
+}
+
+// Refresh automatique toutes les 10 secondes
+refreshStats();
+setInterval(refreshStats, 10000);
+</script>
+{% endblock %}

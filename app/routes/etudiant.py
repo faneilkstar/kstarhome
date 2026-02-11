@@ -15,6 +15,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from app.models import Examen
+from app.services.validation_ia import ValidationIA
 
 
 from app import db
@@ -48,6 +49,12 @@ def inscription():
         prenom = request.form.get('prenom')
         date_naiss = request.form.get('date_naissance')
 
+        # Données académiques
+        moyenne_bac = request.form.get('moyenne_bac')
+        serie_bac = request.form.get('serie_bac')
+        moyenne_licence = request.form.get('moyenne_licence')
+        diplome_licence = request.form.get('diplome_licence')
+
         if password != confirm_password:
             flash("Les mots de passe ne correspondent pas.", "danger")
             return redirect(url_for('etudiant.inscription'))
@@ -67,6 +74,10 @@ def inscription():
                 nom=nom.upper() if nom else "",
                 prenom=prenom.title() if prenom else "",
                 filiere_id=filiere_id,
+                moyenne_bac=float(moyenne_bac) if moyenne_bac else None,
+                serie_bac=serie_bac,
+                moyenne_licence=float(moyenne_licence) if moyenne_licence else None,
+                diplome_licence=diplome_licence,
                 statut_inscription="en_attente",
                 date_inscription=datetime.now()
             )
@@ -75,9 +86,27 @@ def inscription():
                 etudiant.date_naissance = datetime.strptime(date_naiss, "%Y-%m-%d")
 
             db.session.add(etudiant)
-            db.session.commit()
+            db.session.flush()  # Pour avoir l'ID de l'étudiant
 
-            flash("✅ Inscription réussie ! Connectez-vous pour suivre votre dossier.", "success")
+            # 🤖 ÉVALUATION AUTOMATIQUE PAR L'IA
+            try:
+                ia_validation = ValidationIA()
+                resultat = ia_validation.evaluer_inscription(etudiant)
+
+                # Stocker le résultat de l'évaluation IA
+                etudiant.evaluation_ia = str(resultat)  # Stocker en JSON-like string
+
+                # Message personnalisé selon la décision de l'IA
+                if resultat['decision'] == 'accepte':
+                    flash(f"✅ Inscription réussie ! Votre dossier a été pré-validé (score: {resultat['score']}/100). Connectez-vous pour suivre votre dossier.", "success")
+                else:
+                    flash(f"📋 Inscription enregistrée ! Votre dossier est en cours d'analyse. Connectez-vous pour suivre son évolution.", "info")
+
+            except Exception as e_ia:
+                print(f"⚠️  Erreur évaluation IA : {e_ia}")
+                flash("✅ Inscription réussie ! Connectez-vous pour suivre votre dossier.", "success")
+
+            db.session.commit()
             return redirect(url_for('auth.login'))
 
         except Exception as e:
@@ -85,7 +114,7 @@ def inscription():
             flash(f"Erreur lors de l'inscription : {str(e)}", "danger")
 
     filieres = Filiere.query.filter_by(active=True).all()
-    return render_template('etudiant/inscription.html', filieres=filieres)
+    return render_template('auth/inscription.html', filieres=filieres)
 
 
 @bp.route('/dashboard')
@@ -214,6 +243,7 @@ def telecharger_lettre():
 
     # Déterminer le contenu selon le statut
     nom_classe = etudiant.classe.nom_classe if etudiant.classe else "la formation demandée"
+    filiere_nom = etudiant.filiere_objet.nom_filiere if etudiant.filiere_objet else "Non spécifiée"
 
     if etudiant.statut_inscription == 'accepté':
         titre_doc = "NOTIFICATION D'ADMISSION"
@@ -227,15 +257,25 @@ def telecharger_lettre():
             ("a fait l'objet d'un avis FAVORABLE de la part de notre Commission d'Admission.", False),
             ("", False),
             (f"🎓 Vous êtes officiellement admis(e) en {nom_classe.upper()}", True),
+            (f"📚 Filière : {filiere_nom} - PREMIÈRE ANNÉE", True),
+            ("", False),
+            ("⚠️  IMPORTANT : Tous les nouveaux étudiants commencent en 1ère année, quel que soit", False),
+            ("leur niveau d'études antérieur. La progression vers les années supérieures se fera", False),
+            ("après validation des crédits ECTS requis.", False),
             ("", False),
             ("Cette admission fait suite à l'examen attentif de votre dossier académique et témoigne", False),
             ("de la qualité de votre parcours et de votre potentiel.", False),
             ("", False),
-            ("📋 Prochaines étapes:", True),
+            ("📋 Prochaines étapes OBLIGATOIRES:", True),
             ("", False),
-            ("1. Confirmer votre inscription avant le 15/03/2026", False),
-            ("2. Compléter votre dossier administratif", False),
-            ("3. Procéder au règlement des frais de scolarité", False),
+            ("1. Vous connecter à votre espace étudiant", False),
+            ("2. CHOISIR VOS UNITÉS D'ENSEIGNEMENT (UE) - OBLIGATOIRE !", False),
+            ("   → Sans inscription aux UE, vous n'apparaîtrez pas dans les listes des enseignants", False),
+            ("   → Vous ne recevrez pas les cours ni les convocations aux examens", False),
+            ("3. Télécharger votre fiche d'inscription aux UE", False),
+            ("4. Confirmer votre inscription avant le 15/03/2026", False),
+            ("5. Compléter votre dossier administratif", False),
+            ("6. Procéder au règlement des frais de scolarité", False),
             ("", False),
             ("Nous vous félicitons chaleureusement pour cette réussite et avons hâte de vous", False),
             ("accueillir parmi nos étudiants pour cette nouvelle année académique.", False),

@@ -89,6 +89,37 @@
     </header>
 
     <div class="content-padding">
+        {% if inscriptions|length == 0 %}
+        <!-- ⚠️ ALERTE IMPORTANTE : Aucune UE choisie -->
+        <div class="alert alert-warning alert-dismissible fade show shadow-lg border-0 rounded-4 mb-4" role="alert" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white;">
+            <div class="d-flex align-items-center">
+                <div class="me-3" style="font-size: 2rem;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="fw-bold mb-2">⚠️ ACTION URGENTE REQUISE !</h5>
+                    <p class="mb-2">
+                        <strong>Vous n'avez choisi AUCUNE Unité d'Enseignement (UE) !</strong>
+                    </p>
+                    <p class="mb-2 small">
+                        <i class="fas fa-info-circle me-1"></i> Sans inscription aux UE, vous ne pourrez pas :
+                    </p>
+                    <ul class="mb-3 small">
+                        <li>Apparaître dans les listes des enseignants</li>
+                        <li>Recevoir les cours et supports pédagogiques</li>
+                        <li>Être convoqué aux examens</li>
+                        <li>Obtenir vos relevés de notes</li>
+                        <li>Valider votre année académique</li>
+                    </ul>
+                    <a href="{{url_for('etudiant.choisir_ues')}}" class="btn btn-light fw-bold px-4 py-2 rounded-pill shadow">
+                        <i class="fas fa-check-circle me-2"></i>CHOISIR MES UE MAINTENANT
+                    </a>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="hero-banner">
             <div class="row">
                 <div class="col-md-8">

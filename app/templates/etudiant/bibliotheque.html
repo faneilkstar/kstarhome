@@ -13,15 +13,39 @@
         </div>
         <div class="d-flex gap-2">
             <input type="text" id="searchBook" class="form-control" placeholder="Rechercher titre, auteur..." style="width: 300px;">
-            <select id="categoryFilter" class="form-select" style="width: 180px;">
-                <option value="">Toutes catégories</option>
-                <option value="Roman">Roman</option>
-                <option value="Science">Science</option>
-                <option value="Histoire">Histoire</option>
-                <option value="Mathématiques">Mathématiques</option>
-                <option value="Informatique">Informatique</option>
-                <option value="Physique">Physique</option>
-                <option value="Électronique">Électronique</option>
+            <select id="categoryFilter" class="form-select" style="width: 200px;">
+                <option value="">🔍 Toutes catégories</option>
+                <optgroup label="📚 Sciences">
+                    <option value="Mathématiques">Mathématiques</option>
+                    <option value="Physique">Physique</option>
+                    <option value="Chimie">Chimie</option>
+                    <option value="Biologie">Biologie</option>
+                </optgroup>
+                <optgroup label="💻 Ingénierie">
+                    <option value="Informatique">Informatique</option>
+                    <option value="Électronique">Électronique</option>
+                    <option value="Électrotechnique">Électrotechnique</option>
+                    <option value="Mécanique">Mécanique</option>
+                    <option value="Génie Civil">Génie Civil</option>
+                    <option value="Automatique">Automatique</option>
+                    <option value="Thermodynamique">Thermodynamique</option>
+                </optgroup>
+                <optgroup label="📖 Lettres & Humains">
+                    <option value="Roman">Roman</option>
+                    <option value="Histoire">Histoire</option>
+                    <option value="Philosophie">Philosophie</option>
+                    <option value="Langues">Langues</option>
+                </optgroup>
+                <optgroup label="💼 Gestion">
+                    <option value="Économie">Économie</option>
+                    <option value="Gestion">Gestion</option>
+                    <option value="Droit">Droit</option>
+                </optgroup>
+                <optgroup label="🎨 Autres">
+                    <option value="Arts">Arts</option>
+                    <option value="Sport">Sport</option>
+                    <option value="Autre">Autre</option>
+                </optgroup>
             </select>
         </div>
     </div>
@@ -164,18 +188,4 @@ document.addEventListener('DOMContentLoaded', function() {
     categoryFilter.addEventListener('change', filterBooks);
 });
 </script>
-{% endblock %}
-    let books = document.querySelectorAll('.book-item');
-    
-    books.forEach(function(book) {
-        let text = book.innerText.toLowerCase();
-        book.style.display = text.indexOf(value) > -1 ? '' : 'none';
-    });
-});
-</script>
-
-<style>
-.hover-card { transition: transform 0.2s; }
-.hover-card:hover { transform: translateY(-5px); }
-</style>
 {% endblock %}

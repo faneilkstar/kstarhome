@@ -1,5 +1,9 @@
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement depuis .env
+load_dotenv()
 
 # Chemin racine du projet
 basedir = os.path.abspath(os.path.dirname(__file__))

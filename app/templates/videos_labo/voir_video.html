@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}{{ video.titre }} - Vidéo Explicative{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <h3>{{ video.titre }}</h3>
+                    <p class="text-muted">
+                        <span class="badge bg-info">{{ video.niveau }}</span>
+                        <span class="badge bg-secondary">{{ video.duree_minutes }} min</span>
+                        <span class="badge bg-primary">{{ video.nb_vues }} vues</span>
+                    </p>
+                    
+                    <!-- Lecteur vidéo YouTube -->
+                    <div class="ratio ratio-16x9">
+                        {% if 'youtube.com' in video.url_video or 'youtu.be' in video.url_video %}
+                            {% set video_id = video.url_video.split('/')[-1].split('?v=')[-1].split('&')[0] %}
+                            <iframe 
+                                id="youtube-player"
+                                src="https://www.youtube.com/embed/{{ video_id }}?enablejsapi=1" 
+                                allowfullscreen>
+                            </iframe>
+                        {% else %}
+                            <iframe src="{{ video.url_video }}" allowfullscreen></iframe>
+                        {% endif %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5>Description</h5>
+                    <p>{{ video.description }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <h5>Vidéos similaires</h5>
+            {% for v in videos_similaires %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="card-title">{{ v.titre }}</h6>
+                    <p class="card-text small text-muted">{{ v.description[:100] }}...</p>
+                    <a href="{{ url_for('videos_labo.voir_video', video_id=v.id) }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-play"></i> Voir
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Suivi de la progression
+let player;
+let progressInterval;
+
+function onYouTubeIframeAPIReady() {
+    player = new YT.Player('youtube-player', {
+        events: {
+            'onStateChange': onPlayerStateChange
+        }
+    });
+}
+
+function onPlayerStateChange(event) {
+    if (event.data == YT.PlayerState.PLAYING) {
+        // Enregistrer la progression toutes les 10 secondes
+        progressInterval = setInterval(saveProgress, 10000);
+    } else {
+        clearInterval(progressInterval);
+        saveProgress();
+    }
+}
+
+async function saveProgress() {
+    if (!player || !player.getDuration) return;
+    
+    const currentTime = player.getCurrentTime();
+    const duration = player.getDuration();
+    const pourcentage = (currentTime / duration) * 100;
+    
+    await fetch('/videos-labo/api/progression', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            video_id: {{ video.id }},
+            pourcentage: Math.floor(pourcentage)
+        })
+    });
+}
+
+// Charger l'API YouTube
+const tag = document.createElement('script');
+tag.src = "https://www.youtube.com/iframe_api";
+const firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+</script>
+{% endblock %}

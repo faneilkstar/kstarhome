@@ -253,7 +253,8 @@ def ajouter_enseignant():
                 nom=nom.upper(),
                 prenom=prenom.title(),
                 grade=grade,
-                specialite=specialite
+                specialite=specialite,
+                mot_de_passe_initial=password  # Stocker le mot de passe en clair pour le PDF
             )
             db.session.add(new_enseignant)
 
@@ -574,6 +575,67 @@ def valider_etudiant(etudiant_id):
     return redirect(url_for('directeur.liste_etudiants'))
 
 
+@bp.route('/valider-inscriptions-auto', methods=['POST'])
+@directeur_required
+def valider_inscriptions_auto():
+    """Valide automatiquement les inscriptions avec l'IA Gemini"""
+    from app.services.validation_ia import ValidationIA
+
+    # Récupérer tous les étudiants en attente
+    etudiants_attente = Etudiant.query.filter_by(statut_inscription='en_attente').all()
+
+    if not etudiants_attente:
+        flash("Aucune inscription en attente.", "info")
+        return redirect(url_for('directeur.liste_etudiants'))
+
+    ia = ValidationIA()
+    acceptes = 0
+    refuses = 0
+
+    for etudiant in etudiants_attente:
+        # Évaluer avec l'IA
+        resultat = ia.evaluer_inscription(etudiant)
+
+        # Stocker l'évaluation
+        etudiant.evaluation_ia = str(resultat)
+
+        if resultat['decision'] == 'accepte':
+            # Trouver une classe de la filière
+            classe = Classe.query.filter_by(filiere_id=etudiant.filiere_id, active=True).first()
+
+            if classe:
+                # Générer le matricule
+                annee_actuelle = datetime.now().year
+                etudiant.matricule = f"ETU-{annee_actuelle}-{str(etudiant.id).zfill(4)}"
+
+                # Valider
+                etudiant.classe_id = classe.id
+                etudiant.statut_inscription = 'accepté'
+                etudiant.date_validation = datetime.utcnow()
+
+                # Inscrire aux UEs de la classe
+                for ue in classe.ues:
+                    if not InscriptionUE.query.filter_by(etudiant_id=etudiant.id, ue_id=ue.id).first():
+                        nouvelle_ins = InscriptionUE(
+                            etudiant_id=etudiant.id,
+                            ue_id=ue.id,
+                            annee_academique=Config.ANNEE_ACADEMIQUE_ACTUELLE,
+                            statut='validé'
+                        )
+                        db.session.add(nouvelle_ins)
+
+                acceptes += 1
+        else:
+            # Refuser
+            etudiant.statut_inscription = 'refusé'
+            refuses += 1
+
+    db.session.commit()
+
+    flash(f"✅ Validation automatique terminée ! {acceptes} accepté(s), {refuses} refusé(s) (moyenne < 12/20)", "success")
+    return redirect(url_for('directeur.liste_etudiants'))
+
+
 @bp.route('/statistiques/export')
 @directeur_required
 def export_statistiques_file():
@@ -651,9 +713,9 @@ def imprimer_fiche_enseignant(enseignant_id):
     enseignant = Enseignant.query.get_or_404(enseignant_id)
     user = User.query.get(enseignant.user_id)
 
-    # Générer un mot de passe lisible basé sur le nom de l'enseignant
-    # Format: prenom + les 4 premiers caractères du nom + année
-    password_display = f"{enseignant.prenom.lower()}{enseignant.nom[:4].lower()}2026"
+    # Utiliser le mot de passe réel stocké lors de la création
+    # Si pas disponible (anciens comptes), générer un par défaut
+    password_display = enseignant.mot_de_passe_initial or f"{enseignant.prenom.lower()}{enseignant.nom[:4].lower()}2026"
 
     date_edition = datetime.now().strftime('%d/%m/%Y')
 
@@ -1375,10 +1437,22 @@ def bibliotheque():
 @bp.route('/bibliotheque/ajouter', methods=['POST'])
 @directeur_required
 def ajouter_livre():
+    from app.services.ia_bibliotheque import BibliothequeIA
+
     try:
         titre = request.form.get('titre')
         auteur = request.form.get('auteur')
         categorie = request.form.get('categorie')
+        description = request.form.get('description')
+
+        # 🤖 TRI AUTOMATIQUE PAR IA si pas de catégorie sélectionnée
+        if not categorie or categorie == "":
+            biblio_ia = BibliothequeIA()
+            categorie = biblio_ia.determiner_categorie(titre, auteur, description)
+
+            # Générer description si absente
+            if not description:
+                description = biblio_ia.generer_description(titre, auteur, categorie)
 
         # Gestion des fichiers
         pdf = request.files.get('fichier_pdf')
@@ -1404,12 +1478,39 @@ def ajouter_livre():
 
             nouveau_livre = Livre(
                 titre=titre, auteur=auteur, categorie=categorie,
+                description=description,
                 fichier_pdf=unique_pdf, image_couverture=cover_name
             )
             db.session.add(nouveau_livre)
             db.session.commit()
-            flash("Livre ajouté à la bibliothèque !", "success")
+            flash(f"✅ Livre ajouté dans la catégorie '{categorie}' !", "success")
 
+    except Exception as e:
+        flash(f"Erreur: {str(e)}", "danger")
+
+    return redirect(url_for('directeur.bibliotheque'))
+
+
+@bp.route('/bibliotheque/supprimer/<int:livre_id>', methods=['POST'])
+@directeur_required
+def supprimer_livre(livre_id):
+    """Supprimer un livre de la bibliothèque"""
+    try:
+        livre = Livre.query.get_or_404(livre_id)
+
+        # Supprimer les fichiers physiques
+        pdf_path = os.path.join(current_app.root_path, 'static', 'library', 'pdf', livre.fichier_pdf)
+        if os.path.exists(pdf_path):
+            os.remove(pdf_path)
+
+        if livre.image_couverture != 'default_book.jpg':
+            cover_path = os.path.join(current_app.root_path, 'static', 'library', 'covers', livre.image_couverture)
+            if os.path.exists(cover_path):
+                os.remove(cover_path)
+
+        db.session.delete(livre)
+        db.session.commit()
+        flash("Livre supprimé avec succès.", "success")
     except Exception as e:
         flash(f"Erreur: {str(e)}", "danger")
 

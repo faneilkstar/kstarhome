@@ -1,0 +1,189 @@
+{% extends "enseignant/base.html" %}
+{% block title %}Statistiques {{ ue.code_ue }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">
+                <i class="fas fa-chart-pie me-2 text-primary"></i>
+                {{ ue.code_ue }} - {{ ue.intitule }}
+            </h2>
+            <p class="text-muted">{{ ue.credits }} crédits | Coef. {{ ue.coefficient }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('enseignant.exporter_rapport_ue', ue_id=ue.id) }}" class="btn btn-success">
+                <i class="fas fa-file-pdf me-2"></i>Exporter PDF
+            </a>
+            <a href="{{ url_for('enseignant.statistiques') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Retour
+            </a>
+        </div>
+    </div>
+    <!-- Stats descriptives -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h6 class="text-muted small">Moyenne</h6>
+                <h3 class="fw-bold {% if rapport.descriptives.moyenne >= 12 %}text-success{% elif rapport.descriptives.moyenne >= 10 %}text-warning{% else %}text-danger{% endif %}">
+                    {{ rapport.descriptives.moyenne }}/20
+                </h3>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h6 class="text-muted small">Médiane</h6>
+                <h3 class="fw-bold">{{ rapport.descriptives.mediane }}/20</h3>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h6 class="text-muted small">Écart-type</h6>
+                <h3 class="fw-bold text-info">{{ rapport.descriptives.ecart_type }}</h3>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h6 class="text-muted small">Réussite</h6>
+                <h3 class="fw-bold text-success">{{ rapport.descriptives.taux_reussite }}%</h3>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h6 class="text-muted small">Réussis</h6>
+                <h3 class="fw-bold text-success">{{ rapport.descriptives.nb_reussis }}</h3>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm p-3 text-center">
+                <h6 class="text-muted small">Ajournés</h6>
+                <h3 class="fw-bold text-danger">{{ rapport.descriptives.nb_ajournes }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <!-- Graphique distribution -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Distribution des notes</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartDistribution" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Stats avancées -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Statistiques avancées</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <tr><td>Variance</td><td class="fw-bold">{{ rapport.descriptives.variance }}</td></tr>
+                        <tr><td>Q1 (25%)</td><td class="fw-bold">{{ rapport.descriptives.q1 }}/20</td></tr>
+                        <tr><td>Q3 (75%)</td><td class="fw-bold">{{ rapport.descriptives.q3 }}/20</td></tr>
+                        <tr><td>IQR</td><td class="fw-bold">{{ rapport.descriptives.iqr }}</td></tr>
+                        <tr><td>Note min</td><td class="fw-bold text-danger">{{ rapport.descriptives.min }}/20</td></tr>
+                        <tr><td>Note max</td><td class="fw-bold text-success">{{ rapport.descriptives.max }}/20</td></tr>
+                        <tr><td>Étendue</td><td class="fw-bold">{{ rapport.descriptives.etendue }}</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Analyse IA -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-robot me-2"></i>Analyse IA (Gemini)</h5>
+        </div>
+        <div class="card-body">
+            {% if rapport.analyse_ia.synthese %}
+            <div class="alert alert-info">
+                <h6 class="fw-bold"><i class="fas fa-lightbulb me-2"></i>Synthèse</h6>
+                {{ rapport.analyse_ia.synthese }}
+            </div>
+            {% endif %}
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="fw-bold text-success"><i class="fas fa-check-circle me-2"></i>Points forts</h6>
+                    <ul class="list-unstyled">
+                        {% for point in rapport.analyse_ia.points_forts %}
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>{{ point }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold text-warning"><i class="fas fa-exclamation-triangle me-2"></i>Axes d'amélioration</h6>
+                    <ul class="list-unstyled">
+                        {% for axe in rapport.analyse_ia.axes_amelioration %}
+                        <li class="mb-2"><i class="fas fa-arrow-right text-warning me-2"></i>{{ axe }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% if rapport.analyse_ia.recommandations %}
+            <h6 class="fw-bold text-info mt-3"><i class="fas fa-lightbulb me-2"></i>Recommandations</h6>
+            <div class="row">
+                {% for reco in rapport.analyse_ia.recommandations %}
+                <div class="col-md-6 mb-2">
+                    <div class="p-2 bg-light rounded"><i class="fas fa-check-square text-info me-2"></i>{{ reco }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if rapport.analyse_ia.pourquoi %}
+            <div class="alert alert-secondary mt-3">
+                <h6 class="fw-bold"><i class="fas fa-question-circle me-2"></i>Pourquoi ces résultats ?</h6>
+                {{ rapport.analyse_ia.pourquoi }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Stats inférentielles -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0"><i class="fas fa-flask me-2"></i>Statistiques inférentielles</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>Corrélation absences-notes</h6>
+                    <h4 class="fw-bold">{{ rapport.inferentielles.correlation_absences_notes or 'N/A' }}</h4>
+                </div>
+                <div class="col-md-4">
+                    <h6>P-value</h6>
+                    <h4 class="fw-bold">{{ rapport.inferentielles.p_value or 'N/A' }}</h4>
+                </div>
+                <div class="col-md-4">
+                    <h6>Normalité</h6>
+                    <h4 class="fw-bold">{{ rapport.inferentielles.normalite_interpretation }}</h4>
+                </div>
+            </div>
+            <div class="alert alert-info mt-3">
+                <strong>Interprétation :</strong> {{ rapport.inferentielles.interpretation_correlation }}
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('chartDistribution').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['0-5', '5-10', '10-12', '12-14', '14-16', '16-20'],
+        datasets: [{
+            label: 'Étudiants',
+            data: [{{ distribution['0-5'] }}, {{ distribution['5-10'] }}, {{ distribution['10-12'] }}, {{ distribution['12-14'] }}, {{ distribution['14-16'] }}, {{ distribution['16-20'] }}],
+            backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#20c997', '#198754', '#0d6efd']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+});
+</script>
+{% endblock %}

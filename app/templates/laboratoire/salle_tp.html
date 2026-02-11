@@ -290,6 +290,12 @@ const sessionStartTime = Date.now();
     <script src="{{ url_for('static', filename='js/simulation_signal.js') }}"></script>
 {% elif tp.type_simulation == 'stock_flux' %}
     <script src="{{ url_for('static', filename='js/simulation_stock.js') }}"></script>
+{% elif tp.type_simulation == 'pile_electrochimique' %}
+    <script src="{{ url_for('static', filename='js/simulation_pile_electrochimique.js') }}"></script>
+{% elif tp.type_simulation == 'saponification' %}
+    <script src="{{ url_for('static', filename='js/simulation_saponification.js') }}"></script>
+{% elif tp.type_simulation == 'thermodynamique' %}
+    <script src="{{ url_for('static', filename='js/simulation_thermo.js') }}"></script>
 {% endif %}
 
 {% endblock %}

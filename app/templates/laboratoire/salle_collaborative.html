@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Session Collaborative - {{ session_collab.nom_session }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .collab-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        margin-bottom: 20px;
+    }
+    .participant-card {
+        background: white;
+        border-left: 4px solid #4caf50;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .code-badge {
+        font-size: 1.5rem;
+        font-weight: bold;
+        background: #ffd700;
+        color: #000;
+        padding: 10px 20px;
+        border-radius: 10px;
+        letter-spacing: 3px;
+    }
+    .sync-indicator {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: #4caf50;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        display: none;
+    }
+    .sync-indicator.active {
+        display: block;
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+    <div class="collab-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2><i class="fas fa-users"></i> {{ session_collab.nom_session }}</h2>
+                <p class="mb-0">{{ session_collab.tp.titre }} - Mode Collaboratif</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <p class="mb-1">Code d'accès :</p>
+                <span class="code-badge">{{ session_collab.code_acces }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Participants -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-user-friends"></i> Participants (<span id="nb-participants">0</span>/{{ session_collab.max_participants }})
+                </div>
+                <div class="card-body" id="participants-list">
+                    <p class="text-muted">Chargement...</p>
+                </div>
+            </div>
+            
+            {% if est_createur %}
+            <div class="card mt-3">
+                <div class="card-header bg-warning">
+                    <i class="fas fa-crown"></i> Contrôles (Créateur)
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-danger w-100" onclick="terminerSession()">
+                        <i class="fas fa-stop"></i> Terminer la session
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Zone de simulation (même que salle_tp.html) -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-flask"></i> Simulation Collaborative
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        {% if session_collab.partage_mesures %}
+                            Les mesures sont partagées entre tous les participants.
+                        {% else %}
+                            Chaque participant a ses propres mesures.
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Contrôles de simulation -->
+                    <div id="controls-container" class="row mb-3">
+                        <!-- Généré dynamiquement selon le type de TP -->
+                    </div>
+                    
+                    <!-- Graphique -->
+                    <canvas id="scopeCanvas" style="height: 400px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Indicateur de synchronisation -->
+<div class="sync-indicator" id="sync-indicator">
+    <i class="fas fa-sync-alt fa-spin"></i> Synchronisation...
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const SESSION_ID = {{ session_collab.id }};
+const TP_TYPE = "{{ session_collab.tp.type_simulation }}";
+
+let syncTimer;
+
+// Synchroniser les paramètres toutes les 2 secondes
+function syncParams() {
+    const params = getParametresActuels();  // Fonction définie dans simulation_*.js
+    
+    fetch('/labo-collab/api/sync-parametres', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            session_id: SESSION_ID,
+            parametres: params
+        })
+    });
+    
+    showSyncIndicator();
+}
+
+function showSyncIndicator() {
+    const indicator = document.getElementById('sync-indicator');
+    indicator.classList.add('active');
+    setTimeout(() => indicator.classList.remove('active'), 1000);
+}
+
+// Récupérer les paramètres des autres
+async function fetchParams() {
+    try {
+        const response = await fetch(`/labo-collab/api/get-parametres/${SESSION_ID}`);
+        const data = await response.json();
+        
+        // Mettre à jour la liste des participants
+        updateParticipantsList(data.participants);
+        
+        // Mettre à jour les paramètres (si pas le créateur)
+        {% if not est_createur %}
+        if (data.parametres && Object.keys(data.parametres).length > 0) {
+            applyParametres(data.parametres);  // Fonction définie dans simulation_*.js
+        }
+        {% endif %}
+        
+    } catch(e) {
+        console.error('Erreur fetch params:', e);
+    }
+}
+
+function updateParticipantsList(participants) {
+    const container = document.getElementById('participants-list');
+    document.getElementById('nb-participants').innerText = participants.length;
+    
+    let html = '';
+    participants.forEach(p => {
+        const badge = p.role === 'createur' ? '<span class="badge bg-warning">👑 Créateur</span>' : '';
+        html += `
+            <div class="participant-card">
+                <strong>${p.nom}</strong> ${badge}
+                <br><small class="text-muted">${p.mesures} mesures</small>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function terminerSession() {
+    if (confirm('Terminer la session pour tous les participants ?')) {
+        // TODO: Implémenter la terminaison
+        alert('Session terminée !');
+        window.location.href = "{{ url_for('laboratoire.hub_etudiant') }}";
+    }
+}
+
+// Auto-sync toutes les 2 secondes
+setInterval(syncParams, 2000);
+setInterval(fetchParams, 2000);
+
+// Charger le script de simulation spécifique
+document.write('<script src="{{ url_for("static", filename="js/simulation_" + TP_TYPE + ".js") }}"><\/script>');
+</script>
+{% endblock %}
