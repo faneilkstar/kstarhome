@@ -36,3 +36,7 @@ config_local.py
 # Fichiers de configuration sensibles
 .env
 *.env
+
+# Vercel
+.vercel
+
