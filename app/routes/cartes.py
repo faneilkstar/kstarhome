@@ -6,7 +6,7 @@ from flask import Blueprint, render_template, send_file, flash, redirect, url_fo
 from flask_login import login_required, current_user
 from datetime import datetime
 
-from app.models import Etudiant, User
+from app.models import Etudiant, Enseignant, User
 from app.services.carte_etudiant_service import CarteEtudiantService
 
 cartes_bp = Blueprint('cartes', __name__, url_prefix='/cartes')
@@ -38,6 +38,32 @@ def ma_carte():
                            directeur=directeur_nom)
 
 
+@cartes_bp.route('/ma-carte-enseignant')
+@login_required
+def ma_carte_enseignant():
+    """Afficher/générer ma carte d'enseignant"""
+
+    if current_user.role != 'ENSEIGNANT':
+        flash('Accès réservé aux enseignants', 'danger')
+        return redirect(url_for('main.index'))
+
+    enseignant = current_user.enseignant_profile
+
+    # Générer la carte
+    service = CarteEtudiantService()
+    carte_path = service.generer_carte_enseignant(enseignant)
+
+    # Récupérer le directeur
+    directeur = User.query.filter_by(role='DIRECTEUR').first()
+    directeur_nom = f"{directeur.username}" if directeur else "Direction"
+
+    return render_template('cartes/ma_carte_enseignant.html',
+                           carte_path=carte_path,
+                           enseignant=enseignant,
+                           date_emission=datetime.now().strftime('%d/%m/%Y'),
+                           directeur=directeur_nom)
+
+
 @cartes_bp.route('/telecharger/<int:etudiant_id>')
 @login_required
 def telecharger_carte(etudiant_id):
@@ -54,6 +80,25 @@ def telecharger_carte(etudiant_id):
     carte_path = service.generer_carte_complete(etudiant)
 
     return send_file(carte_path, as_attachment=True, download_name=f"carte_{etudiant.matricule}.png")
+
+
+@cartes_bp.route('/telecharger-enseignant/<int:enseignant_id>')
+@login_required
+def telecharger_carte_enseignant(enseignant_id):
+    """Télécharger la carte d'un enseignant"""
+
+    enseignant = Enseignant.query.get_or_404(enseignant_id)
+
+    # Vérifier les permissions
+    if current_user.role == 'ENSEIGNANT' and current_user.enseignant_profile.id != enseignant.id:
+        flash('Non autorisé', 'danger')
+        return redirect(url_for('main.index'))
+
+    service = CarteEtudiantService()
+    matricule = f"ENS{enseignant.id:05d}"
+    carte_path = service.generer_carte_enseignant(enseignant)
+
+    return send_file(carte_path, as_attachment=True, download_name=f"carte_{matricule}.png")
 
 
 @cartes_bp.route('/generer-toutes')
