@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Migrations (ne pas déployer, utiliser la DB distante)
+migrations/
+
+# Logs
+*.log
+logs/
+
+# Tests
+tests/
+*.test.py
+
+# Documentation
+*.md
+!README.md
+
+# Fichiers locaux
+site.db
+app.db
+instance/
+
+# Git
+.git/
+.gitignore
+

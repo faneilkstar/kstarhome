@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -19,11 +20,18 @@ def create_app(config_name='default'):
     config[config_name].init_app(app)
 
     # ---------------------------------------------------------
-    # FORCER SUPABASE (CONFIGURATION FINALE - IRLANDE)
+    # CONFIGURATION BASE DE DONNÉES (VERCEL COMPATIBLE)
     # ---------------------------------------------------------
 
-    # Voici l'adresse exacte assemblée avec tes infos :
-    DB_URL = "postgresql://postgres.pzzfqduntcmklrakhggy:masqquedemort@aws-1-eu-west-1.pooler.supabase.com:6543/postgres"
+    # Utiliser la variable d'environnement DATABASE_URL (configurée dans Vercel)
+    DB_URL = os.environ.get('DATABASE_URL')
+
+    # Fallback pour développement local
+    if not DB_URL:
+        DB_URL = "postgresql://postgres.pzzfqduntcmklrakhggy:masqquedemort@aws-1-eu-west-1.pooler.supabase.com:6543/postgres"
+        print("⚠️ [DEV] Utilisation de la DB locale/dev")
+    else:
+        print("✅ [PROD] Utilisation de DATABASE_URL depuis les variables d'environnement")
 
     app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
@@ -33,7 +41,7 @@ def create_app(config_name='default'):
         'pool_recycle': 1800,
         'pool_pre_ping': True
     }
-    print(f"🔗 [SUPABASE] Connexion forcée sur : aws-1-eu-west-1 (Port 6543)")
+    print(f"🔗 [SUPABASE] Connexion sur : aws-1-eu-west-1 (Port 6543)")
     # ---------------------------------------------------------
 
     # 2. Initialisation des composants avec l'instance de l'app
