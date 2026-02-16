@@ -4,8 +4,9 @@ Routes pour les cartes d'étudiant
 
 from flask import Blueprint, render_template, send_file, flash, redirect, url_for
 from flask_login import login_required, current_user
+from datetime import datetime
 
-from app.models import Etudiant
+from app.models import Etudiant, User
 from app.services.carte_etudiant_service import CarteEtudiantService
 
 cartes_bp = Blueprint('cartes', __name__, url_prefix='/cartes')
@@ -26,9 +27,15 @@ def ma_carte():
     service = CarteEtudiantService()
     carte_path = service.generer_carte_complete(etudiant)
 
+    # Récupérer le directeur
+    directeur = User.query.filter_by(role='DIRECTEUR').first()
+    directeur_nom = f"{directeur.username}" if directeur else "Direction"
+
     return render_template('cartes/ma_carte.html',
                            carte_path=carte_path,
-                           etudiant=etudiant)
+                           etudiant=etudiant,
+                           date_emission=datetime.now().strftime('%d/%m/%Y'),
+                           directeur=directeur_nom)
 
 
 @cartes_bp.route('/telecharger/<int:etudiant_id>')

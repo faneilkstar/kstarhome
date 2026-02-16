@@ -78,6 +78,10 @@ def create_app(config_name='default'):
     from app.routes.laboratoire import laboratoire_bp
     app.register_blueprint(laboratoire_bp, url_prefix='/laboratoire')
 
+    # CARTES : Cartes d'étudiant
+    from app.routes.cartes import cartes_bp
+    app.register_blueprint(cartes_bp, url_prefix='/cartes')
+
     # API IA : Intelligence Artificielle Gemini
     from app.routes.api_ia import bp as api_ia_bp
     app.register_blueprint(api_ia_bp)

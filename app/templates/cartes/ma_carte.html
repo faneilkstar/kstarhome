@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Ma Carte Étudiant{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    }
+
+    .carte-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .carte-preview {
+        border: 3px solid #daa520;
+        border-radius: 20px;
+        box-shadow: 0 15px 40px rgba(218, 165, 32, 0.3);
+        overflow: hidden;
+        background: white;
+        transition: transform 0.3s ease;
+    }
+
+    .carte-preview:hover {
+        transform: scale(1.02);
+        box-shadow: 0 20px 50px rgba(218, 165, 32, 0.4);
+    }
+
+    .carte-preview img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    .btn-gold {
+        background: linear-gradient(135deg, #daa520 0%, #ffd700 100%);
+        color: white;
+        border: none;
+        font-weight: 600;
+        padding: 12px 30px;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-gold:hover {
+        background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(218, 165, 32, 0.3);
+    }
+
+    .info-card {
+        background: white;
+        border: 2px solid #daa520;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .info-card h5 {
+        color: #daa520;
+        font-weight: 700;
+        margin-bottom: 15px;
+    }
+
+    .info-card p {
+        color: #666;
+        margin-bottom: 8px;
+    }
+
+    .badge-gold {
+        background: linear-gradient(135deg, #daa520 0%, #ffd700 100%);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+        display: inline-block;
+        margin: 5px;
+    }
+
+    /* Styles pour l'impression */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+
+        .carte-preview, .carte-preview * {
+            visibility: visible;
+        }
+
+        .carte-preview {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 85.6mm;
+            height: 54mm;
+            border: none;
+            box-shadow: none;
+        }
+
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="carte-container">
+        <!-- En-tête -->
+        <div class="text-center mb-5 no-print">
+            <h2 style="color: #daa520;">🎓 Ma Carte Étudiant</h2>
+            <p class="text-muted">Carte officielle Polytech Infinity 2025-2026</p>
+            <div class="badge-gold">
+                <i class="fas fa-id-card me-2"></i>{{ etudiant.matricule }}
+            </div>
+        </div>
+
+        <!-- Prévisualisation de la carte -->
+        <div class="carte-preview mb-4 animate__animated animate__zoomIn">
+            <img src="/{{ carte_path }}" alt="Carte Étudiant {{ etudiant.nom }}" />
+        </div>
+
+        <!-- Actions -->
+        <div class="text-center mb-4 no-print">
+            <a href="{{ url_for('cartes.telecharger_carte', etudiant_id=etudiant.id) }}" class="btn btn-gold me-2">
+                <i class="fas fa-download me-2"></i>Télécharger la carte
+            </a>
+
+            <button onclick="window.print()" class="btn btn-gold me-2">
+                <i class="fas fa-print me-2"></i>Imprimer la carte
+            </button>
+
+            {% if current_user.role == 'DIRECTEUR' %}
+            <a href="{{ url_for('cartes.generer_toutes') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-users me-2"></i>Générer toutes les cartes
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Informations complémentaires -->
+        <div class="row no-print">
+            <div class="col-md-6">
+                <div class="info-card">
+                    <h5><i class="fas fa-info-circle me-2"></i>Informations</h5>
+                    <p><strong>Nom complet :</strong> {{ etudiant.prenom }} {{ etudiant.nom }}</p>
+                    <p><strong>Matricule :</strong> {{ etudiant.matricule }}</p>
+                    <p><strong>Classe :</strong>
+                        {% if etudiant.classe %}
+                            {{ etudiant.classe.nom_classe }}
+                            {% if etudiant.classe.filiere %}
+                                - {{ etudiant.classe.filiere.nom_filiere }}
+                            {% endif %}
+                        {% else %}
+                            Non affecté
+                        {% endif %}
+                    </p>
+                    <p><strong>Année universitaire :</strong> 2025-2026</p>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="info-card">
+                    <h5><i class="fas fa-shield-alt me-2"></i>Sécurité</h5>
+                    <p><i class="fas fa-qrcode me-2 text-warning"></i>QR Code de vérification inclus</p>
+                    <p><i class="fas fa-wifi me-2 text-warning"></i>Badge NFC virtuel</p>
+                    <p><i class="fas fa-fingerprint me-2 text-warning"></i>Code unique : <code>{{ etudiant.matricule }}</code></p>
+                    <p><i class="fas fa-calendar me-2 text-warning"></i>Émise le : {{ date_emission }}</p>
+                    {% if directeur %}
+                    <p><i class="fas fa-user-tie me-2 text-warning"></i>Directeur : {{ directeur }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions d'utilisation -->
+        <div class="info-card no-print">
+            <h5><i class="fas fa-info-circle me-2"></i>Comment utiliser cette carte ?</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="text-center p-3">
+                        <i class="fas fa-download fa-3x mb-3" style="color: #daa520;"></i>
+                        <h6>1. Télécharger</h6>
+                        <p class="small text-muted">Cliquez sur le bouton "Télécharger" pour sauvegarder votre carte</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center p-3">
+                        <i class="fas fa-print fa-3x mb-3" style="color: #daa520;"></i>
+                        <h6>2. Imprimer</h6>
+                        <p class="small text-muted">Imprimez au format 85.6 x 54 mm (format carte bancaire)</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="text-center p-3">
+                        <i class="fas fa-id-card fa-3x mb-3" style="color: #daa520;"></i>
+                        <h6>3. Plastifier</h6>
+                        <p class="small text-muted">Plastifiez votre carte pour une durabilité maximale</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Note importante -->
+        <div class="alert alert-warning mt-3 no-print">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Important :</strong> Cette carte est personnelle et incessible. En cas de perte, contactez immédiatement l'administration pour la bloquer et obtenir un duplicata.
+        </div>
+
+        <!-- Retour -->
+        <div class="text-center mt-4 no-print">
+            <a href="{{ url_for('etudiant.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Retour au tableau de bord
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Ajouter un effet de parallaxe léger sur la carte
+    const carte = document.querySelector('.carte-preview');
+
+    carte.addEventListener('mousemove', function(e) {
+        const rect = carte.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const rotateX = (y - centerY) / 50;
+        const rotateY = (centerX - x) / 50;
+
+        carte.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+    });
+
+    carte.addEventListener('mouseleave', function() {
+        carte.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+    });
+});
+</script>
+
+{% endblock %}
+
