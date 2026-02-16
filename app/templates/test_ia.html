@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Test IA Gemini{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    }
+
+    .chat-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .message-box {
+        background: white;
+        border: 2px solid #daa520;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .message-user {
+        background: linear-gradient(135deg, #fff8dc 0%, #ffd700 100%);
+        border-color: #daa520;
+        text-align: right;
+    }
+
+    .message-ia {
+        background: white;
+        border-color: #daa520;
+    }
+
+    .btn-gold {
+        background: linear-gradient(135deg, #daa520 0%, #ffd700 100%);
+        color: white;
+        border: none;
+        font-weight: 600;
+    }
+
+    .btn-gold:hover {
+        background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
+        color: white;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .status-active {
+        background: linear-gradient(135deg, #daa520 0%, #ffd700 100%);
+        color: white;
+    }
+
+    .status-inactive {
+        background: #dc3545;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h2 style="color: #daa520;">🤖 Test IA Gemini Pro</h2>
+            <p class="text-muted">Interface de test pour l'intelligence artificielle</p>
+            <div id="status-container">
+                <span class="status-badge status-inactive">⏳ Vérification...</span>
+            </div>
+        </div>
+
+        <!-- Zone de chat -->
+        <div id="chat-messages"></div>
+
+        <!-- Formulaire de question -->
+        <div class="card shadow-sm" style="border: 2px solid #daa520; border-radius: 15px;">
+            <div class="card-body">
+                <form id="chat-form">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: #daa520;">
+                            <i class="fas fa-question-circle me-2"></i>Pose ta question
+                        </label>
+                        <textarea
+                            class="form-control"
+                            id="question"
+                            rows="3"
+                            placeholder="Ex: Explique-moi le théorème de Pythagore"
+                            required
+                            style="border: 2px solid #daa520;"
+                        ></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" style="color: #daa520;">
+                            <i class="fas fa-user-tie me-2"></i>Rôle de l'IA
+                        </label>
+                        <select class="form-select" id="role" style="border: 2px solid #daa520;">
+                            <option value="Tu es un assistant pédagogique universitaire bienveillant.">Assistant pédagogique</option>
+                            <option value="Tu es un professeur de mathématiques patient et clair.">Prof de Maths</option>
+                            <option value="Tu es un professeur de physique qui explique simplement.">Prof de Physique</option>
+                            <option value="Tu es un professeur d'informatique passionné.">Prof d'Informatique</option>
+                            <option value="Tu es un tuteur qui aide à réviser pour les examens.">Tuteur de révision</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-gold w-100" id="submit-btn">
+                        <i class="fas fa-paper-plane me-2"></i>Envoyer la question
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Exemples de questions -->
+        <div class="mt-4">
+            <p class="text-muted small mb-2"><i class="fas fa-lightbulb me-2"></i>Exemples de questions :</p>
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-sm btn-outline-secondary exemple-btn" data-question="Explique-moi la photosynthèse en termes simples">Photosynthèse</button>
+                <button class="btn btn-sm btn-outline-secondary exemple-btn" data-question="Comment résoudre une équation du second degré ?">Équations</button>
+                <button class="btn btn-sm btn-outline-secondary exemple-btn" data-question="Qu'est-ce que la relativité restreinte ?">Relativité</button>
+                <button class="btn btn-sm btn-outline-secondary exemple-btn" data-question="Explique le principe de la programmation orientée objet">POO</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chat-form');
+    const chatMessages = document.getElementById('chat-messages');
+    const questionInput = document.getElementById('question');
+    const roleSelect = document.getElementById('role');
+    const submitBtn = document.getElementById('submit-btn');
+    const statusContainer = document.getElementById('status-container');
+
+    // Vérifier le statut de l'IA au chargement
+    fetch('/api/ia/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.disponible) {
+                statusContainer.innerHTML = `
+                    <span class="status-badge status-active">
+                        ✅ ${data.message}
+                    </span>
+                `;
+            } else {
+                statusContainer.innerHTML = `
+                    <span class="status-badge status-inactive">
+                        ❌ ${data.message}
+                    </span>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Erreur statut:', error);
+        });
+
+    // Boutons exemples
+    document.querySelectorAll('.exemple-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            questionInput.value = this.dataset.question;
+            questionInput.focus();
+        });
+    });
+
+    // Soumission du formulaire
+    chatForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const question = questionInput.value.trim();
+        const role = roleSelect.value;
+
+        if (!question) return;
+
+        // Afficher la question de l'utilisateur
+        addMessage(question, 'user');
+
+        // Désactiver le bouton
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>L\'IA réfléchit...';
+
+        // Vider le champ
+        questionInput.value = '';
+
+        try {
+            const response = await fetch('/api/ia/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ question, role })
+            });
+
+            const data = await response.json();
+
+            if (data.succes) {
+                addMessage(data.reponse, 'ia');
+            } else {
+                addMessage('❌ Erreur : ' + data.error, 'ia');
+            }
+        } catch (error) {
+            addMessage('❌ Erreur de connexion : ' + error.message, 'ia');
+        } finally {
+            // Réactiver le bouton
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Envoyer la question';
+        }
+    });
+
+    function addMessage(text, type) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message-box animate__animated animate__fadeIn ' +
+                              (type === 'user' ? 'message-user' : 'message-ia');
+
+        const icon = type === 'user' ? '👤' : '🤖';
+        const label = type === 'user' ? 'Vous' : 'IA Gemini';
+
+        messageDiv.innerHTML = `
+            <div style="font-size: 0.9rem; color: #666; margin-bottom: 10px;">
+                <strong>${icon} ${label}</strong>
+            </div>
+            <div style="white-space: pre-wrap;">${escapeHtml(text)}</div>
+        `;
+
+        chatMessages.appendChild(messageDiv);
+        messageDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+});
+</script>
+{% endblock %}
+
