@@ -11,7 +11,7 @@ from collections import Counter
 
 # Import conditionnel de google.generativeai
 try:
-    import google.generativeai as genai
+    from google import genai
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False

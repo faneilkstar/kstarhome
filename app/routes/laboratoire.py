@@ -11,22 +11,37 @@ from app.models import (
     InteractionIA, UE
 )
 
-# Hiérarchie d'IA : Ultra > Avancée > Basique (avec fallback robuste)
+# Hiérarchie d'IA : V3 (Gemini Pro) > V2 (améliorée) > Ultra > Avancée > Basique
 IA_VERSION = 'basique'
 try:
-    from app.services.ia_laboratoire_ultra import IAFactoryUltra as IAFactory
-    IA_VERSION = 'ultra'
+    from app.services.ia_laboratoire_v3 import IAFactoryV3 as IAFactory
+    IA_VERSION = 'v3-gemini-pro'
+    print(f"✅ [LABORATOIRE] IA V3 chargée (Gemini Pro + Fallback intelligent)")
 except Exception as e:
-    print(f"[LABO] IA Ultra non disponible: {e}")
+    print(f"⚠️  [LABO] IA V3 non disponible: {e}")
     try:
-        from app.services.ia_laboratoire_avancee import IAFactoryAvancee as IAFactory
-        IA_VERSION = 'avancee'
+        from app.services.ia_laboratoire_v2 import IAFactoryV2 as IAFactory
+        IA_VERSION = 'v2-amelioree'
+        print(f"✅ [LABORATOIRE] IA V2 chargée (avec Gemini + Fallback robuste)")
     except Exception as e2:
-        print(f"[LABO] IA Avancée non disponible: {e2}")
-        from app.services.ia_laboratoire import IAFactory
-        IA_VERSION = 'basique'
+        print(f"⚠️  [LABO] IA V2 non disponible: {e2}")
+        try:
+            from app.services.ia_laboratoire_ultra import IAFactoryUltra as IAFactory
+            IA_VERSION = 'ultra'
+            print(f"✅ [LABORATOIRE] IA Ultra chargée")
+        except Exception as e3:
+            print(f"⚠️  [LABO] IA Ultra non disponible: {e3}")
+            try:
+                from app.services.ia_laboratoire_avancee import IAFactoryAvancee as IAFactory
+                IA_VERSION = 'avancee'
+                print(f"✅ [LABORATOIRE] IA Avancée chargée")
+            except Exception as e4:
+                print(f"⚠️  [LABO] IA Avancée non disponible: {e4}")
+                from app.services.ia_laboratoire import IAFactory
+                IA_VERSION = 'basique'
+                print(f"✅ [LABORATOIRE] IA Basique chargée (fallback)")
 
-print(f"[LABORATOIRE] IA chargée: version {IA_VERSION}")
+print(f"🔬 [LABORATOIRE] IA chargée: version {IA_VERSION}")
 
 from datetime import datetime
 import json
@@ -126,26 +141,62 @@ def hub_directeur():
 @enseignant_required
 def hub_enseignant():
     """Hub du laboratoire pour l'enseignant"""
-    enseignant = current_user.enseignant_profile
+    try:
+        enseignant = current_user.enseignant_profile
 
-    # TPs créés par cet enseignant
-    mes_tps = TP.query.filter_by(enseignant_id=enseignant.id).all()
+        if not enseignant:
+            flash('⚠️ Profil enseignant introuvable. Veuillez contacter l\'administrateur.', 'danger')
+            return redirect(url_for('enseignant.dashboard'))
 
-    # Sessions en cours
-    sessions_actives = SessionTP.query.join(TP).filter(
-        TP.enseignant_id == enseignant.id,
-        SessionTP.statut == 'en_cours'
-    ).all()
+        # TPs créés par cet enseignant
+        mes_tps = TP.query.filter_by(enseignant_id=enseignant.id).order_by(TP.date_creation.desc()).all()
 
-    # Statistiques
-    total_sessions = SessionTP.query.join(TP).filter(
-        TP.enseignant_id == enseignant.id
-    ).count()
+        # Regrouper les TPs par UE
+        ues_tps = []
+        for ue in enseignant.ues:
+            tps_ue = [tp for tp in mes_tps if tp.ue_id == ue.id]
+            if tps_ue or True:  # Afficher toutes les UE même sans TP
+                ues_tps.append({
+                    'ue': ue,
+                    'tps': tps_ue,
+                    'nb_tps': len(tps_ue)
+                })
 
-    return render_template('laboratoire/hub_enseignant.html',
-                         mes_tps=mes_tps,
-                         sessions_actives=sessions_actives,
-                         total_sessions=total_sessions)
+        # Sessions actives liées aux TPs de l'enseignant
+        sessions_actives = db.session.query(SessionTP).join(TP).filter(
+            TP.enseignant_id == enseignant.id,
+            SessionTP.statut.in_(['en_cours', 'terminé'])
+        ).order_by(SessionTP.date_debut.desc()).limit(20).all()
+
+        # Statistiques globales
+        total_tps = len(mes_tps)
+        total_sessions = db.session.query(SessionTP).join(TP).filter(
+            TP.enseignant_id == enseignant.id
+        ).count()
+
+        sessions_a_evaluer = db.session.query(SessionTP).join(TP).filter(
+            TP.enseignant_id == enseignant.id,
+            SessionTP.statut == 'terminé',
+            SessionTP.note_finale == None
+        ).count()
+
+        return render_template('laboratoire/hub_enseignant.html',
+                             enseignant=enseignant,
+                             mes_tps=mes_tps,
+                             ues_tps=ues_tps,
+                             sessions_actives=sessions_actives,
+                             total_tps=total_tps,
+                             total_sessions=total_sessions,
+                             sessions_a_evaluer=sessions_a_evaluer,
+                             ia_version=IA_VERSION,
+                             SessionTP=SessionTP)
+
+    except Exception as e:
+        print(f"❌ [ERREUR] Hub enseignant : {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f'❌ Erreur lors du chargement du laboratoire : {str(e)}', 'danger')
+        return redirect(url_for('enseignant.dashboard'))
 
 
 # ============================================================
@@ -158,8 +209,18 @@ def hub_etudiant():
     """Hub du laboratoire pour l'étudiant"""
     etudiant = current_user.etudiant_profile
 
-    # TPs disponibles pour cet étudiant
-    tps_disponibles = TP.query.filter_by(actif=True).all()
+    # TPs disponibles par UE
+    ues_avec_tps = []
+    if etudiant.classe:
+        # Récupérer les UEs de la classe de l'étudiant
+        for ue in etudiant.classe.ues:
+            tps_ue = TP.query.filter_by(ue_id=ue.id, actif=True).all()
+            if tps_ue:
+                ues_avec_tps.append({
+                    'ue': ue,
+                    'tps': tps_ue,
+                    'nb_tps': len(tps_ue)
+                })
 
     # Mes sessions
     mes_sessions = SessionTP.query.filter_by(etudiant_id=etudiant.id).order_by(
@@ -169,10 +230,18 @@ def hub_etudiant():
     # Sessions en cours
     sessions_en_cours = [s for s in mes_sessions if s.statut == 'en_cours']
 
+    # Statistiques
+    nb_sessions_total = len(mes_sessions)
+    nb_sessions_terminees = len([s for s in mes_sessions if s.statut == 'terminé'])
+
     return render_template('laboratoire/hub_etudiant.html',
-                         tps_disponibles=tps_disponibles,
+                         etudiant=etudiant,
+                         ues_avec_tps=ues_avec_tps,
                          mes_sessions=mes_sessions,
-                         sessions_en_cours=sessions_en_cours)
+                         sessions_en_cours=sessions_en_cours,
+                         nb_sessions_total=nb_sessions_total,
+                         nb_sessions_terminees=nb_sessions_terminees,
+                         SessionTP=SessionTP)
 
 
 # ============================================================
@@ -236,7 +305,8 @@ def creer_tp():
     return render_template('laboratoire/creer_tp.html',
                          mes_ues=mes_ues,
                          types_simulation=types_simulation,
-                         assistants_ia=assistants_ia)
+                         assistants_ia=assistants_ia,
+                         ue=None)  # Pour éviter l'erreur dans le template
 
 
 # ============================================================

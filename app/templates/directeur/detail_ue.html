@@ -20,7 +20,7 @@
                 <div class="row g-3">
                     <div class="col-6">
                         <label class="text-muted small text-uppercase fw-bold">Classe</label>
-                        <p class="fw-bold text-dark">{{ ue.classe.nom_classe }}</p>
+                        <p class="fw-bold text-dark">{{ ue.classe.nom_classe if ue.classe else 'Non assignée' }}</p>
                     </div>
                     <div class="col-6">
                         <label class="text-muted small text-uppercase fw-bold">Crédits / Coef</label>
@@ -28,7 +28,11 @@
                     </div>
                     <div class="col-12">
                         <label class="text-muted small text-uppercase fw-bold">Filière</label>
-                        <p class="fw-bold text-dark">{{ ue.classe.filiere.nom_filiere }} ({{ ue.classe.filiere.cycle }})</p>
+                        {% if ue.classe and ue.classe.filiere %}
+                            <p class="fw-bold text-dark">{{ ue.classe.filiere.nom_filiere }} ({{ ue.classe.filiere.cycle }})</p>
+                        {% else %}
+                            <p class="text-muted">N/A</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>

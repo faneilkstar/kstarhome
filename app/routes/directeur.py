@@ -229,12 +229,24 @@ def ajouter_enseignant():
         grade = request.form.get('grade')
         specialite = request.form.get('specialite')
 
+        # Nouveaux champs
+        date_naissance_str = request.form.get('date_naissance')
+        sexe = request.form.get('sexe')
+        telephone = request.form.get('telephone')
+        adresse = request.form.get('adresse')
+
         # 2. Sécurité : Vérifier si le pseudo existe déjà
         if User.query.filter_by(username=username).first():
             flash("Cet identifiant est déjà utilisé !", "danger")
             return redirect(url_for('directeur.ajouter_enseignant'))
 
         try:
+            # Conversion de la date
+            from datetime import datetime
+            date_naissance = None
+            if date_naissance_str:
+                date_naissance = datetime.strptime(date_naissance_str, '%Y-%m-%d').date()
+
             # ÉTAPE 1 : Créer le compte User
             new_user = User(
                 username=username,
@@ -252,8 +264,13 @@ def ajouter_enseignant():
                 user_id=new_user.id,  # LE LIEN SACRÉ
                 nom=nom.upper(),
                 prenom=prenom.title(),
+                date_naissance=date_naissance,
+                sexe=sexe,
+                telephone=telephone,
+                adresse=adresse,
                 grade=grade,
                 specialite=specialite,
+                date_embauche=datetime.utcnow().date(),
                 mot_de_passe_initial=password  # Stocker le mot de passe en clair pour le PDF
             )
             db.session.add(new_enseignant)
@@ -320,29 +337,285 @@ def ajouter_ue():
     classes = Classe.query.filter_by(active=True).all()
 
     if request.method == 'POST':
-        code = request.form.get('code_ue').upper()
+        code_base = request.form.get('code_ue').upper()
+        intitule = request.form.get('intitule')
+        semestre = int(request.form.get('semestre'))
 
-        # Vérif doublon code UE
-        if UE.query.filter_by(code_ue=code).first():
-            flash(f"Le code UE {code} existe déjà.", "warning")
-            return redirect(url_for('directeur.ajouter_ue'))
+        # NOUVEAUX CHOIX (3 modes)
+        mode_creation = request.form.get('mode_creation', 'ue_specifique')
+        type_evaluation = request.form.get('type_evaluation', 'simple')
 
         try:
-            ue = UE(
-                code_ue=code,
-                intitule=request.form.get('intitule'),
-                credits=int(request.form.get('credits')),
-                coefficient=int(request.form.get('coefficient')),
-                heures=int(request.form.get('heures')),
-                classe_id=int(request.form.get('classe_id'))
-            )
-            db.session.add(ue)
+            classes_ids = request.form.getlist('classes_ids')
+
+            if not classes_ids:
+                flash("❌ Veuillez sélectionner au moins une classe.", "warning")
+                return redirect(url_for('directeur.ajouter_ue'))
+
+            ues_creees = []
+
+            # =============================================
+            # TYPE COMPOSITE : Créer UE Parent + Sous-UE
+            # =============================================
+            if type_evaluation == 'composite':
+                # Récupérer les sous-UE
+                sous_ues_data = []
+                for i in range(1, 4):  # Jusqu'à 3 sous-UE
+                    intitule_sous = request.form.get(f'sous_ue_{i}_intitule', '').strip()
+                    credits_sous = int(request.form.get(f'sous_ue_{i}_credits', 0))
+
+                    if intitule_sous and credits_sous > 0:
+                        sous_ues_data.append({
+                            'prefixe': str(i),
+                            'intitule': intitule_sous,
+                            'credits': credits_sous
+                        })
+
+                if len(sous_ues_data) < 2:
+                    flash("❌ Une UE composite nécessite au moins 2 sous-UE.", "warning")
+                    return redirect(url_for('directeur.ajouter_ue'))
+
+                # Calculer le total des crédits
+                credits_total = sum([s['credits'] for s in sous_ues_data])
+                heures = credits_total * 12
+                coefficient = credits_total
+
+                # MODE SPÉCIFIQUE
+                if mode_creation == 'ue_specifique':
+                    if len(classes_ids) > 1:
+                        flash("⚠️  Mode UE Spécifique : une seule classe autorisée.", "warning")
+                        return redirect(url_for('directeur.ajouter_ue'))
+
+                    classe = Classe.query.get(int(classes_ids[0]))
+
+                    # Créer UE Parent
+                    ue_parent = UE(
+                        code_ue=code_base,
+                        intitule=intitule,
+                        credits=credits_total,
+                        coefficient=coefficient,
+                        heures=heures,
+                        semestre=semestre,
+                        classe_id=int(classes_ids[0]),
+                        type_ue_creation='composite'
+                    )
+                    db.session.add(ue_parent)
+                    db.session.flush()
+
+                    # Créer les Sous-UE
+                    for sous_ue in sous_ues_data:
+                        code_sous = f"{sous_ue['prefixe']}{code_base}"
+                        heures_sous = sous_ue['credits'] * 12
+
+                        ue_enfant = UE(
+                            code_ue=code_sous,
+                            intitule=sous_ue['intitule'],
+                            credits=sous_ue['credits'],
+                            coefficient=sous_ue['credits'],
+                            heures=heures_sous,
+                            semestre=semestre,
+                            classe_id=int(classes_ids[0]),
+                            type_ue_creation='simple',
+                            ue_parent_id=ue_parent.id
+                        )
+                        db.session.add(ue_enfant)
+
+                    ues_creees.append(f"{code_base} Composite ({len(sous_ues_data)} sous-UE, {credits_total} ECTS)")
+
+                # MODE TRONC COMMUN
+                elif mode_creation == 'tronc_commun':
+                    classes_obj = [Classe.query.get(int(cid)) for cid in classes_ids if Classe.query.get(int(cid))]
+                    annees = set([c.annee for c in classes_obj if c.annee])
+
+                    if annees:
+                        niveaux = sorted([f"L{a}" for a in annees])
+                        libelle_tronc = f"Tronc Commun {'/'.join(niveaux)}"
+                    else:
+                        libelle_tronc = "Tronc Commun"
+
+                    # Créer UE Parent Tronc Commun
+                    ue_parent = UE(
+                        code_ue=code_base,
+                        intitule=f"{intitule} ({libelle_tronc})",
+                        credits=credits_total,
+                        coefficient=coefficient,
+                        heures=heures,
+                        semestre=semestre,
+                        classe_id=None,
+                        type_ue_creation='composite_tronc'
+                    )
+                    db.session.add(ue_parent)
+                    db.session.flush()
+
+                    # Associer classes
+                    for classe_id in classes_ids:
+                        classe = Classe.query.get(int(classe_id))
+                        if classe:
+                            ue_parent.classes.append(classe)
+
+                    # Créer les Sous-UE
+                    for sous_ue in sous_ues_data:
+                        code_sous = f"{sous_ue['prefixe']}{code_base}"
+                        heures_sous = sous_ue['credits'] * 12
+
+                        ue_enfant = UE(
+                            code_ue=code_sous,
+                            intitule=f"{sous_ue['intitule']} ({libelle_tronc})",
+                            credits=sous_ue['credits'],
+                            coefficient=sous_ue['credits'],
+                            heures=heures_sous,
+                            semestre=semestre,
+                            classe_id=None,
+                            type_ue_creation='simple',
+                            ue_parent_id=ue_parent.id
+                        )
+                        db.session.add(ue_enfant)
+                        db.session.flush()
+
+                        # Associer classes aux sous-UE
+                        for classe_id in classes_ids:
+                            classe = Classe.query.get(int(classe_id))
+                            if classe:
+                                ue_enfant.classes.append(classe)
+
+                    ues_creees.append(f"{code_base} Composite {libelle_tronc} ({len(sous_ues_data)} sous-UE)")
+
+                # MODE UE FILLES
+                elif mode_creation == 'ue_filles':
+                    for classe_id in classes_ids:
+                        classe = Classe.query.get(int(classe_id))
+                        if classe:
+                            code_parent = f"{code_base}-{classe.code_classe}"
+
+                            # Créer UE Parent
+                            ue_parent = UE(
+                                code_ue=code_parent,
+                                intitule=intitule,
+                                credits=credits_total,
+                                coefficient=coefficient,
+                                heures=heures,
+                                semestre=semestre,
+                                classe_id=int(classe_id),
+                                type_ue_creation='composite'
+                            )
+                            db.session.add(ue_parent)
+                            db.session.flush()
+
+                            # Créer Sous-UE
+                            for sous_ue in sous_ues_data:
+                                code_sous = f"{sous_ue['prefixe']}{code_base}-{classe.code_classe}"
+                                heures_sous = sous_ue['credits'] * 12
+
+                                ue_enfant = UE(
+                                    code_ue=code_sous,
+                                    intitule=sous_ue['intitule'],
+                                    credits=sous_ue['credits'],
+                                    coefficient=sous_ue['credits'],
+                                    heures=heures_sous,
+                                    semestre=semestre,
+                                    classe_id=int(classe_id),
+                                    type_ue_creation='simple',
+                                    ue_parent_id=ue_parent.id
+                                )
+                                db.session.add(ue_enfant)
+
+                            ues_creees.append(f"{code_parent} Composite ({classe.nom_classe})")
+
+            # =============================================
+            # TYPE SIMPLE (Sans sous-UE)
+            # =============================================
+            else:
+                credits = int(request.form.get('credits'))
+                heures = credits * 12
+                coefficient = credits
+
+                # MODE SPÉCIFIQUE
+                if mode_creation == 'ue_specifique':
+                    if len(classes_ids) > 1:
+                        flash("⚠️  Mode UE Spécifique : une seule classe autorisée.", "warning")
+                        return redirect(url_for('directeur.ajouter_ue'))
+
+                    classe = Classe.query.get(int(classes_ids[0]))
+                    if classe:
+                        nouvelle_ue = UE(
+                            code_ue=code_base,
+                            intitule=intitule,
+                            credits=credits,
+                            coefficient=coefficient,
+                            heures=heures,
+                            semestre=semestre,
+                            classe_id=int(classes_ids[0]),
+                            type_ue_creation='simple'
+                        )
+                        db.session.add(nouvelle_ue)
+                        ues_creees.append(f"{code_base} ({classe.nom_classe})")
+
+                # MODE TRONC COMMUN
+                elif mode_creation == 'tronc_commun':
+                    classes_obj = [Classe.query.get(int(cid)) for cid in classes_ids if Classe.query.get(int(cid))]
+                    annees = set([c.annee for c in classes_obj if c.annee])
+
+                    if annees:
+                        niveaux = sorted([f"L{a}" for a in annees])
+                        libelle_tronc = f"Tronc Commun {'/'.join(niveaux)}"
+                    else:
+                        libelle_tronc = "Tronc Commun"
+
+                    ue_tronc = UE(
+                        code_ue=code_base,
+                        intitule=f"{intitule} ({libelle_tronc})",
+                        credits=credits,
+                        coefficient=coefficient,
+                        heures=heures,
+                        semestre=semestre,
+                        classe_id=None,
+                        type_ue_creation='tronc_commun'
+                    )
+                    db.session.add(ue_tronc)
+                    db.session.flush()
+
+                    for classe_id in classes_ids:
+                        classe = Classe.query.get(int(classe_id))
+                        if classe:
+                            ue_tronc.classes.append(classe)
+
+                    classes_noms = [c.nom_classe for c in classes_obj]
+                    ues_creees.append(f"{code_base} ({libelle_tronc})")
+
+                # MODE UE FILLES
+                elif mode_creation == 'ue_filles':
+                    for classe_id in classes_ids:
+                        classe = Classe.query.get(int(classe_id))
+                        if classe:
+                            code_ue_unique = f"{code_base}-{classe.code_classe}"
+
+                            nouvelle_ue = UE(
+                                code_ue=code_ue_unique,
+                                intitule=intitule,
+                                credits=credits,
+                                coefficient=coefficient,
+                                heures=heures,
+                                semestre=semestre,
+                                classe_id=int(classe_id),
+                                type_ue_creation='simple'
+                            )
+                            db.session.add(nouvelle_ue)
+                            ues_creees.append(f"{code_ue_unique} ({classe.nom_classe})")
+
             db.session.commit()
-            flash("UE créée avec succès.", "success")
+
+            if len(ues_creees) > 0:
+                flash(f"✅ {len(ues_creees)} UE créée(s) : {', '.join(ues_creees)}", "success")
+            else:
+                flash("❌ Aucune UE n'a été créée.", "info")
+
             return redirect(url_for('directeur.liste_ues'))
+
         except Exception as e:
             db.session.rollback()
-            flash("Erreur lors de la création de l'UE.", "danger")
+            flash(f"❌ Erreur : {str(e)}", "danger")
+            import traceback
+            traceback.print_exc()
 
     return render_template('directeur/ajouter_ue.html', classes=classes)
 
@@ -404,6 +677,62 @@ def affectations():
     ues = UE.query.all()
     enseignants = Enseignant.query.filter_by(actif=True).all()
     return render_template('directeur/affectations.html', ues=ues, enseignants=enseignants)
+
+
+# NOUVELLE ROUTE : Affectation simplifiée avec checkboxes
+@bp.route('/affectations-simplifiees')
+@directeur_required
+def affectations_simplifiees():
+    """Page d'affectation simplifiée avec checkboxes"""
+    ues = UE.query.order_by(UE.code_ue).all()
+    enseignants = Enseignant.query.filter_by(actif=True).order_by(Enseignant.nom).all()
+
+    # Calculer les UE non affectées (sans aucun enseignant)
+    # INCLURE les UE Tronc Commun sans prof
+    ues_non_affectees = [ue for ue in ues if len(ue.enseignants) == 0]
+
+    # Séparer les troncs communs des autres
+    troncs_communs_non_affectes = [ue for ue in ues_non_affectees if ue.type_ue_creation == 'tronc_commun']
+    ue_filles_non_affectees = [ue for ue in ues_non_affectees if ue.type_ue_creation != 'tronc_commun']
+
+    return render_template('directeur/affecter_ues_enseignants.html',
+                         ues=ues,
+                         enseignants=enseignants,
+                         ues_non_affectees=ues_non_affectees,
+                         troncs_communs_non_affectes=troncs_communs_non_affectes,
+                         ue_filles_non_affectees=ue_filles_non_affectees)
+
+
+@bp.route('/enseignant/<int:enseignant_id>/affecter-ues', methods=['POST'])
+@directeur_required
+def affecter_ues_a_enseignant(enseignant_id):
+    """Met à jour les affectations UE pour un enseignant"""
+    enseignant = Enseignant.query.get_or_404(enseignant_id)
+
+    # Récupérer les UE cochées
+    ues_ids = request.form.getlist('ues_ids')
+    ues_ids = [int(ue_id) for ue_id in ues_ids]
+
+    try:
+        # Supprimer toutes les affectations actuelles
+        enseignant.ues.clear()
+
+        # Ajouter les nouvelles affectations
+        for ue_id in ues_ids:
+            ue = UE.query.get(ue_id)
+            if ue:
+                enseignant.ues.append(ue)
+
+        db.session.commit()
+
+        nb_ues = len(ues_ids)
+        flash(f"✅ Affectations mises à jour pour {enseignant.nom} {enseignant.prenom} : {nb_ues} UE(s)", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"❌ Erreur lors de la mise à jour : {str(e)}", "danger")
+
+    return redirect(url_for('directeur.affectations_simplifiees'))
 
 
 @bp.route('/affectations/creer', methods=['POST'])
@@ -1621,3 +1950,4 @@ def voir_pv(classe_id):
                            classe=classe,
                            deliberations=deliberations,
                            stats={'admis': admis, 'total': total, 'taux': taux})
+

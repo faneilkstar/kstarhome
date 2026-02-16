@@ -6,7 +6,7 @@
     <div>
         <h2 class="fw-bold text-dark">{{ ue.intitule }}</h2>
         <span class="badge bg-primary-subtle text-primary">{{ ue.code_ue }}</span>
-        <span class="ms-2 text-muted"><i class="fas fa-graduation-cap"></i> {{ ue.classe.nom_classe }}</span>
+        <span class="ms-2 text-muted"><i class="fas fa-graduation-cap"></i> {{ ue.classe.nom_classe if ue.classe else 'N/A' }}</span>
     </div>
     <div class="text-end">
         <button form="form-notes" type="submit" class="btn btn-accent shadow">

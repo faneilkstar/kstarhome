@@ -1,0 +1,254 @@
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║     🚀 GUIDE COMPLET - SETUP SUPABASE AVEC PYCHARM 🚀         ║
+║                                                               ║
+║                  KSTAR-HOME V3.0 ULTRA                        ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+
+📋 ÉTAPES À SUIVRE DANS PYCHARM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+ÉTAPE 0: ACTIVER LE VENV (IMPORTANT !)
+────────────────────────────────────────────────────────────────
+
+⚠️ TRÈS IMPORTANT: Vous DEVEZ utiliser le venv !
+
+Dans le Terminal PyCharm (en bas), tapez:
+
+   source venv/bin/activate
+
+Vous devriez voir (venv) apparaître au début de la ligne.
+
+Si pas de venv, créez-le:
+
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+
+
+ÉTAPE 1: GRAND NETTOYAGE 🧹
+────────────────────────────────────────────────────────────────
+
+Dans la colonne de gauche de PyCharm:
+
+1. Si vous voyez un dossier "migrations":
+   → Clic droit > Delete > OK
+
+2. Si vous voyez "site.db" ou "app.db":
+   → Clic droit > Delete > OK
+
+3. Si vous voyez un dossier "instance" avec des .db:
+   → Clic droit sur le fichier .db > Delete > OK
+
+OU dans le Terminal (avec venv activé):
+
+   rm -rf migrations
+   rm -f instance/*.db
+
+
+ÉTAPE 2: CONFIGURER SUPABASE
+────────────────────────────────────────────────────────────────
+
+A) Créer votre projet Supabase (si pas encore fait):
+
+   1. Allez sur: https://supabase.com
+   2. "Start your project" (GRATUIT)
+   3. Créez un projet:
+      - Name: kstar-home
+      - Password: [NOTEZ-LE BIEN !]
+      - Region: Europe (Frankfurt)
+   4. Attendez 2 minutes (création)
+
+B) Configurer le Pool Size:
+
+   1. Settings → Database
+   2. Pool Size: 10
+   3. Save
+
+C) Récupérer l'URL:
+
+   1. Settings → Database
+   2. Connection string → "Connection pooling" (port 6543)
+   3. COPIEZ l'URL complète
+
+
+ÉTAPE 3: CRÉER LE FICHIER .env
+────────────────────────────────────────────────────────────────
+
+Dans le Terminal PyCharm (avec venv activé):
+
+   cp .env.example .env
+
+Puis ouvrir .env et ajouter votre URL Supabase:
+
+   SUPABASE_DB_URL=postgresql://postgres.pzzfqduntcmklrakhggy:VotreMotDePasse@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+
+⚠️ REMPLACEZ "VotreMotDePasse" par votre VRAI mot de passe !
+
+
+ÉTAPE 4: INITIALISER FLASK-MIGRATE
+────────────────────────────────────────────────────────────────
+
+Dans le Terminal PyCharm (avec venv activé), tapez ces 3 commandes:
+
+1. Initialiser le système de migration:
+
+   export FLASK_APP=run.py
+   flask db init
+
+   → Cela crée le dossier "migrations"
+
+2. Générer la migration:
+
+   flask db migrate -m "Creation tables Supabase"
+
+   → Vous devez voir une liste: "Detected table users", etc.
+
+3. Appliquer sur Supabase:
+
+   flask db upgrade
+
+   → Cela crée VRAIMENT les tables sur Supabase (10-30 secondes)
+
+
+ÉTAPE 5: CRÉER LE COMPTE ADMIN
+────────────────────────────────────────────────────────────────
+
+Dans le Terminal PyCharm (avec venv activé):
+
+   python create_admin.py
+
+Suivez les instructions ou appuyez sur Enter pour les valeurs par défaut:
+   - Identifiant: admin
+   - Mot de passe: admin123
+
+
+ÉTAPE 6: LANCER L'APPLICATION 🚀
+────────────────────────────────────────────────────────────────
+
+Dans le Terminal PyCharm (avec venv activé):
+
+   python run.py
+
+Vous devriez voir:
+   * Running on http://127.0.0.1:5000
+
+Cliquez sur le lien OU allez sur: http://localhost:5000
+
+
+ÉTAPE 7: SE CONNECTER
+────────────────────────────────────────────────────────────────
+
+Dans le navigateur:
+
+   👤 Identifiant: admin
+   🔑 Mot de passe: admin123
+
+✅ Vous êtes connecté avec Supabase !
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 RÉSUMÉ DES COMMANDES (copier-coller dans Terminal)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# 1. Activer venv
+source venv/bin/activate
+
+# 2. Nettoyer
+rm -rf migrations
+rm -f instance/*.db
+
+# 3. Créer .env (puis éditer avec votre URL Supabase)
+cp .env.example .env
+nano .env
+
+# 4. Initialiser Flask-Migrate
+export FLASK_APP=run.py
+flask db init
+flask db migrate -m "Creation tables Supabase"
+flask db upgrade
+
+# 5. Créer admin
+python create_admin.py
+
+# 6. Lancer
+python run.py
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🐛 PROBLÈMES FRÉQUENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ "ModuleNotFoundError: No module named 'flask'"
+   → Vous n'êtes PAS dans le venv !
+   → Solution: source venv/bin/activate
+
+❌ "password authentication failed"
+   → Mauvais mot de passe dans .env
+   → Vérifiez SUPABASE_DB_URL
+
+❌ "could not connect to server"
+   → URL incorrecte ou internet coupé
+   → Vérifiez l'URL (port 6543)
+
+❌ "No changes in schema detected"
+   → Normal si les tables existent déjà
+   → Passez à l'étape suivante
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ VÉRIFIER SUR SUPABASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Retournez sur https://supabase.com/dashboard
+2. Sélectionnez votre projet
+3. Cliquez sur "Table Editor" (à gauche)
+4. Vous devriez voir vos tables:
+   - user (avec l'admin)
+   - etudiant
+   - enseignant
+   - ue
+   - tp
+   - session_tp
+   - etc.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📱 ALTERNATIVE: SCRIPT AUTOMATIQUE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Si vous préférez, utilisez le script qui fait TOUT:
+
+   source venv/bin/activate
+   ./setup_supabase.sh
+
+Il va faire toutes les étapes automatiquement !
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎉 FÉLICITATIONS !
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Votre application KSTAR-HOME est maintenant connectée à Supabase !
+
+Avantages:
+   ✅ Base de données PostgreSQL cloud
+   ✅ Backups automatiques (7 jours)
+   ✅ Dashboard web pour gérer vos données
+   ✅ 500 MB gratuit
+   ✅ Production ready
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KSTAR-HOME V3.0 ULTRA - Powered by Supabase
+Date: 2026-02-12 | By: GitHub Copilot
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+

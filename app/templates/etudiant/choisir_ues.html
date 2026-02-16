@@ -114,9 +114,16 @@
                         <strong class="text-dark fs-5" id="summary-credits">0 ECTS</strong>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-lg" id="btn-valider">
-                    Confirmer l'inscription <i class="fas fa-save ms-2"></i>
-                </button>
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-lg" id="btn-valider">
+                        Confirmer l'inscription <i class="fas fa-save ms-2"></i>
+                    </button>
+                    {% if ues_inscrites_ids %}
+                    <a href="{{ url_for('etudiant.telecharger_fiche_ue') }}" class="btn btn-success btn-lg rounded-pill px-4 fw-bold shadow-lg" target="_blank">
+                        <i class="fas fa-download me-2"></i>Télécharger ma fiche
+                    </a>
+                    {% endif %}
+                </div>
             </div>
         </form>
     </div>

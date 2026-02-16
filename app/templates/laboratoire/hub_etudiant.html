@@ -45,7 +45,7 @@
 <div class="container-fluid">
     <div class="lab-header text-center">
         <h1><i class="fas fa-flask"></i> Laboratoire Virtuel Harmony</h1>
-        <p class="lead">Bienvenue {{ etudiant.prenom }} - Expérimentez avec l'IA !</p>
+        <p class="lead">Bienvenue {{ current_user.prenom }} - Expérimentez avec l'IA !</p>
     </div>
 
     <div class="container">
@@ -60,10 +60,15 @@
                             </h5>
                         </div>
                         <div class="card-body">
+                            {% if item.ue.enseignants %}
                             <p class="text-muted small">
-                                <i class="fas fa-graduation-cap"></i> {{ item.ue.enseignant.nom }} {{ item.ue.enseignant.prenom }}
+                                <i class="fas fa-graduation-cap"></i>
+                                {% for ens in item.ue.enseignants %}
+                                    {{ ens.nom }} {{ ens.prenom }}{% if not loop.last %}, {% endif %}
+                                {% endfor %}
                             </p>
-                            
+                            {% endif %}
+
                             <hr>
                             
                             <h6 class="text-primary"><i class="fas fa-vial"></i> TPs Disponibles ({{ item.nb_tps }})</h6>
@@ -133,7 +138,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for session in etudiant.sessions_tp.order_by(SessionTP.date_debut.desc()).limit(10) %}
+                            {% for session in mes_sessions[:10] %}
                             <tr>
                                 <td>{{ session.tp.titre }}</td>
                                 <td>{{ session.date_debut.strftime('%d/%m/%Y %H:%M') }}</td>
@@ -143,7 +148,7 @@
                                         {{ session.statut }}
                                     </span>
                                 </td>
-                                <td>{{ session.note_ia or '-' }}/20</td>
+                                <td>{{ session.note_ia|round(1) if session.note_ia else '-' }}/20</td>
                                 <td>
                                     {% if session.note_finale %}
                                         <strong class="text-primary">{{ session.note_finale }}/20</strong>

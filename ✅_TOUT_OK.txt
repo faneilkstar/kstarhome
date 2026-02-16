@@ -1,0 +1,9 @@
+✅ TOUT EST CORRIGÉ ET FONCTIONNE !
+COMMANDE DANS PYCHARM:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+venv/bin/python3 run.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Puis ouvrir: http://localhost:5000
+Login: admin
+Mot de passe: admin123
+✅ PRÊT POUR L'UNIVERSITÉ !

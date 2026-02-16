@@ -6,12 +6,22 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import Enum
 
 # ============================================================
-# 1. TABLE D'ASSOCIATION (Enseignant <-> UE)
+# 1. TABLES D'ASSOCIATION
 # ============================================================
+
+# Association Enseignant <-> UE (many-to-many)
 enseignant_ue = db.Table(
     'enseignant_ue',
     db.Column('enseignant_id', db.Integer, db.ForeignKey('enseignants.id', ondelete='CASCADE'), primary_key=True),
     db.Column('ue_id', db.Integer, db.ForeignKey('ues.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('date_attribution', db.DateTime, default=datetime.utcnow)
+)
+
+# Association UE <-> Classe (many-to-many) - NOUVEAU
+ue_classe = db.Table(
+    'ue_classe',
+    db.Column('ue_id', db.Integer, db.ForeignKey('ues.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('classe_id', db.Integer, db.ForeignKey('classes.id', ondelete='CASCADE'), primary_key=True),
     db.Column('date_attribution', db.DateTime, default=datetime.utcnow)
 )
 
@@ -218,6 +228,16 @@ class Enseignant(db.Model):
     ues = db.relationship('UE', secondary=enseignant_ue, back_populates='enseignants')
     documents = db.relationship('Document', back_populates='enseignant', lazy='dynamic')
     emplois_temps = db.relationship('EmploiTemps', backref='enseignant', lazy='dynamic')
+    tps_crees = db.relationship('TP', back_populates='enseignant', lazy='dynamic')
+
+    @property
+    def sessions_tp_supervisees(self):
+        """Retourne toutes les sessions TP des TPs créés par cet enseignant"""
+        from app.models import SessionTP
+        # Récupérer tous les IDs des TPs de cet enseignant
+        tp_ids = [tp.id for tp in self.tps_crees.all()]
+        # Retourner les sessions de ces TPs
+        return SessionTP.query.filter(SessionTP.tp_id.in_(tp_ids))
 
     @property
     def nom_complet(self):
@@ -243,15 +263,46 @@ class UE(db.Model):
     semestre = db.Column(db.Integer)
     type_ue = db.Column(db.String(20), default='Obligatoire')
 
-    classe_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='CASCADE'), nullable=False)
+    # NOUVEAU : Type de création UE
+    # 'simple' = UE normale (1 UE par classe)
+    # 'tronc_commun' = UE partagée entre plusieurs classes (1 seul prof)
+    # 'composite' = UE composée de plusieurs sous-UE
+    type_ue_creation = db.Column(db.String(20), default='simple')
+
+    # Pour les UE composites : référence vers l'UE parent
+    ue_parent_id = db.Column(db.Integer, db.ForeignKey('ues.id'), nullable=True)
+
+    # ANCIEN : classe_id unique (gardé pour compatibilité)
+    classe_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='CASCADE'), nullable=True)
 
     # Relations
+    # ANCIEN : Relation one-to-many (gardée pour compatibilité)
     classe = db.relationship('Classe', back_populates='ues')
+
+    # NOUVEAU : Relation many-to-many avec les classes
+    classes = db.relationship('Classe', secondary=ue_classe, backref='ues_attribuees', lazy='dynamic')
+
+    # Relations pour UE composites
+    sous_ues = db.relationship('UE', backref=db.backref('ue_parent_obj', remote_side=[id]), lazy='dynamic')
+
+    # Autres relations
     enseignants = db.relationship('Enseignant', secondary=enseignant_ue, back_populates='ues')
     inscriptions = db.relationship('InscriptionUE', back_populates='ue', lazy='dynamic', cascade='all, delete-orphan')
     notes = db.relationship('Note', backref='ue_parent', lazy='dynamic', cascade='all, delete-orphan')
     absences = db.relationship('Absence', backref='ue_concernee', lazy='dynamic', cascade='all, delete-orphan')
     emploi_temps = db.relationship('EmploiTemps', backref='ue_associee', lazy='dynamic', cascade='all, delete-orphan')
+
+    def get_toutes_classes(self):
+        """Retourne toutes les classes où cette UE est enseignée"""
+        # Si classe_id existe (ancien système), l'inclure
+        classes_list = list(self.classes.all())
+        if self.classe_id and self.classe and self.classe not in classes_list:
+            classes_list.append(self.classe)
+        return classes_list
+
+    def est_dans_classe(self, classe_id):
+        """Vérifie si l'UE est attribuée à une classe donnée"""
+        return self.classes.filter_by(id=classe_id).first() is not None or self.classe_id == classe_id
 
     def get_nombre_etudiants(self):
         return self.inscriptions.filter_by(statut='validé').count()
@@ -607,6 +658,7 @@ class TP(db.Model):
     date_limite = db.Column(db.DateTime)  # Deadline
 
     # Relations
+    enseignant = db.relationship('Enseignant', back_populates='tps_crees')
     sessions = db.relationship('SessionTP', backref='tp', lazy='dynamic', cascade='all, delete-orphan')
 
     def __repr__(self):
@@ -895,3 +947,476 @@ class ReactionChimique(db.Model):
 
     def __repr__(self):
         return f'<ReactionChimique {self.nom}>'
+
+
+# ============================================================
+# PARAMÈTRES SYSTÈME (Validation automatique)
+# ============================================================
+class ParametreSysteme(db.Model):
+    """Paramètres configurables par le directeur"""
+    __tablename__ = 'parametres_systeme'
+
+    id = db.Column(db.Integer, primary_key=True)
+    cle = db.Column(db.String(100), unique=True, nullable=False)
+    valeur = db.Column(db.String(500))
+    type_valeur = db.Column(db.String(20), default='string')  # string, int, float, bool
+    description = db.Column(db.Text)
+    categorie = db.Column(db.String(50))  # validation, laboratoire, general
+    modifie_par = db.Column(db.Integer, db.ForeignKey('users.id'))
+    date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def get_valeur_typee(self):
+        """Retourne la valeur avec le bon type"""
+        if self.type_valeur == 'int':
+            return int(self.valeur) if self.valeur else 0
+        elif self.type_valeur == 'float':
+            return float(self.valeur) if self.valeur else 0.0
+        elif self.type_valeur == 'bool':
+            return self.valeur.lower() in ['true', '1', 'oui', 'yes'] if self.valeur else False
+        return self.valeur
+
+    def __repr__(self):
+        return f'<ParametreSysteme {self.cle}={self.valeur}>'
+
+
+class ConfigurationEcole(db.Model):
+    """Configuration et branding de l'école"""
+    __tablename__ = 'configuration_ecole'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Informations générales
+    nom_ecole = db.Column(db.String(200), default='École Polytechnique Harmony')
+    nom_court = db.Column(db.String(50), default='EPH')
+    slogan = db.Column(db.String(200))
+
+    # Coordonnées
+    adresse = db.Column(db.Text)
+    ville = db.Column(db.String(100))
+    code_postal = db.Column(db.String(20))
+    pays = db.Column(db.String(100), default='Togo')
+    telephone = db.Column(db.String(50))
+    email = db.Column(db.String(100))
+    site_web = db.Column(db.String(200))
+
+    # Branding
+    logo_path = db.Column(db.String(500))  # Chemin vers le logo
+    logo_header_path = db.Column(db.String(500))  # Logo pour en-têtes
+    filigrane_path = db.Column(db.String(500))  # Filigrane pour documents
+
+    # Couleurs (Hex)
+    couleur_primaire = db.Column(db.String(7), default='#1976d2')
+    couleur_secondaire = db.Column(db.String(7), default='#424242')
+    couleur_accent = db.Column(db.String(7), default='#ff9800')
+
+    # Informations administratives
+    numero_agrement = db.Column(db.String(100))
+    numero_registre = db.Column(db.String(100))
+    annee_creation = db.Column(db.Integer)
+
+    # Signature directeur
+    signature_directeur_path = db.Column(db.String(500))
+    nom_directeur = db.Column(db.String(200))
+    titre_directeur = db.Column(db.String(100), default='Directeur')
+
+    # Métadonnées
+    date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<ConfigEcole {self.nom_ecole}>'
+
+
+class Cours(db.Model):
+    """Cours en ligne"""
+    __tablename__ = 'cours_elearning'
+
+    id = db.Column(db.Integer, primary_key=True)
+    titre = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+
+    # Association
+    ue_id = db.Column(db.Integer, db.ForeignKey('ues.id', ondelete='CASCADE'))
+    enseignant_id = db.Column(db.Integer, db.ForeignKey('enseignants.id', ondelete='CASCADE'))
+
+    # Contenu
+    type_contenu = db.Column(
+        Enum('video', 'document', 'quiz', 'exercice', name='type_contenu_enum'),
+        default='video'
+    )
+
+    # Vidéo
+    url_video = db.Column(db.String(500))
+    duree_minutes = db.Column(db.Integer)
+
+    # Document
+    fichier_path = db.Column(db.String(500))
+
+    # Métadonnées
+    ordre = db.Column(db.Integer, default=0)
+    publie = db.Column(db.Boolean, default=False)
+    date_publication = db.Column(db.DateTime)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    ue = db.relationship('UE', backref='cours_elearning')
+    enseignant = db.relationship('Enseignant', backref='cours_crees')
+
+    def __repr__(self):
+        return f'<Cours {self.titre}>'
+
+
+class Quiz(db.Model):
+    """Quiz en ligne"""
+    __tablename__ = 'quiz'
+
+    id = db.Column(db.Integer, primary_key=True)
+    titre = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+
+    cours_id = db.Column(db.Integer, db.ForeignKey('cours_elearning.id', ondelete='CASCADE'))
+    ue_id = db.Column(db.Integer, db.ForeignKey('ues.id', ondelete='CASCADE'))
+
+    # Configuration
+    duree_limite_minutes = db.Column(db.Integer)  # Temps limite
+    note_passage = db.Column(db.Float, default=10.0)  # Note minimale
+    tentatives_autorisees = db.Column(db.Integer, default=3)
+    afficher_corrections = db.Column(db.Boolean, default=True)
+    melanger_questions = db.Column(db.Boolean, default=True)
+
+    # Métadonnées
+    publie = db.Column(db.Boolean, default=False)
+    date_ouverture = db.Column(db.DateTime)
+    date_fermeture = db.Column(db.DateTime)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    cours = db.relationship('Cours', backref='quiz')
+    ue = db.relationship('UE', backref='quiz')
+
+    def __repr__(self):
+        return f'<Quiz {self.titre}>'
+
+
+class QuestionQuiz(db.Model):
+    """Question d'un quiz"""
+    __tablename__ = 'questions_quiz'
+
+    id = db.Column(db.Integer, primary_key=True)
+    quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.id', ondelete='CASCADE'), nullable=False)
+
+    enonce = db.Column(db.Text, nullable=False)
+    type_question = db.Column(
+        Enum('qcm_unique', 'qcm_multiple', 'vrai_faux', 'texte_court', name='type_question_enum'),
+        default='qcm_unique'
+    )
+
+    # Réponses (JSON)
+    options = db.Column(db.Text)  # Liste des options pour QCM
+    reponses_correctes = db.Column(db.Text)  # Liste des bonnes réponses
+
+    # Notation
+    points = db.Column(db.Float, default=1.0)
+
+    # Métadonnées
+    ordre = db.Column(db.Integer, default=0)
+    explication = db.Column(db.Text)  # Explication de la réponse
+
+    # Relations
+    quiz = db.relationship('Quiz', backref='questions')
+
+    def __repr__(self):
+        return f'<QuestionQuiz {self.id}>'
+
+
+class TentativeQuiz(db.Model):
+    """Tentative d'un étudiant sur un quiz"""
+    __tablename__ = 'tentatives_quiz'
+
+    id = db.Column(db.Integer, primary_key=True)
+    quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.id', ondelete='CASCADE'), nullable=False)
+    etudiant_id = db.Column(db.Integer, db.ForeignKey('etudiants.id', ondelete='CASCADE'), nullable=False)
+
+    # Résultats
+    reponses = db.Column(db.Text)  # JSON des réponses
+    note_obtenue = db.Column(db.Float)
+    note_totale = db.Column(db.Float)
+    pourcentage = db.Column(db.Float)
+
+    # Temps
+    date_debut = db.Column(db.DateTime, default=datetime.utcnow)
+    date_fin = db.Column(db.DateTime)
+    duree_minutes = db.Column(db.Integer)
+
+    # État
+    terminee = db.Column(db.Boolean, default=False)
+    reussie = db.Column(db.Boolean, default=False)
+
+    # Relations
+    quiz = db.relationship('Quiz')
+    etudiant = db.relationship('Etudiant', backref='tentatives_quiz')
+
+    def __repr__(self):
+        return f'<TentativeQuiz E:{self.etudiant_id} Q:{self.quiz_id}>'
+
+
+class Devoir(db.Model):
+    """Devoir à rendre en ligne"""
+    __tablename__ = 'devoirs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    titre = db.Column(db.String(200), nullable=False)
+    consignes = db.Column(db.Text)
+
+    ue_id = db.Column(db.Integer, db.ForeignKey('ues.id', ondelete='CASCADE'))
+    enseignant_id = db.Column(db.Integer, db.ForeignKey('enseignants.id', ondelete='CASCADE'))
+    classe_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='CASCADE'))
+
+    # Fichier sujet
+    fichier_sujet_path = db.Column(db.String(500))
+
+    # Dates limites
+    date_publication = db.Column(db.DateTime, default=datetime.utcnow)
+    date_limite = db.Column(db.DateTime, nullable=False)
+
+    # Notation
+    note_sur = db.Column(db.Float, default=20.0)
+    coefficient = db.Column(db.Float, default=1.0)
+
+    # Relations
+    ue = db.relationship('UE', backref='devoirs')
+    enseignant = db.relationship('Enseignant', backref='devoirs_crees')
+    classe = db.relationship('Classe', backref='devoirs')
+
+    def __repr__(self):
+        return f'<Devoir {self.titre}>'
+
+
+class RenduDevoir(db.Model):
+    """Rendu d'un devoir par un étudiant"""
+    __tablename__ = 'rendus_devoirs'
+
+    id = db.Column(db.Integer, primary_key=True)
+    devoir_id = db.Column(db.Integer, db.ForeignKey('devoirs.id', ondelete='CASCADE'), nullable=False)
+    etudiant_id = db.Column(db.Integer, db.ForeignKey('etudiants.id', ondelete='CASCADE'), nullable=False)
+
+    # Fichier rendu
+    fichier_path = db.Column(db.String(500))
+    commentaire_etudiant = db.Column(db.Text)
+
+    # Soumission
+    date_soumission = db.Column(db.DateTime, default=datetime.utcnow)
+    en_retard = db.Column(db.Boolean, default=False)
+
+    # Correction
+    note_obtenue = db.Column(db.Float)
+    commentaire_enseignant = db.Column(db.Text)
+    date_correction = db.Column(db.DateTime)
+    corrige = db.Column(db.Boolean, default=False)
+
+    # Relations
+    devoir = db.relationship('Devoir', backref='rendus')
+    etudiant = db.relationship('Etudiant', backref='rendus_devoirs')
+
+    def __repr__(self):
+        return f'<RenduDevoir E:{self.etudiant_id} D:{self.devoir_id}>'
+
+
+class Certificat(db.Model):
+    """Certificats de complétion"""
+    __tablename__ = 'certificats'
+
+    id = db.Column(db.Integer, primary_key=True)
+    etudiant_id = db.Column(db.Integer, db.ForeignKey('etudiants.id', ondelete='CASCADE'), nullable=False)
+
+    type_certificat = db.Column(
+        Enum('cours', 'module', 'formation', name='type_certificat_enum'),
+        default='cours'
+    )
+
+    titre = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+
+    # Référence
+    cours_id = db.Column(db.Integer, db.ForeignKey('cours_elearning.id', ondelete='SET NULL'))
+
+    # Génération
+    code_verification = db.Column(db.String(50), unique=True)
+    qr_code_path = db.Column(db.String(500))
+    fichier_pdf_path = db.Column(db.String(500))
+
+    date_obtention = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    etudiant = db.relationship('Etudiant', backref='certificats')
+    cours = db.relationship('Cours')
+
+    def __repr__(self):
+        return f'<Certificat {self.code_verification}>'
+
+
+class EvaluationEnseignant(db.Model):
+    """Évaluation d'un enseignant par un étudiant"""
+    __tablename__ = 'evaluations_enseignants'
+
+    id = db.Column(db.Integer, primary_key=True)
+    enseignant_id = db.Column(db.Integer, db.ForeignKey('enseignants.id', ondelete='CASCADE'), nullable=False)
+    etudiant_id = db.Column(db.Integer, db.ForeignKey('etudiants.id', ondelete='CASCADE'), nullable=False)
+    ue_id = db.Column(db.Integer, db.ForeignKey('ues.id', ondelete='CASCADE'))
+
+    # Critères de notation (sur 5)
+    pedagogie = db.Column(db.Float)  # Qualité pédagogique
+    clarte = db.Column(db.Float)  # Clarté des explications
+    disponibilite = db.Column(db.Float)  # Disponibilité
+    ponctualite = db.Column(db.Float)  # Ponctualité
+    organisation = db.Column(db.Float)  # Organisation du cours
+
+    # Commentaires
+    points_forts = db.Column(db.Text)
+    points_amelioration = db.Column(db.Text)
+    commentaire_general = db.Column(db.Text)
+
+    # Note globale (moyenne)
+    note_globale = db.Column(db.Float)
+
+    # Métadonnées
+    anonyme = db.Column(db.Boolean, default=True)
+    date_evaluation = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    enseignant = db.relationship('Enseignant', backref='evaluations_recues')
+    etudiant = db.relationship('Etudiant', backref='evaluations_donnees')
+    ue = db.relationship('UE')
+
+    def calculer_note_globale(self):
+        """Calcule la moyenne des critères"""
+        notes = [
+            self.pedagogie,
+            self.clarte,
+            self.disponibilite,
+            self.ponctualite,
+            self.organisation
+        ]
+        notes_valides = [n for n in notes if n is not None]
+
+        if notes_valides:
+            self.note_globale = sum(notes_valides) / len(notes_valides)
+
+        return self.note_globale
+
+    def __repr__(self):
+        return f'<EvaluationEnseignant Ens:{self.enseignant_id} Note:{self.note_globale}>'
+
+
+class Semestre(db.Model):
+    __tablename__ = 'semestres'
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(50), nullable=False)
+    date_debut = db.Column(db.Date)
+    date_fin = db.Column(db.Date)
+    annee_academique = db.Column(db.String(20))
+    active = db.Column(db.Boolean, default=True)
+
+    def __repr__(self):
+        return f'<Semestre {self.nom}>'
+
+
+class CampagneEvaluation(db.Model):
+    """Campagne d'évaluation des enseignants"""
+    __tablename__ = 'campagnes_evaluation'
+
+    id = db.Column(db.Integer, primary_key=True)
+    titre = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+
+    # Période
+    date_debut = db.Column(db.DateTime, nullable=False)
+    date_fin = db.Column(db.DateTime, nullable=False)
+
+    # Cibles
+    semestre_id = db.Column(db.Integer, db.ForeignKey('semestres.id', ondelete='CASCADE'))
+
+    # Configuration
+    anonyme_obligatoire = db.Column(db.Boolean, default=True)
+    questions_ouvertes = db.Column(db.Boolean, default=True)
+
+    # État
+    active = db.Column(db.Boolean, default=True)
+    publiee = db.Column(db.Boolean, default=False)
+
+    # Métadonnées
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    semestre = db.relationship('Semestre', backref='campagnes_evaluation')
+
+    def __repr__(self):
+        return f'<CampagneEvaluation {self.titre}>'
+
+
+class RapportEvaluation(db.Model):
+    """Rapport d'évaluation pour un enseignant"""
+    __tablename__ = 'rapports_evaluation'
+
+    id = db.Column(db.Integer, primary_key=True)
+    enseignant_id = db.Column(db.Integer, db.ForeignKey('enseignants.id', ondelete='CASCADE'), nullable=False)
+    campagne_id = db.Column(db.Integer, db.ForeignKey('campagnes_evaluation.id', ondelete='CASCADE'))
+
+    # Statistiques
+    nb_evaluations = db.Column(db.Integer, default=0)
+    note_moyenne_globale = db.Column(db.Float)
+    note_moyenne_pedagogie = db.Column(db.Float)
+    note_moyenne_clarte = db.Column(db.Float)
+    note_moyenne_disponibilite = db.Column(db.Float)
+    note_moyenne_ponctualite = db.Column(db.Float)
+    note_moyenne_organisation = db.Column(db.Float)
+
+    # Tendances
+    evolution_note = db.Column(db.Float)  # Par rapport à la campagne précédente
+
+    # Rapport généré
+    rapport_pdf_path = db.Column(db.String(500))
+    date_generation = db.Column(db.DateTime)
+
+    # Relations
+    enseignant = db.relationship('Enseignant', backref='rapports_evaluation')
+    campagne = db.relationship('CampagneEvaluation')
+
+    def __repr__(self):
+        return f'<RapportEvaluation Ens:{self.enseignant_id}>'
+
+
+class SignatureDocument(db.Model):
+    """Signatures numériques des documents"""
+    __tablename__ = 'signatures_documents'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Document signé
+    document_type = db.Column(db.String(50), nullable=False)  # attestation, releve, etc.
+    document_id = db.Column(db.Integer, nullable=False)
+
+    # Code de vérification
+    code_verification = db.Column(db.String(50), unique=True, nullable=False)
+
+    # Signature numérique
+    signature_numerique = db.Column(db.Text)  # Signature RSA en hex
+
+    # QR Code
+    qr_code_path = db.Column(db.String(500))
+
+    # Métadonnées
+    date_signature = db.Column(db.DateTime, default=datetime.utcnow)
+    valide = db.Column(db.Boolean, default=True)
+
+    # Index pour recherche rapide
+    __table_args__ = (
+        db.Index('idx_code_verification', 'code_verification'),
+        db.Index('idx_document', 'document_type', 'document_id'),
+    )
+
+    def __repr__(self):
+        return f'<SignatureDocument {self.code_verification}>'
+
+
+
+

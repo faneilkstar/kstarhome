@@ -7,7 +7,7 @@ Date : 11 Février 2026
 import os
 from datetime import datetime, timedelta
 try:
-    import google.generativeai as genai
+    from google import genai
     GEMINI_DISPONIBLE = True
 except ImportError:
     GEMINI_DISPONIBLE = False
@@ -26,8 +26,7 @@ class ValidationIA:
             api_key = os.environ.get('GEMINI_API_KEY')
             if api_key and api_key.strip():
                 try:
-                    genai.configure(api_key=api_key)
-                    self.model = genai.GenerativeModel('gemini-pro')
+                    self.client = genai.Client(api_key=api_key)
                     self.ia_activee = True
                 except Exception as e:
                     print(f"⚠️  Erreur configuration Gemini : {e}")
@@ -129,8 +128,11 @@ RECOMMANDATIONS:
 """
 
         try:
-            # Appeler Gemini
-            response = self.model.generate_content(prompt)
+            # Appeler Gemini avec la nouvelle API
+            response = self.client.models.generate_content(
+                model='gemini-2.0-flash-exp',
+                contents=prompt
+            )
             texte_reponse = response.text
 
             # Parser la réponse
@@ -217,4 +219,83 @@ RECOMMANDATIONS:
         # Pour l'instant, on retourne juste la date prévue
 
         return date_validation
+
+    @staticmethod
+    def valider_automatiquement_si_actif(etudiant):
+        """
+        Valide automatiquement l'étudiant si la validation auto est activée
+
+        Args:
+            etudiant: Instance Etudiant
+
+        Returns:
+            dict: Résultat de la validation ou None si désactivé
+        """
+        from app.models import ParametreSysteme
+
+        # Vérifier si la validation auto est activée
+        param_auto = ParametreSysteme.query.filter_by(cle='validation_auto_active').first()
+        if not param_auto or not param_auto.get_valeur_typee():
+            return None
+
+        # Récupérer le délai configuré
+        param_delai = ParametreSysteme.query.filter_by(cle='validation_auto_delai_minutes').first()
+        delai_minutes = param_delai.get_valeur_typee() if param_delai else 30
+
+        # Vérifier si le délai est écoulé
+        temps_ecoule = (datetime.now() - etudiant.date_inscription).total_seconds() / 60
+
+        if temps_ecoule >= delai_minutes:
+            # Valider automatiquement
+            ia_validator = ValidationIA()
+            resultat = ia_validator.evaluer_inscription(etudiant)
+
+            # Appliquer la décision
+            etudiant.statut_inscription = resultat['decision']
+            etudiant.evaluation_ia = json.dumps(resultat, ensure_ascii=False)
+
+            from app import db
+            db.session.commit()
+
+            return resultat
+
+        return None
+
+    @staticmethod
+    def init_parametres_defaut():
+        """Initialise les paramètres par défaut de validation automatique"""
+        from app.models import ParametreSysteme
+        from app import db
+
+        parametres_defaut = [
+            {
+                'cle': 'validation_auto_active',
+                'valeur': 'true',
+                'type_valeur': 'bool',
+                'description': 'Active la validation automatique des inscriptions',
+                'categorie': 'validation'
+            },
+            {
+                'cle': 'validation_auto_delai_minutes',
+                'valeur': '30',
+                'type_valeur': 'int',
+                'description': 'Délai en minutes avant validation automatique',
+                'categorie': 'validation'
+            },
+            {
+                'cle': 'validation_moyenne_minimale',
+                'valeur': '12.0',
+                'type_valeur': 'float',
+                'description': 'Moyenne minimale pour acceptation automatique',
+                'categorie': 'validation'
+            }
+        ]
+
+        for param_data in parametres_defaut:
+            param = ParametreSysteme.query.filter_by(cle=param_data['cle']).first()
+            if not param:
+                param = ParametreSysteme(**param_data)
+                db.session.add(param)
+
+        db.session.commit()
 

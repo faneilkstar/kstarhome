@@ -190,7 +190,7 @@ class AgentIARapports:
             actions.append("• Proposer des projets complexes ou des concours inter-écoles.")
         elif profil == "Excellence Polarisée":
             actions.append("• Utiliser les élèves leaders comme tuteurs pour les élèves en retrait.")
-            actions.append("• Vérifier si les écarts proviennent de matières spécifiques.")
+            actions.append("• Vérifier si les écarts proviennent de UE spécifiques.")
         elif profil == "Classe Hétérogène":
             actions.append("• Impératif : Mettre en place des groupes de niveau.")
             actions.append("• Adapter les évaluations (notation différenciée ou progressive).")

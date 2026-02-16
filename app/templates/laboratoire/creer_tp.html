@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Créer un TP - {{ ue.code_ue }}{% endblock %}
+{% block title %}Créer un TP - Laboratoire IA{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -45,6 +45,14 @@
                                     <optgroup label="🏗️ Génie Civil">
                                         <option value="rdm_poutre">RDM - Poutre en flexion</option>
                                     </optgroup>
+                                    <optgroup label="🔬 Optique">
+                                    <option value="optique_geo">Optique géométrique (lentilles/miroirs)</option>
+                                    <option value="optique_ondu">Optique ondulatoire (Young, Fresnel)</option>
+                                </optgroup>
+                                <optgroup label="💻 Électronique & Informatique">
+                                    <option value="electronique_logique">Circuits logiques</option>
+                                    <option value="algebre">Algèbre & Transformations</option>
+                                </optgroup>
                                     <optgroup label="🔧 Mécanique">
                                         <option value="chute_libre">Chute libre</option>
                                         <option value="plan_incline">Plan incliné</option>

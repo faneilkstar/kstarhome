@@ -18,9 +18,28 @@ def create_app(config_name='default'):
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
 
+    # ---------------------------------------------------------
+    # FORCER SUPABASE (CONFIGURATION FINALE - IRLANDE)
+    # ---------------------------------------------------------
+
+    # Voici l'adresse exacte assemblée avec tes infos :
+    DB_URL = "postgresql://postgres.pzzfqduntcmklrakhggy:masqquedemort@aws-1-eu-west-1.pooler.supabase.com:6543/postgres"
+
+    app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_size': 5,
+        'max_overflow': 10,
+        'pool_timeout': 30,
+        'pool_recycle': 1800,
+        'pool_pre_ping': True
+    }
+    print(f"🔗 [SUPABASE] Connexion forcée sur : aws-1-eu-west-1 (Port 6543)")
+    # ---------------------------------------------------------
+
     # 2. Initialisation des composants avec l'instance de l'app
     db.init_app(app)
     migrate.init_app(app, db)
+    login_manager.init_app(app)
     login_manager.init_app(app)
 
     # 3. Configuration de la sécurité Flask-Login
@@ -58,6 +77,20 @@ def create_app(config_name='default'):
     # LABORATOIRE : Simulations et TPs virtuels
     from app.routes.laboratoire import laboratoire_bp
     app.register_blueprint(laboratoire_bp, url_prefix='/laboratoire')
+
+    # 5. Filtres Jinja2 personnalisés
+    # ---------------------------------------------------------
+    @app.template_filter('ue_classe_name')
+    def ue_classe_name(ue):
+        """Retourne le nom de la classe d'une UE ou 'N/A'"""
+        return ue.classe.nom_classe if ue.classe else 'Non assignée'
+
+    @app.template_filter('ue_filiere_name')
+    def ue_filiere_name(ue):
+        """Retourne le nom de la filière d'une UE ou 'N/A'"""
+        if ue.classe and ue.classe.filiere:
+            return ue.classe.filiere.nom_filiere
+        return 'N/A'
 
     return app
 

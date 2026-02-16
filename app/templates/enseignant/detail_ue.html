@@ -12,7 +12,7 @@
             </ol>
         </nav>
         <h2 class="fw-bold mb-0">{{ ue.intitule }}</h2>
-        <p class="text-muted"><i class="fas fa-graduation-cap me-2"></i>{{ ue.classe.nom_classe }} | {{ ue.credits }} Crédits ECTS</p>
+        <p class="text-muted"><i class="fas fa-graduation-cap me-2"></i>{{ ue.classe.nom_classe if ue.classe else 'N/A' }} | {{ ue.credits }} Crédits ECTS</p>
     </div>
     <div class="col-md-6 text-md-end">
         <a href="{{ url_for('enseignant.configurer_composantes', ue_id=ue.id) }}" class="btn btn-outline-primary me-2">

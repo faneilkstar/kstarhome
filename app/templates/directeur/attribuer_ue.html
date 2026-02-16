@@ -216,7 +216,7 @@
                                 <div class="text-muted small">{{ ue.heures }}h volume</div>
                             </td>
                             <td>
-                                <span class="badge bg-outline-secondary border text-dark fw-bold">{{ ue.classe.nom_classe }}</span>
+                                <span class="badge bg-outline-secondary border text-dark fw-bold">{{ ue.classe.nom_classe if ue.classe else 'N/A' }}</span>
                             </td>
                             <td>
                                 {% if ue.enseignant %}

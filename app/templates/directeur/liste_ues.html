@@ -159,8 +159,12 @@
                             </div>
                         </td>
                         <td>
-                            <div class="fw-bold small text-dark">{{ ue.classe.nom_classe }}</div>
-                            <div class="text-muted" style="font-size: 0.75rem;">{{ ue.classe.filiere.nom_filiere }}</div>
+                            {% if ue.classe %}
+                                <div class="fw-bold small text-dark">{{ ue.classe.nom_classe }}</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">{{ ue.classe.filiere.nom_filiere if ue.classe.filiere else 'N/A' }}</div>
+                            {% else %}
+                                <span class="text-muted small">Aucune classe</span>
+                            {% endif %}
                         </td>
                         <td>
                             <span class="badge rounded-pill bg-light text-dark border">

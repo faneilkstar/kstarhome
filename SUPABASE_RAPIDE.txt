@@ -1,0 +1,68 @@
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║           🚀 SUPABASE - CONFIGURATION RAPIDE 🚀               ║
+║                                                               ║
+║                  KSTAR-HOME VERSION 3.0                       ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+📝 ÉTAPES SIMPLES (5 MINUTES)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1️⃣  CRÉER COMPTE SUPABASE
+   → https://supabase.com
+   → "Start your project" (gratuit, pas de CB)
+2️⃣  CRÉER PROJET
+   • Name: kstar-home
+   • Password: [Choisir un mot de passe FORT et le noter !]
+   • Region: Europe (Frankfurt)
+   • Cliquer "Create new project"
+   • ⏳ Attendre 2 minutes
+3️⃣  RÉCUPÉRER L'URL
+   • Settings → Database
+   • Connection string → Connection pooling
+   • COPIER l'URL (port 6543)
+4️⃣  CONFIGURER .ENV
+   cp .env.example .env
+   nano .env
+   # Coller et remplacer [YOUR-PASSWORD]:
+   SUPABASE_DB_URL=postgresql://postgres.pzzfqduntcmklrakhggy:VotreMotDePasse@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+5️⃣  MIGRER
+   python3 migrate_to_supabase.py
+   ✅ Tables créées !
+6️⃣  TESTER
+   python3 run.py
+   → http://localhost:5000
+🚀 DÉPLOYER SUR RENDER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Render Dashboard → Votre service → Environment
+2. Add variable:
+   • Key: SUPABASE_DB_URL
+   • Value: [Votre URL complète]
+3. Save Changes
+4. ./deploy_auto.sh
+✅ C'EST TOUT !
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Votre base de données est maintenant dans le cloud !
+Avantages:
+✅ Gratuit (500 MB)
+✅ Backups automatiques
+✅ Dashboard web
+✅ Performant
+✅ Scalable
+📚 DOCUMENTATION COMPLÈTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Voir GUIDE_SUPABASE.md pour:
+• Troubleshooting
+• Migration des données
+• Backups
+• Monitoring
+🐛 PROBLÈMES FRÉQUENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ "password authentication failed"
+   → Vérifier le mot de passe dans l'URL
+❌ "could not connect"
+   → Vérifier l'URL complète (avec :6543)
+❌ "relation does not exist"
+   → Relancer: python3 migrate_to_supabase.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Version: 3.0 | Date: 2026-02-12 | By: GitHub Copilot
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

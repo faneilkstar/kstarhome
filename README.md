@@ -4,11 +4,14 @@
 [![Flask](https://img.shields.io/badge/Flask-3.0-green.svg)](https://flask.palletsprojects.com/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-success.svg)]()
+[![Deploy](https://img.shields.io/badge/Deploy-Automatic-brightgreen.svg)]()
+[![AI](https://img.shields.io/badge/AI-Gemini%20%2B%20Fallback-orange.svg)]()
 
-> **Système complet de gestion académique moderne avec IA intégrée**
+> **Système complet de gestion académique moderne avec IA intégrée et déploiement automatique**
 
 **Créé par : Ing. KOISSI-ZO Tonyi Constantin**  
-Spécialiste en Électronique de Puissance
+Spécialiste en Électronique de Puissance  
+📅 **Dernière mise à jour** : 12 Février 2026
 
 ---
 
@@ -17,6 +20,13 @@ Spécialiste en Électronique de Puissance
 **KstarHome** est un système complet de gestion académique pour établissements d'enseignement supérieur. Cette application web permet de gérer les étudiants, enseignants, notes, absences, documents pédagogiques et bien plus encore.
 
 ### 🌐 Site web : https://kstarhome.onrender.com
+
+### 🆕 **Nouveautés (v2.0 - Février 2026)**
+- 🚀 **Déploiement automatique** : Push sur GitHub = Site mis à jour (3-5 min)
+- 🤖 **IA améliorée** : Gemini AI + Fallback robuste (fonctionne offline)
+- 🧪 **Tests automatiques** : GitHub Actions CI/CD
+- 🔧 **Stabilité accrue** : Gestion d'erreurs robuste
+- 📊 **Laboratoire V2** : Système d'assistants IA ETA, ALPHA, KAYT
 ## ✨ Fonctionnalités Principales
 ### 👨‍🎓 Pour les Étudiants
 - ✅ Consultation des notes et bulletins
@@ -63,6 +73,44 @@ python3 init_database.py
 python3 run.py
 ```
 L'application sera accessible sur `http://localhost:5000`
+
+---
+
+## 🚀 DÉPLOIEMENT AUTOMATIQUE (NOUVEAU v2.0 !)
+
+### ⚡ Déployer en 1 commande :
+
+```bash
+# Modifier votre code
+nano app/routes/laboratoire.py
+
+# Déployer automatiquement
+./deploy_quick.sh "✨ Nouvelle fonctionnalité"
+
+# Le site est mis à jour automatiquement en 3-5 minutes ! ☕
+```
+
+### 🔄 Comment ça marche ?
+
+1. **Vous modifiez** le code localement
+2. **Vous exécutez** `./deploy_quick.sh "Votre message"`
+3. **Le script** :
+   - ✅ Teste la syntaxe Python
+   - ✅ Crée un commit Git
+   - ✅ Push sur GitHub
+   - ✅ Déclenche le déploiement
+4. **Render redéploie automatiquement** (Auto-Deploy)
+5. **Site en ligne** après 3-5 minutes !
+
+### 📚 Guides détaillés :
+
+- 📖 [`DEPLOIEMENT_AUTO_COMPLET.md`](DEPLOIEMENT_AUTO_COMPLET.md) - Guide complet du déploiement
+- 🔧 [`CONFIGURATION_RENDER_AUTO_DEPLOY.md`](CONFIGURATION_RENDER_AUTO_DEPLOY.md) - Configuration Render
+- 📊 [`RECAPITULATIF_FINAL_CORRECTIONS.md`](RECAPITULATIF_FINAL_CORRECTIONS.md) - Changelog v2.0
+- 🧪 [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) - CI/CD automatique
+
+---
+
 ## 🔐 Comptes par défaut
 Après l'initialisation, vous pouvez vous connecter avec :
 - **Directeur** : `directeur` / `directeur123`

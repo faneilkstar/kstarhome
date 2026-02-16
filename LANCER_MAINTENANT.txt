@@ -1,0 +1,5 @@
+✅ TOUT EST CORRIGÉ
+COPIEZ CETTE COMMANDE DANS PYCHARM:
+venv/bin/python3 run.py
+Puis ouvrez: http://localhost:5000
+Login: admin / admin123

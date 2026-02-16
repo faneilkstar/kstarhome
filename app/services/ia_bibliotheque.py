@@ -7,7 +7,7 @@ Date : 11 Février 2026
 
 import os
 try:
-    import google.generativeai as genai
+    from google import genai
     GEMINI_DISPONIBLE = True
 except ImportError:
     GEMINI_DISPONIBLE = False

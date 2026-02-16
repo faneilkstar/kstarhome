@@ -81,7 +81,7 @@
                                 <td>{{ ue.intitule }}</td>
                                 <td>
                                     {% if ue.classe %}
-                                        <span class="badge bg-secondary">{{ ue.classe.code_classe }}</span>
+                                        <span class="badge bg-secondary">{{ ue.classe.nom_classe if ue.classe else 'N/A' }}</span>
                                     {% else %}
                                         <span class="text-muted fst-italic">--</span>
                                     {% endif %}

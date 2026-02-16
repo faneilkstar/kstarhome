@@ -10,7 +10,7 @@ from datetime import datetime
 import numpy as np
 from scipy import stats as scipy_stats
 try:
-    import google.generativeai as genai
+    from google import genai
     GEMINI_DISPONIBLE = True
 except ImportError:
     GEMINI_DISPONIBLE = False

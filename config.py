@@ -14,81 +14,105 @@ class Config:
 
     # --- SÉCURITÉ ---
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'ma-cle-secrete-super-securisee-2024'
-
-    # Durée de vie de la session (déconnexion auto après 60 min d'inactivité)
     PERMANENT_SESSION_LIFETIME = timedelta(minutes=60)
 
     # --- BASE DE DONNÉES ---
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    # Par défaut, on enregistre l'heure des requêtes lentes
     SQLALCHEMY_RECORD_QUERIES = True
 
     # --- GESTION DES FICHIERS (Uploads) ---
-    # Limite la taille des fichiers à 16 MB (Évite les attaques par saturation)
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB max
     UPLOAD_FOLDER = os.path.join(basedir, 'app', 'static', 'uploads')
     DOCUMENTS_FOLDER = os.path.join(basedir, 'documents')
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'doc', 'docx'}
 
-    # --- PARAMÈTRES ACADÉMIQUES LMD (CONSTANTES) ---
+    # --- PARAMÈTRES ACADÉMIQUES ---
     ANNEE_ACADEMIQUE_ACTUELLE = "2025-2026"
     CREDITS_SEMESTRE = 30
     CREDITS_ANNEE = 60
     NOTE_PASSAGE = 10.0
-    NOTE_ELIMINATOIRE = 6.0  # Utile pour les règles de compensation
+    NOTE_ELIMINATOIRE = 6.0
+
+    # --- SÉCURITÉ JWT ---
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'votre-cle-secrete-jwt-super-longue')
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+
+    # --- API ---
+    API_TITLE = 'Harmony School API'
+    API_VERSION = 'v1'
+    API_RATE_LIMIT = '100 per hour'
 
     @staticmethod
     def init_app(app):
-        """Initialisation automatique des dossiers au démarrage"""
+        """Création automatique des dossiers nécessaires"""
         os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
         os.makedirs(Config.DOCUMENTS_FOLDER, exist_ok=True)
         os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
-
-        # Sous-dossiers pour organiser les uploads
         os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'photos'), exist_ok=True)
         os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'justificatifs'), exist_ok=True)
 
 
 class DevelopmentConfig(Config):
-    """Configuration pour le développement (votre machine)"""
+    """Configuration développement"""
     DEBUG = True
-    # Affiche les requêtes SQL dans la console (très utile pour debug)
     SQLALCHEMY_ECHO = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-                              'sqlite:///' + os.path.join(basedir, 'instance', 'academique_dev.db')
+
+    # Configuration Supabase (si disponible)
+    DB_URL = os.environ.get('SUPABASE_DB_URL')
+
+    # Fix pour Supabase
+    if DB_URL and DB_URL.startswith("postgres://"):
+        DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
+
+    # Utiliser Supabase si configuré, sinon SQLite local
+    if DB_URL and 'supabase' in DB_URL:
+        SQLALCHEMY_DATABASE_URI = DB_URL
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_size': 5,
+            'max_overflow': 10,
+            'pool_timeout': 30,
+            'pool_recycle': 1800,
+            'pool_pre_ping': True
+        }
+    else:
+        # SQLite local (fallback)
+        SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'instance', 'harmony.db')
+
 
 
 class TestingConfig(Config):
-    """Configuration pour les tests"""
+    """Configuration pour les tests (reste en local)"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
-                              'sqlite:///' + os.path.join(basedir, 'instance', 'academique_test.db')
-    WTF_CSRF_ENABLED = False  # Désactive la protection CSRF pour faciliter les tests
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'instance', 'academique_test.db')
+    WTF_CSRF_ENABLED = False
 
 
 class ProductionConfig(Config):
-    """Configuration pour le déploiement réel"""
+    """Configuration pour la production (Render)"""
     DEBUG = False
 
-    # Récupérer l'URL de la base de données depuis les variables d'environnement
-    database_url = os.environ.get('DATABASE_URL')
+    # Priorité: SUPABASE_DB_URL > DATABASE_URL
+    DB_URL = os.environ.get('SUPABASE_DB_URL') or os.environ.get('DATABASE_URL')
 
-    # Render utilise postgres:// mais SQLAlchemy 1.4+ nécessite postgresql://
-    if database_url and database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    # Fix pour Supabase
+    if DB_URL and DB_URL.startswith("postgres://"):
+        DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
 
-    # En production sur Render, utiliser PostgreSQL. Sinon SQLite en fallback
-    SQLALCHEMY_DATABASE_URI = database_url or \
-                              'sqlite:///' + os.path.join(basedir, 'instance', 'academique_prod.db')
+    SQLALCHEMY_DATABASE_URI = DB_URL or 'sqlite:///' + os.path.join(basedir, 'instance', 'prod.db')
 
-    # Paramètres optimisés pour PostgreSQL en production
-    SQLALCHEMY_POOL_SIZE = 10
-    SQLALCHEMY_POOL_RECYCLE = 3600  # Recycler les connexions toutes les heures
-    SQLALCHEMY_POOL_TIMEOUT = 30
-    SQLALCHEMY_MAX_OVERFLOW = 20
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 10,
+        'max_overflow': 20,
+        'pool_recycle': 1800,
+        'pool_pre_ping': True,
+        'connect_args': {
+            'connect_timeout': 10
+        }
+    }
 
 
-# Dictionnaire pour choisir l'environnement facilement
+# Dictionnaire de configuration
 config = {
     'development': DevelopmentConfig,
     'testing': TestingConfig,

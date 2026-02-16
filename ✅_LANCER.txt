@@ -1,0 +1,6 @@
+✅ TOUT FONCTIONNE !
+DANS PYCHARM TERMINAL:
+venv/bin/python3 run.py
+→ http://localhost:5000
+→ admin / admin123
+✅ PRÊT !

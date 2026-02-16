@@ -3,142 +3,471 @@
 
 {% block extra_css %}
 <style>
-    /* On change le fond pour quelque chose de plus frais */
-    body { background: radial-gradient(circle at top right, #fdfbfb 0%, #ebedee 100%); }
+    /* Empêcher le débordement de texte */
+    * {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
 
-    /* En-tête avec un dégradé plus vif */
+    body {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        overflow-x: hidden;
+        min-height: 100vh;
+    }
+
+    /* Container pour éviter débordement */
+    .container-fluid {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    /* En-tête doré */
     .action-header {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 20px;
-        border-left: 8px solid #4361ee; /* Bleu électrique */
-        box-shadow: 0 10px 30px rgba(67, 97, 238, 0.1);
-        margin-bottom: 2rem;
+        background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
+        padding: 1.2rem;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(218, 165, 32, 0.3);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
     }
 
     .card-form {
         border: none;
-        border-radius: 25px;
-        box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         background: white;
         overflow: hidden;
+        max-width: 100%;
     }
 
-    /* Titres de section colorés */
+    /* Titres de section */
     .form-section-title {
         font-size: 0.9rem;
         text-transform: uppercase;
-        letter-spacing: 2px;
-        color: #4361ee;
-        font-weight: 900;
-        margin-bottom: 25px;
+        letter-spacing: 1.5px;
+        background: linear-gradient(90deg, #daa520 0%, #ffd700 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+        margin-bottom: 20px;
         display: flex;
         align-items: center;
     }
 
-    /* Icônes de section avec fond coloré */
+    /* Icônes de section */
     .section-icon {
-        width: 35px;
-        height: 35px;
-        background: rgba(67, 97, 238, 0.1);
-        color: #4361ee;
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #daa520 0%, #ffd700 100%);
+        color: white;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 10px;
-        margin-right: 15px;
+        margin-right: 12px;
+        flex-shrink: 0;
     }
 
-    /* Inputs avec focus coloré */
+    /* Inputs avec focus amélioré */
     .form-control-lg, .form-select-lg {
-        border-radius: 15px;
-        border: 2px solid #f0f2f5;
-        padding: 0.8rem 1.2rem;
+        border-radius: 12px;
+        border: 2px solid #e0e0e0;
+        padding: 0.75rem 1rem;
+        max-width: 100%;
+        transition: all 0.3s ease;
     }
 
-    .form-control-lg:focus {
-        border-color: #4361ee;
-        box-shadow: 0 0 15px rgba(67, 97, 238, 0.2);
-        background: #fbfbff;
+    .form-control-lg:focus, .form-select-lg:focus {
+        border-color: #daa520;
+        box-shadow: 0 0 0 0.2rem rgba(218, 165, 32, 0.25);
+        background: #fffef5;
     }
 
-    /* Icônes des inputs */
+    /* Boutons radio personnalisés */
+    .btn-check:checked + label {
+        background: linear-gradient(135deg, #ffd700 0%, #daa520 100%) !important;
+        color: white !important;
+        border-color: #daa520 !important;
+        transform: scale(1.02);
+        box-shadow: 0 8px 20px rgba(218, 165, 32, 0.4);
+        font-weight: 700;
+    }
+
+    .btn-outline-info:hover,
+    .btn-outline-success:hover,
+    .btn-outline-primary:hover,
+    .btn-outline-warning:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(218, 165, 32, 0.3);
+        background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
+        color: white;
+    }
+
+    /* Cartes avec effets */
+    .card {
+        overflow: hidden;
+        word-break: break-word;
+        transition: all 0.3s ease;
+    }
+
+    /* Boutons améliorés */
+    .btn {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: all 0.3s ease;
+        border-width: 2px;
+    }
+
     .input-group-text {
-        border-radius: 15px 0 0 15px;
-        background: #4361ee;
+        border-radius: 12px 0 0 12px;
+        background: linear-gradient(135deg, #daa520 0%, #ffd700 100%);
         color: white;
         border: none;
+        font-weight: 600;
     }
 
-    /* Bouton principal vibrant */
+    /* Bouton principal */
     .btn-gradient-primary {
-        background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
+        background: linear-gradient(135deg, #daa520 0%, #ffd700 100%);
         border: none;
         color: white;
-        box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3);
+        box-shadow: 0 8px 20px rgba(218, 165, 32, 0.3);
+        transition: all 0.3s ease;
+        font-weight: 600;
     }
 
     .btn-gradient-primary:hover {
         transform: scale(1.05);
         color: white;
-        box-shadow: 0 15px 25px rgba(114, 9, 183, 0.4);
+        box-shadow: 0 12px 25px rgba(218, 165, 32, 0.4);
+        background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
     }
 
     .btn-light-custom {
-        background: #f8f9fa;
-        color: #6c757d;
-        border-radius: 50px;
+        background: white;
+        color: #daa520;
+        border-radius: 40px;
+        transition: all 0.3s ease;
+        border: 2px solid #daa520;
+        font-weight: 600;
     }
 
-    /* Badge pour les classes */
-    .option-badge {
-        font-size: 0.8rem;
-        background: #eef2ff;
-        color: #4361ee;
-        padding: 2px 8px;
-        border-radius: 5px;
+    .btn-light-custom:hover {
+        background: #fffef5;
+        transform: translateY(-2px);
+        border-color: #ffd700;
+        box-shadow: 0 5px 15px rgba(218, 165, 32, 0.2);
+    }
+
+    /* Labels et textes */
+    label, .form-label {
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    /* Alertes */
+    .alert {
+        border-radius: 12px;
+        border: none;
+    }
+
+    .alert-info {
+        background: linear-gradient(135deg, #fffef5 0%, #fff8e1 100%);
+        color: #b8860b;
+        border-left: 5px solid #daa520;
+    }
+
+    /* Style pour le bouton "Définir la nature" */
+    #btn-nature {
+        background: white !important;
+        border: 2px solid #daa520 !important;
+    }
+
+    #btn-nature:hover {
+        background: linear-gradient(90deg, #fffef5 0%, #fff8e1 100%) !important;
+        box-shadow: 0 4px 15px rgba(218, 165, 32, 0.2);
+    }
+
+    #btn-nature:active {
+        transform: scale(0.98);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid px-4 py-4" style="max-width: 1400px;">
     <div class="action-header d-flex justify-content-between align-items-center animate__animated animate__fadeInDown">
         <div class="d-flex align-items-center">
-            <div class="bg-primary text-white p-3 rounded-4 me-3 shadow" style="background: linear-gradient(135deg, #4361ee, #4cc9f0) !important;">
+            <div class="text-white p-3 rounded-4 me-3 shadow" style="background: linear-gradient(135deg, #daa520, #ffd700) !important;">
                 <i class="fas fa-magic fa-lg"></i>
             </div>
             <div>
-                <h4 class="mb-0 fw-bold" style="color: #2b2d42;">Création Intuitive</h4>
-                <p class="text-muted small mb-0">Donnez vie à une nouvelle unité d'enseignement</p>
+                <h4 class="mb-0 fw-bold text-white">Création UE</h4>
+                <p class="small mb-0 text-white opacity-75">Nouvelle unité d'enseignement</p>
             </div>
         </div>
         <div class="d-flex gap-3">
             <a href="{{ url_for('directeur.dashboard') }}" class="btn btn-light-custom btn-pill px-4 shadow-sm text-decoration-none">
-                <i class="fas fa-th-large me-2 text-primary"></i> Dashboard
+                <i class="fas fa-th-large me-2"></i> Dashboard
             </a>
         </div>
     </div>
 
     <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <div class="card card-form">
-                <div class="card-body p-5">
+        <div class="col-12">
+            <div class="card card-form" style="overflow: hidden;">
+                <div class="card-body p-3 p-lg-4">
                     <form method="POST">
+
+                        <!-- ===================================== -->
+                        <!-- SECTION NATURE DE L'UE (STYLE LISTE) -->
+                        <!-- ===================================== -->
+                        <div class="mb-4" style="border: 2px solid #daa520; border-radius: 15px; padding: 0; overflow: hidden; background: white;">
+                            <button type="button" class="w-100 text-start p-3 border-0 d-flex justify-content-between align-items-center"
+                                    id="btn-nature" onclick="toggleNatureSection()"
+                                    style="background: white;
+                                           cursor: pointer;
+                                           transition: all 0.3s ease;">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-sliders-h me-3" style="color: #daa520; font-size: 1.3rem;"></i>
+                                    <div>
+                                        <strong style="color: #daa520; font-size: 1.1rem;">Définir la Nature de l'UE</strong>
+                                        <div class="small mt-1" style="color: #b8860b;">Cliquez pour choisir le type et le mode de création</div>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-down" id="chevron-nature" style="color: #daa520; transition: transform 0.3s ease;"></i>
+                            </button>
+                        </div>
+
+                        <!-- ===================================== -->
+                        <!-- SECTION NATURE (CACHÉE PAR DÉFAUT) -->
+                        <!-- ===================================== -->
+                        <div id="nature-section" class="d-none">
+
+                            <!-- MODE DE CRÉATION -->
+                            <div class="form-section-title">
+                                <div class="section-icon"><i class="fas fa-sitemap"></i></div>
+                                Mode de Création
+                            </div>
+
+                            <div class="alert alert-info mb-3 p-3">
+                                <h6 class="fw-bold mb-2 small"><i class="fas fa-lightbulb me-2"></i>Modes disponibles :</h6>
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <div class="p-2 rounded" style="background: white; border: 2px solid #daa520;">
+                                            <h6 class="small mb-1" style="color: #daa520;"><i class="fas fa-book me-1"></i>SPÉCIFIQUE</h6>
+                                            <ul class="small mb-0" style="font-size: 0.75rem; color: #b8860b;">
+                                                <li>1 UE → 1 classe</li>
+                                                <li>Code préservé</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="p-2 rounded" style="background: linear-gradient(135deg, #fffef5 0%, #fff8e1 100%); border: 2px solid #ffd700;">
+                                            <h6 class="small mb-1" style="color: #daa520;"><i class="fas fa-users me-1"></i>TRONC COMMUN</h6>
+                                            <ul class="small mb-0" style="font-size: 0.75rem; color: #b8860b;">
+                                                <li>1 UE → N classes</li>
+                                                <li>1 seul prof</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="p-2 rounded" style="background: white; border: 2px solid #daa520;">
+                                            <h6 class="small mb-1" style="color: #daa520;"><i class="fas fa-layer-group me-1"></i>UE FILLES</h6>
+                                            <ul class="small mb-0" style="font-size: 0.75rem; color: #b8860b;">
+                                                <li>N UE (1/classe)</li>
+                                                <li>Code muté</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <input type="radio" class="btn-check" name="mode_creation" id="mode_specifique" value="ue_specifique" checked>
+                                            <label class="btn w-100 py-3 h-100" for="mode_specifique" style="border: 3px solid #daa520; color: #b8860b; background: white;">
+                                                <i class="fas fa-book fa-2x d-block mb-2" style="color: #daa520;"></i>
+                                                <strong>SPÉCIFIQUE</strong>
+                                                <div class="small mt-1">1 UE → 1 Classe</div>
+                                            </label>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <input type="radio" class="btn-check" name="mode_creation" id="mode_tronc" value="tronc_commun">
+                                            <label class="btn w-100 py-3 h-100" for="mode_tronc" style="border: 3px solid #ffd700; color: #b8860b; background: #fffef5;">
+                                                <i class="fas fa-users fa-2x d-block mb-2" style="color: #daa520;"></i>
+                                                <strong>TRONC COMMUN</strong>
+                                                <div class="small mt-1">1 UE → N Classes</div>
+                                            </label>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <input type="radio" class="btn-check" name="mode_creation" id="mode_filles" value="ue_filles">
+                                            <label class="btn w-100 py-3 h-100" for="mode_filles" style="border: 3px solid #daa520; color: #b8860b; background: white;">
+                                                <i class="fas fa-layer-group fa-2x d-block mb-2" style="color: #daa520;"></i>
+                                                <strong>UE FILLES</strong>
+                                                <div class="small mt-1">N UE (1 par Classe)</div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            </div>
+
+                        <!-- ===================================== -->
+                        <!-- TYPE D'UE : SIMPLE OU COMPOSITE -->
+                        <!-- ===================================== -->
+                        <div class="form-section-title mt-4">
+                            <div class="section-icon"><i class="fas fa-puzzle-piece"></i></div>
+                            Type d'Évaluation
+                        </div>
+
+                        <div class="alert alert-info mb-3 p-3">
+                            <small><i class="fas fa-info-circle me-1"></i>Choisissez le type d'évaluation pour cette UE :</small>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <input type="radio" class="btn-check" name="type_evaluation" id="eval_simple" value="simple" checked>
+                                <label class="btn w-100 py-3 h-100" for="eval_simple" style="border: 3px solid #daa520; color: #b8860b; background: white;">
+                                    <i class="fas fa-file-alt fa-2x d-block mb-2" style="color: #daa520;"></i>
+                                    <strong>SIMPLE</strong>
+                                    <div class="small mt-1">1 note unique</div>
+                                </label>
+                            </div>
+
+                            <div class="col-md-6">
+                                <input type="radio" class="btn-check" name="type_evaluation" id="eval_composite" value="composite">
+                                <label class="btn w-100 py-3 h-100" for="eval_composite" style="border: 3px solid #ffd700; color: #b8860b; background: #fffef5;">
+                                    <i class="fas fa-layer-group fa-2x d-block mb-2" style="color: #daa520;"></i>
+                                    <strong>COMPOSITE</strong>
+                                    <div class="small mt-1">Note = Sous-UE pondérées</div>
+                                </label>
+                            </div>
+                        </div>
+
+                        </div>
+
+                        </div><!-- FIN nature-section -->
 
                         <div class="form-section-title">
                             <div class="section-icon"><i class="fas fa-fingerprint"></i></div>
                             Identité du Module
                         </div>
                         <div class="row g-4 mb-5">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label fw-bold">Code Unique</label>
-                                <input type="text" name="code_ue" class="form-control form-control-lg" placeholder="MATH101" required>
+                                <input type="text" name="code_ue" class="form-control form-control-lg" placeholder="GEC1220" required>
+                                <small class="text-muted" id="code-hint">
+                                    <i class="fas fa-info-circle"></i> <span id="code-hint-text">Code préservé</span>
+                                </small>
                             </div>
-                            <div class="col-md-8">
+                            <div class="col-md-6">
                                 <label class="form-label fw-bold">Nom de l'UE</label>
-                                <input type="text" name="intitule" class="form-control form-control-lg" placeholder="Ex: Analyse Mathématique II" required>
+                                <input type="text" name="intitule" class="form-control form-control-lg" placeholder="Ex: Algèbre et Pratique" required>
                             </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Semestre</label>
+                                <select name="semestre" class="form-select form-select-lg" required>
+                                    <option value="">Choisir...</option>
+                                    <option value="1">Semestre 1</option>
+                                    <option value="2">Semestre 2</option>
+                                    <option value="3">Semestre 3</option>
+                                    <option value="4">Semestre 4</option>
+                                    <option value="5">Semestre 5</option>
+                                    <option value="6">Semestre 6</option>
+                                    <option value="7">Semestre 7</option>
+                                    <option value="8">Semestre 8</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- SECTION UE COMPOSITE -->
+                        <div id="composite-section" class="d-none">
+                            <div class="alert alert-warning mb-4">
+                                <h6 class="fw-bold"><i class="fas fa-layer-group me-2"></i>Configuration UE Composite</h6>
+                                <p class="small mb-2">L'UE composite est formée de plusieurs sous-UE. Définissez-les ci-dessous :</p>
+                            </div>
+
+                            <div class="form-section-title">
+                                <div class="section-icon"><i class="fas fa-puzzle-piece"></i></div>
+                                Sous-UE (Composantes)
+                            </div>
+
+                            <div id="sous-ues-container">
+                                <!-- Sous-UE 1 -->
+                                <div class="card mb-3 border-primary sous-ue-card">
+                                    <div class="card-header bg-primary text-white d-flex justify-content-between">
+                                        <strong>Sous-UE 1</strong>
+                                        <small>Préfixe : 1</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-8">
+                                                <label class="form-label">Intitulé</label>
+                                                <input type="text" name="sous_ue_1_intitule" class="form-control" placeholder="Ex: Algèbre Linéaire">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Crédits ECTS</label>
+                                                <input type="number" name="sous_ue_1_credits" class="form-control sous-ue-credits" min="1" max="10" value="3">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Sous-UE 2 -->
+                                <div class="card mb-3 border-success sous-ue-card">
+                                    <div class="card-header bg-success text-white d-flex justify-content-between">
+                                        <strong>Sous-UE 2</strong>
+                                        <small>Préfixe : 2</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-8">
+                                                <label class="form-label">Intitulé</label>
+                                                <input type="text" name="sous_ue_2_intitule" class="form-control" placeholder="Ex: TP Algèbre">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Crédits ECTS</label>
+                                                <input type="number" name="sous_ue_2_credits" class="form-control sous-ue-credits" min="1" max="10" value="2">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Sous-UE 3 (optionnelle) -->
+                                <div class="card mb-3 border-warning sous-ue-card">
+                                    <div class="card-header bg-warning text-dark d-flex justify-content-between">
+                                        <strong>Sous-UE 3 (Optionnelle)</strong>
+                                        <small>Préfixe : 3</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-8">
+                                                <label class="form-label">Intitulé</label>
+                                                <input type="text" name="sous_ue_3_intitule" class="form-control" placeholder="Ex: Projet">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Crédits ECTS</label>
+                                                <input type="number" name="sous_ue_3_credits" class="form-control sous-ue-credits" min="1" max="10" value="0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <strong>Total Crédits Parent :</strong> <span id="total-credits-composite" class="fs-5 fw-bold">5</span> ECTS
+                            </div>
+                        </div>
+                        <!-- FIN SECTION UE COMPOSITE -->
                         </div>
 
                         <div class="form-section-title">
@@ -147,20 +476,25 @@
                         </div>
                         <div class="row g-4 mb-5">
                             <div class="col-md-4">
-                                <label class="form-label fw-bold">Volume Horaire</label>
+                                <label class="form-label fw-bold">Crédits ECTS</label>
+                                <input type="number" name="credits" id="credits-input" class="form-control form-control-lg" value="3" min="1" max="10" required>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> 1 crédit = 12h
+                                </small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Volume Horaire (auto)</label>
                                 <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-hourglass-half"></i></span>
-                                    <input type="number" name="heures" class="form-control form-control-lg" placeholder="45" required>
+                                    <span class="input-group-text bg-light"><i class="fas fa-hourglass-half"></i></span>
+                                    <input type="text" id="heures-display" class="form-control form-control-lg bg-light" value="36" readonly>
                                     <span class="input-group-text bg-light text-dark border-start-0">Heures</span>
                                 </div>
+                                <small class="text-muted">Calculé automatiquement</small>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold">Crédits ECTS</label>
-                                <input type="number" name="credits" class="form-control form-control-lg" value="3" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold">Coefficient</label>
-                                <input type="number" name="coefficient" class="form-control form-control-lg" value="1" required>
+                                <label class="form-label fw-bold">Coefficient (auto)</label>
+                                <input type="text" id="coef-display" class="form-control form-control-lg bg-light" value="3" readonly>
+                                <small class="text-muted">Égal aux crédits</small>
                             </div>
                         </div>
 
@@ -170,21 +504,52 @@
                         </div>
                         <div class="row mb-5">
                             <div class="col-12">
-                                <label class="form-label fw-bold">Assigner à une Classe</label>
-                                <select name="classe_id" class="form-select form-select-lg" required>
-                                    <option value="" disabled selected>Où ce cours sera-t-il enseigné ?</option>
+                                <label class="form-label fw-bold mb-3">
+                                    <i class="fas fa-users me-2 text-primary"></i>Cochez les classes où cette UE sera enseignée
+                                </label>
+                                <p class="text-muted small mb-3">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Vous pouvez sélectionner plusieurs classes en cochant les cases. Au moins une classe est requise.
+                                </p>
+
+                                <div class="row g-3">
                                     {% for classe in classes %}
-                                    <option value="{{ classe.id }}">
-                                        📍 {{ classe.nom_classe }} — {{ classe.filiere.nom_filiere }}
-                                    </option>
+                                    <div class="col-md-6 col-lg-4">
+                                        <div class="form-check card p-3 border border-secondary classe-checkbox-card" style="cursor: pointer; transition: all 0.3s;">
+                                            <input
+                                                class="form-check-input me-2"
+                                                type="checkbox"
+                                                name="classes_ids"
+                                                value="{{ classe.id }}"
+                                                id="classe_{{ classe.id }}"
+                                            >
+                                            <label class="form-check-label w-100" for="classe_{{ classe.id }}" style="cursor: pointer;">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div class="flex-grow-1">
+                                                        <div class="fw-bold text-primary">📍 {{ classe.nom_classe }}</div>
+                                                        <div class="small text-muted">{{ classe.filiere.nom_filiere }}</div>
+                                                        <div class="mt-2">
+                                                            <span class="badge bg-info">Année {{ classe.annee }}</span>
+                                                            <span class="badge bg-secondary">{{ classe.cycle }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <i class="fas fa-check-circle text-success fs-4 check-icon" style="display: none;"></i>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
                                     {% endfor %}
-                                </select>
+                                </div>
+
+                                <div id="error-message" class="alert alert-warning mt-3" style="display: none;">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Veuillez sélectionner au moins une classe
+                                </div>
                             </div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-3 pt-4 border-top">
                             <a href="{{ url_for('directeur.liste_ues') }}" class="btn btn-light-custom btn-pill px-5">Annuler</a>
-                            <button type="submit" class="btn btn-gradient-primary btn-pill px-5">
+                            <button type="submit" class="btn btn-gradient-primary btn-pill px-5" id="submit-btn">
                                 <i class="fas fa-rocket me-2"></i> Lancer l'UE
                             </button>
                         </div>
@@ -194,4 +559,254 @@
         </div>
     </div>
 </div>
+
+<script>
+// ===================================
+// TOGGLE SECTION NATURE
+// ===================================
+function toggleNatureSection() {
+    const section = document.getElementById('nature-section');
+    const chevron = document.getElementById('chevron-nature');
+
+    if (section.classList.contains('d-none')) {
+        // Afficher la section
+        section.classList.remove('d-none');
+        section.classList.add('animate__animated', 'animate__fadeIn');
+
+        // Tourner le chevron vers le haut
+        chevron.style.transform = 'rotate(180deg)';
+
+        // Scroll vers la section
+        setTimeout(() => {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    } else {
+        // Masquer la section
+        section.classList.add('d-none');
+        section.classList.remove('animate__animated', 'animate__fadeIn');
+
+        // Tourner le chevron vers le bas
+        chevron.style.transform = 'rotate(0deg)';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // ===================================
+    // GESTION DU MODE (3 modes)
+    // ===================================
+    const modeSpecifique = document.getElementById('mode_specifique');
+    const modeTronc = document.getElementById('mode_tronc');
+    const modeFilles = document.getElementById('mode_filles');
+    const codeHintText = document.getElementById('code-hint-text');
+
+    function updateModeHint() {
+        if (modeSpecifique.checked) {
+            // UE Spécifique : 1 UE pour 1 classe
+            codeHintText.textContent = "Code préservé pour 1 classe (ex: MTH100)";
+            codeHintText.parentElement.className = "text-info small";
+        } else if (modeTronc.checked) {
+            // Tronc Commun : Code préservé
+            codeHintText.textContent = "Code préservé pour tronc commun (ex: ANG100)";
+            codeHintText.parentElement.className = "text-success small";
+        } else {
+            // UE Filles : Code muté
+            codeHintText.textContent = "Code sera muté par classe (ex: MTH100-L1INFO)";
+            codeHintText.parentElement.className = "text-primary small";
+        }
+    }
+
+    modeSpecifique.addEventListener('change', updateModeHint);
+    modeTronc.addEventListener('change', updateModeHint);
+    modeFilles.addEventListener('change', updateModeHint);
+    updateModeHint(); // Initial
+
+    // ===================================
+    // GESTION TYPE ÉVALUATION (Simple/Composite)
+    // ===================================
+    const evalSimple = document.getElementById('eval_simple');
+    const evalComposite = document.getElementById('eval_composite');
+    const compositeSection = document.getElementById('composite-section');
+    const creditsInput = document.getElementById('credits-input');
+
+    function toggleCompositeSection() {
+        if (evalComposite.checked) {
+            // Afficher la section composite
+            compositeSection.classList.remove('d-none');
+            // Désactiver le champ crédits manuel
+            creditsInput.disabled = true;
+            creditsInput.parentElement.parentElement.style.opacity = '0.5';
+            // Calculer le total des crédits des sous-UE
+            updateCompositeCredits();
+        } else {
+            // Masquer la section composite
+            compositeSection.classList.add('d-none');
+            // Réactiver le champ crédits
+            creditsInput.disabled = false;
+            creditsInput.parentElement.parentElement.style.opacity = '1';
+        }
+    }
+
+    evalSimple.addEventListener('change', toggleCompositeSection);
+    evalComposite.addEventListener('change', toggleCompositeSection);
+
+    // ===================================
+    // CALCUL AUTOMATIQUE CRÉDITS COMPOSITE
+    // ===================================
+    function updateCompositeCredits() {
+        const sousUeCredits = document.querySelectorAll('.sous-ue-credits');
+        let total = 0;
+
+        sousUeCredits.forEach(input => {
+            const value = parseInt(input.value) || 0;
+            total += value;
+        });
+
+        // Mettre à jour le total affiché
+        document.getElementById('total-credits-composite').textContent = total;
+
+        // Mettre à jour le champ credits caché
+        creditsInput.value = total;
+
+        // Mettre à jour les calculs automatiques
+        updateCalculations();
+    }
+
+    // Écouter les changements sur les champs de crédits des sous-UE
+    document.querySelectorAll('.sous-ue-credits').forEach(input => {
+        input.addEventListener('input', updateCompositeCredits);
+        input.addEventListener('change', updateCompositeCredits);
+    });
+
+    // ===================================
+    // CALCUL AUTOMATIQUE HEURES ET COEFFICIENT
+    // ===================================
+    const heuresDisplay = document.getElementById('heures-display');
+    const coefDisplay = document.getElementById('coef-display');
+
+    function updateCalculations() {
+        const credits = parseInt(creditsInput.value) || 0;
+        const heures = credits * 12;  // 1 crédit = 12 heures
+        const coefficient = credits;   // Coefficient = Crédits
+
+        heuresDisplay.value = heures;
+        coefDisplay.value = coefficient;
+    }
+
+    // Mise à jour initiale
+    updateCalculations();
+
+    // Mise à jour à chaque changement
+    creditsInput.addEventListener('input', updateCalculations);
+    creditsInput.addEventListener('change', updateCalculations);
+
+    // ===================================
+    // GESTION DES CHECKBOXES CLASSES
+    // ===================================
+    // Récupérer tous les éléments
+    const checkboxCards = document.querySelectorAll('.classe-checkbox-card');
+    const form = document.querySelector('form');
+    const errorMessage = document.getElementById('error-message');
+
+    // Fonction pour mettre à jour l'apparence d'une card
+    function updateCardAppearance(card, checkbox) {
+        const checkIcon = card.querySelector('.check-icon');
+
+        if (checkbox.checked) {
+            card.classList.remove('border-secondary');
+            card.classList.add('border-success', 'bg-light');
+            checkIcon.style.display = 'block';
+        } else {
+            card.classList.remove('border-success', 'bg-light');
+            card.classList.add('border-secondary');
+            checkIcon.style.display = 'none';
+        }
+    }
+
+    // Ajouter l'événement click sur chaque card
+    checkboxCards.forEach(card => {
+        const checkbox = card.querySelector('input[type="checkbox"]');
+
+        // Clic sur la card (sauf si on clique directement sur le checkbox ou le label)
+        card.addEventListener('click', function(e) {
+            // Ne pas déclencher si on a cliqué sur le checkbox lui-même (évite le double toggle)
+            if (e.target.type !== 'checkbox') {
+                checkbox.checked = !checkbox.checked;
+                updateCardAppearance(card, checkbox);
+                errorMessage.style.display = 'none';
+            }
+        });
+
+        // Événement change sur le checkbox (pour les clics directs sur le checkbox)
+        checkbox.addEventListener('change', function() {
+            updateCardAppearance(card, checkbox);
+            errorMessage.style.display = 'none';
+        });
+
+        // Animation hover
+        card.addEventListener('mouseenter', function() {
+            card.style.transform = 'translateY(-2px)';
+            card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        });
+
+        card.addEventListener('mouseleave', function() {
+            card.style.transform = 'translateY(0)';
+            card.style.boxShadow = 'none';
+        });
+    });
+
+    // Validation du formulaire
+    form.addEventListener('submit', function(e) {
+        const checkedBoxes = document.querySelectorAll('input[name="classes_ids"]:checked');
+
+        if (checkedBoxes.length === 0) {
+            e.preventDefault();
+            errorMessage.style.display = 'block';
+            errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return false;
+        }
+
+        return true;
+    });
+
+    // Bouton "Tout cocher" / "Tout décocher" (optionnel - peut être ajouté plus tard)
+    const selectAllBtn = document.createElement('button');
+    selectAllBtn.type = 'button';
+    selectAllBtn.className = 'btn btn-sm btn-outline-primary mb-3';
+    selectAllBtn.innerHTML = '<i class="fas fa-check-double me-2"></i>Tout sélectionner';
+    selectAllBtn.onclick = function() {
+        const allChecked = document.querySelectorAll('input[name="classes_ids"]:checked').length === checkboxCards.length;
+
+        checkboxCards.forEach(card => {
+            const checkbox = card.querySelector('input[type="checkbox"]');
+            checkbox.checked = !allChecked;
+            updateCardAppearance(card, checkbox);
+        });
+
+        this.innerHTML = allChecked ?
+            '<i class="fas fa-check-double me-2"></i>Tout sélectionner' :
+            '<i class="fas fa-times me-2"></i>Tout désélectionner';
+    };
+
+    // Ajouter le bouton avant la grille de classes
+    const classesGrid = document.querySelector('.row.g-3');
+    if (classesGrid) {
+        classesGrid.parentElement.insertBefore(selectAllBtn, classesGrid);
+    }
+});
+</script>
+
+<style>
+.classe-checkbox-card {
+    min-height: 100px;
+}
+
+.classe-checkbox-card:hover {
+    cursor: pointer;
+}
+
+.form-check-input:checked ~ .form-check-label {
+    font-weight: 600;
+}
+</style>
+
 {% endblock %}

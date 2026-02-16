@@ -167,7 +167,7 @@
                                     <option value="" disabled selected>Choisir UE...</option>
                                     {% for ue in toutes_les_ues %}
                                         {% if ue not in enseignant.ues %}
-                                        <option value="{{ ue.id }}">{{ ue.code_ue }} - {{ ue.classe.nom_classe }}</option>
+                                        <option value="{{ ue.id }}">{{ ue.code_ue }} - {{ ue.classe.nom_classe if ue.classe else 'N/A' }}</option>
                                         {% endif %}
                                     {% endfor %}
                                 </select>

@@ -1,0 +1,81 @@
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║         🚀 DÉPLOIEMENT AUTOMATIQUE KSTAR-HOME 🚀              ║
+║                                                               ║
+║                     VERSION 3.0 ULTRA                         ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+📖 GUIDE ULTRA-RAPIDE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ ÉTAPE 1: Configuration Initiale (1 FOIS SEULEMENT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1️⃣  Sur Render (https://dashboard.render.com)
+   • Ouvrir votre service Web
+   • Aller dans Settings → Deploy Hook
+   • Cliquer "Create Deploy Hook"
+   • COPIER l'URL (commence par https://api.render.com/deploy/...)
+2️⃣  Sur GitHub (https://github.com)
+   • Aller dans votre dépôt
+   • Settings → Secrets and variables → Actions
+   • Cliquer "New repository secret"
+   • Nom: RENDER_DEPLOY_HOOK
+   • Valeur: COLLER l'URL de Render
+   • Cliquer "Add secret"
+3️⃣  Terminer
+   • C'est tout ! Configuration terminée ✅
+✅ ÉTAPE 2: Utilisation Quotidienne
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 MÉTHODE ULTRA-SIMPLE (RECOMMANDÉE)
+   ./deploy_auto.sh
+   → Script interactif qui fait TOUT automatiquement
+🎯 MÉTHODE MANUELLE (si vous préférez)
+   git add .
+   git commit -m "Mes modifications"
+   git push origin main
+   → Déploiement automatique en 3-5 minutes
+📊 SUIVI DU DÉPLOIEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• GitHub Actions: https://github.com/VOTRE-REPO/actions
+• Render Dashboard: https://dashboard.render.com
+Timeline:
+  [0-1 min] GitHub Actions démarre
+  [1-2 min] Tests et vérifications  
+  [2-5 min] Render build et deploy
+  [5 min] ✅ SITE MIS À JOUR !
+🆕 NOUVEAUTÉS VERSION 3.0
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Laboratoire enseignant: 100% fonctionnel
+✅ IA V3 avec Gemini Pro
+✅ Déploiement automatique GitHub Actions
+✅ Script deploy_auto.sh ultra-simple
+✅ Documentation complète
+🐛 DÉPANNAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ "Le site ne se met pas à jour"
+   → Attendez 5 minutes
+   → Videz le cache (Ctrl+F5)
+   → Vérifiez les logs sur Render
+❌ "GitHub Actions échoue"
+   → Vérifiez l'onglet Actions sur GitHub
+   → Regardez les erreurs dans les logs
+   → Testez localement: python3 run.py
+❌ "Render build échoue"
+   → Vérifiez les logs sur Render
+   → Erreur fréquente: requirements.txt
+   → Sur Render: Manual Deploy → Clear cache & deploy
+📚 DOCUMENTATION COMPLÈTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📄 DEPLOIEMENT_AUTOMATIQUE_COMPLET.md
+   → Guide détaillé étape par étape
+📄 RECAPITULATIF_AMELIORATIONS_V3.md
+   → Toutes les améliorations de cette version
+📄 START_HERE.md
+   → Guide général du projet
+🎉 C'EST TOUT !
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Une seule commande pour déployer:
+   ./deploy_auto.sh
+Le reste est AUTOMATIQUE ! 🚀
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Version: 3.0 ULTRA | Date: 2026-02-12 | By: GitHub Copilot
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

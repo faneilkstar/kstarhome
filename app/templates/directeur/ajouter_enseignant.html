@@ -45,6 +45,26 @@
                             </div>
 
                             <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">DATE DE NAISSANCE *</label>
+                                <input type="date" name="date_naissance" class="form-control form-control-lg bg-light border-0 rounded-4" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">SEXE *</label>
+                                <select name="sexe" class="form-select form-select-lg bg-light border-0 rounded-4" required>
+                                    <option value="" disabled selected>-- Sélectionner --</option>
+                                    <option value="M">Masculin</option>
+                                    <option value="F">Féminin</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">TÉLÉPHONE *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-0 rounded-start-4"><i class="fas fa-phone text-muted"></i></span>
+                                    <input type="tel" name="telephone" class="form-control form-control-lg bg-light border-0 rounded-end-4" required placeholder="+228 XX XX XX XX">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted">GRADE ACADÉMIQUE *</label>
                                 <select name="grade" class="form-select form-select-lg bg-light border-0 rounded-4" required>
                                     <option value="" disabled selected>-- Sélectionner --</option>
@@ -54,9 +74,14 @@
                                     <option value="Vacataire">Vacataire</option>
                                 </select>
                             </div>
+
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted">DOMAINE D'EXPERTISE</label>
                                 <input type="text" name="specialite" class="form-control form-control-lg bg-light border-0 rounded-4" placeholder="ex: Cybersécurité">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">ADRESSE</label>
+                                <input type="text" name="adresse" class="form-control form-control-lg bg-light border-0 rounded-4" placeholder="ex: Lomé, Tokoin">
                             </div>
                         </div>
                     </div>

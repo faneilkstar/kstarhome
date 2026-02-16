@@ -197,7 +197,7 @@
                                     <div class="text-muted small fw-bold">{{ ue.code_ue }}</div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-dark px-3 py-2 rounded-pill border fw-bold">{{ ue.classe.nom_classe }}</span>
+                                    <span class="badge bg-light text-dark px-3 py-2 rounded-pill border fw-bold">{{ ue.classe.nom_classe if ue.classe else 'N/A' }}</span>
                                 </td>
                                 <td class="text-center fw-900 text-warning">{{ ue.credits }}</td>
                                 <td class="text-end">

@@ -586,7 +586,7 @@ def telecharger_observations():
     elif moyenne >= 12:
         analyse = f"<b>Profil: BIEN</b><br/>Résultats satisfaisants ({moyenne}/20) avec des performances correctes. Potentiel d'amélioration détecté. Recommandation: Renforcer le travail personnel pour atteindre 14+."
     elif moyenne >= 10:
-        analyse = f"<b>Profil: PASSABLE</b><br/>Niveau juste acceptable ({moyenne}/20). Fragilités détectées dans certaines matières. Recommandation: Soutien pédagogique recommandé, travail régulier indispensable."
+        analyse = f"<b>Profil: PASSABLE</b><br/>Niveau juste acceptable ({moyenne}/20). Fragilités détectées dans certaines UE. Recommandation: Soutien pédagogique recommandé, travail régulier indispensable."
     else:
         analyse = f"<b>Profil: INSUFFISANT</b><br/>Moyenne de {moyenne}/20 en dessous du seuil. Difficultés majeures identifiées. Recommandation URGENTE: Accompagnement personnalisé, révision des bases, entretien pédagogique."
 
@@ -628,9 +628,9 @@ def telecharger_observations():
     if moyenne < 10:
         reco_text += "• Rendez-vous obligatoire avec le responsable pédagogique<br/>• Plan de remise à niveau à mettre en place<br/>• Suivi hebdomadaire recommandé"
     elif moyenne < 12:
-        reco_text += "• Renforcer le travail personnel<br/>• Participer aux séances de tutorat<br/>• Revoir les bases des matières faibles"
+        reco_text += "• Renforcer le travail personnel<br/>• Participer aux séances de tutorat<br/>• Revoir les bases des UE faibles"
     elif moyenne < 14:
-        reco_text += "• Maintenir l'effort actuel<br/>• Viser l'excellence dans les matières fortes<br/>• Consolider les matières moyennes"
+        reco_text += "• Maintenir l'effort actuel<br/>• Viser l'excellence dans les UE fortes<br/>• Consolider les UE moyennes"
     else:
         reco_text += "• Continuer sur cette excellente voie<br/>• Approfondir les connaissances<br/>• Participer aux projets avancés"
 
@@ -911,3 +911,209 @@ def bibliotheque_ecole():
     # On récupère tous les livres
     livres = Livre.query.order_by(Livre.titre).all()
     return render_template('etudiant/bibliotheque.html', livres=livres)
+
+
+@bp.route('/telecharger-fiche-ue')
+@etudiant_required
+def telecharger_fiche_ue():
+    """Génère et télécharge la fiche d'inscription UE avec photo"""
+    etudiant = Etudiant.query.filter_by(user_id=current_user.id).first_or_404()
+
+    # Récupérer les UE inscrites
+    inscriptions = InscriptionUE.query.filter_by(
+        etudiant_id=etudiant.id,
+        statut='validé'
+    ).all()
+
+    if not inscriptions:
+        flash("Vous devez d'abord choisir vos UE avant de télécharger la fiche.", "warning")
+        return redirect(url_for('etudiant.choisir_ues'))
+
+    # Création du PDF
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    # === EN-TÊTE ===
+    # Logo/Titre
+    c.setFont("Helvetica-Bold", 20)
+    c.setFillColor(colors.HexColor('#1e3a8a'))
+    c.drawCentredString(width/2, height - 50, "FICHE D'INSCRIPTION PÉDAGOGIQUE")
+
+    c.setFont("Helvetica", 12)
+    c.setFillColor(colors.black)
+    c.drawCentredString(width/2, height - 70, f"Année Académique 2025-2026")
+
+    # Ligne de séparation
+    c.setStrokeColor(colors.HexColor('#1e3a8a'))
+    c.setLineWidth(2)
+    c.line(50, height - 85, width - 50, height - 85)
+
+    # === PHOTO ET INFORMATIONS ÉTUDIANT ===
+    y_pos = height - 120
+
+    # Cadre pour photo (à gauche)
+    photo_x = 60
+    photo_y = y_pos - 80
+    photo_size = 80
+
+    # Rectangle pour la photo
+    c.setStrokeColor(colors.HexColor('#1e3a8a'))
+    c.setLineWidth(2)
+    c.rect(photo_x, photo_y, photo_size, photo_size, stroke=1, fill=0)
+
+    # Texte "PHOTO" au centre du rectangle
+    c.setFont("Helvetica", 10)
+    c.setFillColor(colors.grey)
+    c.drawCentredString(photo_x + photo_size/2, photo_y + photo_size/2 - 5, "PHOTO")
+    c.drawCentredString(photo_x + photo_size/2, photo_y + photo_size/2 - 20, "D'IDENTITÉ")
+
+    # Informations à droite de la photo
+    info_x = photo_x + photo_size + 30
+    info_y = y_pos
+
+    c.setFont("Helvetica-Bold", 12)
+    c.setFillColor(colors.black)
+    c.drawString(info_x, info_y, "INFORMATIONS ÉTUDIANT")
+
+    c.setFont("Helvetica", 10)
+    info_y -= 25
+
+    # Nom complet
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(info_x, info_y, "Nom & Prénom :")
+    c.setFont("Helvetica", 10)
+    c.drawString(info_x + 100, info_y, f"{etudiant.nom.upper()} {etudiant.prenom.title()}")
+
+    info_y -= 18
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(info_x, info_y, "Matricule :")
+    c.setFont("Helvetica", 10)
+    c.drawString(info_x + 100, info_y, etudiant.matricule or "En attente")
+
+    info_y -= 18
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(info_x, info_y, "Classe :")
+    c.setFont("Helvetica", 10)
+    c.drawString(info_x + 100, info_y, etudiant.classe.nom_classe if etudiant.classe else "N/A")
+
+    info_y -= 18
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(info_x, info_y, "Filière :")
+    c.setFont("Helvetica", 10)
+    filiere_nom = etudiant.filiere_objet.nom_filiere if etudiant.filiere_objet else "N/A"
+    c.drawString(info_x + 100, info_y, filiere_nom)
+
+    # === LISTE DES UE INSCRITES ===
+    y_pos = photo_y - 40
+
+    c.setFont("Helvetica-Bold", 14)
+    c.setFillColor(colors.HexColor('#1e3a8a'))
+    c.drawString(50, y_pos, "UNITÉS D'ENSEIGNEMENT (UE) INSCRITES")
+
+    y_pos -= 20
+    c.setStrokeColor(colors.HexColor('#1e3a8a'))
+    c.setLineWidth(1)
+    c.line(50, y_pos, width - 50, y_pos)
+
+    # Tableau des UE
+    y_pos -= 30
+
+    # En-tête du tableau
+    c.setFont("Helvetica-Bold", 9)
+    c.setFillColor(colors.HexColor('#1e3a8a'))
+    c.drawString(60, y_pos, "CODE UE")
+    c.drawString(150, y_pos, "INTITULÉ")
+    c.drawString(380, y_pos, "CRÉDITS")
+    c.drawString(450, y_pos, "HEURES")
+
+    y_pos -= 15
+    c.setLineWidth(0.5)
+    c.line(50, y_pos, width - 50, y_pos)
+
+    # Lignes des UE
+    c.setFont("Helvetica", 9)
+    c.setFillColor(colors.black)
+
+    total_credits = 0
+    total_heures = 0
+
+    for i, ins in enumerate(inscriptions):
+        if ins.ue:
+            y_pos -= 20
+
+            # Alternance de couleurs de fond
+            if i % 2 == 0:
+                c.setFillColor(colors.Color(0.95, 0.95, 0.95))
+                c.rect(50, y_pos - 5, width - 100, 20, stroke=0, fill=1)
+
+            c.setFillColor(colors.black)
+            c.drawString(60, y_pos, ins.ue.code_ue)
+
+            # Intitulé (tronqué si trop long)
+            intitule = ins.ue.intitule[:35] + "..." if len(ins.ue.intitule) > 35 else ins.ue.intitule
+            c.drawString(150, y_pos, intitule)
+
+            c.drawString(390, y_pos, str(ins.ue.credits))
+            c.drawString(460, y_pos, f"{ins.ue.heures}h")
+
+            total_credits += ins.ue.credits
+            total_heures += ins.ue.heures
+
+            # Vérifier si on doit passer à une nouvelle page
+            if y_pos < 150:
+                c.showPage()
+                y_pos = height - 50
+                c.setFont("Helvetica", 9)
+
+    # Ligne de séparation avant le total
+    y_pos -= 15
+    c.setLineWidth(1)
+    c.line(50, y_pos, width - 50, y_pos)
+
+    # TOTAL
+    y_pos -= 20
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(60, y_pos, "TOTAL")
+    c.drawString(380, y_pos, str(total_credits))
+    c.drawString(450, y_pos, f"{total_heures}h")
+
+    # === BAS DE PAGE ===
+    y_pos -= 50
+
+    c.setFont("Helvetica", 9)
+    c.setFillColor(colors.grey)
+    c.drawString(50, y_pos, f"Date d'impression : {datetime.now().strftime('%d/%m/%Y à %H:%M')}")
+
+    y_pos -= 30
+    c.setFont("Helvetica-Bold", 9)
+    c.setFillColor(colors.black)
+    c.drawString(50, y_pos, "Signature de l'étudiant :")
+    c.drawString(300, y_pos, "Cachet de l'établissement :")
+
+    # Lignes pour signatures
+    y_pos -= 40
+    c.setLineWidth(0.5)
+    c.line(50, y_pos, 200, y_pos)
+    c.line(300, y_pos, 450, y_pos)
+
+    # Pied de page
+    c.setFont("Helvetica-Oblique", 8)
+    c.setFillColor(colors.grey)
+    c.drawCentredString(width/2, 30, "Document officiel - À conserver précieusement")
+    c.drawCentredString(width/2, 20, "Polytech Academy - Année 2026")
+
+    c.showPage()
+    c.save()
+
+    buffer.seek(0)
+
+    filename = f"Fiche_Inscription_UE_{etudiant.nom}_{etudiant.prenom}_{datetime.now().strftime('%Y')}.pdf"
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/pdf'
+    )
+

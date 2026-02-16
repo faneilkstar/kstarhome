@@ -1,7 +1,42 @@
-# 🚀 DÉMARRER ICI - Guide Ultra-Rapide
-## 🎯 Vous voulez mettre votre site en ligne MAINTENANT ?
-Suivez ce guide en **3 étapes simples** (15 minutes max) :
+# 🚀 DÉMARRER ICI - Guide Ultra-Rapide K-Star Home v2.0
+
+## 🎉 NOUVEAUTÉS (12 Février 2026)
+
+### ✅ Corrections Appliquées :
+- 🔧 **Validation IA** : Erreur de syntaxe corrigée
+- 🔧 **Hub Enseignant** : Internal Server Error résolu
+- 🔧 **Système d'IA Laboratoire** : Gemini + Fallback robuste
+
+### 🚀 Nouvelles Fonctionnalités :
+- ⚡ **Déploiement automatique** : `./deploy_quick.sh "message"` = Site mis à jour !
+- 🤖 **IA V2** : Fonctionne avec ET sans Internet
+- 🧪 **Tests automatiques** : GitHub Actions CI/CD
+- 📚 **Documentation complète** : 4 nouveaux guides
+
 ---
+
+## 🎯 Vous voulez mettre votre site en ligne MAINTENANT ?
+
+### 🚀 MÉTHODE RAPIDE (v2.0) :
+
+```bash
+# 1. Activer Auto-Deploy sur Render (1 fois seulement)
+# → Render Dashboard → Settings → Auto-Deploy: Yes
+
+# 2. Modifier votre code
+nano app/routes/laboratoire.py
+
+# 3. Déployer (UNE SEULE COMMANDE !)
+./deploy_quick.sh "✨ Ma nouvelle fonctionnalité"
+
+# 4. Attendre 3-5 minutes ☕
+# → Site automatiquement mis à jour !
+```
+
+**📖 Guide complet** : [`DEPLOIEMENT_AUTO_COMPLET.md`](DEPLOIEMENT_AUTO_COMPLET.md)
+
+---
+
 ## ✅ ÉTAPE 1 : Mettre le code sur GitHub (5 min)
 ```bash
 # Dans votre terminal :

@@ -1,0 +1,12 @@
+⚠️  IMPORTANT - AVANT DE LANCER !
+1. Ouvrez le fichier .env
+2. Remplacez [TON_MOT_DE_PASSE] par votre VRAI mot de passe Supabase
+3. Enlevez les crochets []
+Exemple:
+❌ MAUVAIS:
+SUPABASE_DB_URL=postgresql://postgres.xxx:[TON_MOT_DE_PASSE]@xxx
+✅ BON:
+SUPABASE_DB_URL=postgresql://postgres.xxx:VotreMotDePasse123@xxx
+4. Sauvegardez le fichier
+5. Lancez: venv/bin/python3 run.py
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

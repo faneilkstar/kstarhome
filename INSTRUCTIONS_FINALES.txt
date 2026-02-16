@@ -1,0 +1,11 @@
+╔═══════════════════════════════════════════════════════════════╗
+║            ✅ TOUT EST CORRIGÉ - PRÊT À LANCER ✅             ║
+╚═══════════════════════════════════════════════════════════════╝
+DANS PYCHARM TERMINAL:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+python run.py
+OU si erreur "python not found":
+python3 run.py
+→ http://localhost:5000
+→ admin / admin123
+✅ FAIT

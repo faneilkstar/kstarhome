@@ -1,0 +1,8 @@
+✅ ERREUR LABORATOIRE CORRIGÉE !
+Problème: "Entity namespace for tps has no property statut"
+Solution: Corrigé la propriété sessions_tp_supervisees dans le modèle Enseignant
+LANCER:
+venv/bin/python3 run.py
+URL: http://localhost:5000
+LOGIN: admin / admin123
+✅ Le laboratoire enseignant fonctionne maintenant !

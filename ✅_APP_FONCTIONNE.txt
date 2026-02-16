@@ -1,0 +1,11 @@
+✅ L'APPLICATION FONCTIONNE !
+MODE: SQLite LOCAL (base de données sur votre PC)
+LANCER:
+venv/bin/python3 run.py
+CONNEXION:
+http://localhost:5000
+admin / admin123
+NOTE: Supabase nécessite les VRAIES informations de connexion
+      (project ID, password correct).
+      Pour l'instant, SQLite fonctionne parfaitement !
+✅ PRÊT !

@@ -4,20 +4,71 @@
 
 {% block content %}
 <style>
+    body {
+        background: linear-gradient(135deg, #1a4d2e 0%, #4f772d 50%, #90a955 100%);
+        min-height: 100vh;
+    }
+
     .stats-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #4f772d 0%, #90a955 100%);
         color: white;
         border-radius: 15px;
-        padding: 20px;
+        padding: 25px;
         margin-bottom: 20px;
+        box-shadow: 0 8px 25px rgba(79, 119, 45, 0.3);
+        transition: all 0.3s ease;
     }
+
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 30px rgba(79, 119, 45, 0.5);
+    }
+
     .tp-card {
         transition: transform 0.3s;
-        border-left: 5px solid #007bff;
+        border-left: 5px solid #d4af37;
+        background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
     }
+
     .tp-card:hover {
         transform: translateX(5px);
+        box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
+        border-left-color: #ffd700;
+    }
+
+    .card {
+        border: none;
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .card-header.bg-primary {
+        background: linear-gradient(135deg, #4f772d 0%, #90a955 100%) !important;
+        border: none;
+    }
+
+    .card-header.bg-warning {
+        background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%) !important;
+        color: #1a4d2e !important;
+        border: none;
+    }
+
+    .btn-light {
+        background: #fff;
+        color: #4f772d;
+        border: 2px solid #90a955;
+        font-weight: 600;
+    }
+
+    .btn-light:hover {
+        background: #4f772d;
+        color: white;
+        border-color: #4f772d;
+    }
+
+    .badge.bg-primary {
+        background: linear-gradient(135deg, #ffd700 0%, #d4af37 100%) !important;
+        color: #1a4d2e;
+        font-weight: 700;
     }
 </style>
 
@@ -39,19 +90,19 @@
         </div>
         <div class="col-md-3">
             <div class="stats-card text-center">
-                <h2>{{ ues_tps|sum(attribute='nb_tps') }}</h2>
+                <h2>{{ total_tps }}</h2>
                 <p class="mb-0">TPs créés</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="stats-card text-center">
-                <h2>{{ enseignant.sessions_tp_supervisees.count() }}</h2>
+                <h2>{{ total_sessions }}</h2>
                 <p class="mb-0">Sessions totales</p>
             </div>
         </div>
         <div class="col-md-3">
             <div class="stats-card text-center">
-                <h2>{{ enseignant.sessions_tp_supervisees.filter_by(statut='terminé').count() }}</h2>
+                <h2>{{ sessions_a_evaluer }}</h2>
                 <p class="mb-0">À corriger</p>
             </div>
         </div>
@@ -93,9 +144,7 @@
                             </div>
                             <div class="col-md-3 text-center">
                                 <h3 class="text-primary mb-0">{{ tp.sessions.count() }}</h3>
-                                <small class="text-muted">Sessions</small>
-                                <br>
-                                <small class="text-success">{{ tp.sessions.filter_by(statut='évalué').count() }} évaluées</small>
+                                <small class="text-muted">Sessions totales</small>
                             </div>
                             <div class="col-md-3 text-end">
                                 <a href="{{ url_for('laboratoire.detail_tp', tp_id=tp.id) }}" 
@@ -140,12 +189,12 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for session in enseignant.sessions_tp_supervisees.filter_by(statut='terminé').order_by(SessionTP.date_fin.desc()).limit(10) %}
+                        {% for session in sessions_actives if session.statut == 'terminé' and not session.note_finale %}
                         <tr>
                             <td>{{ session.etudiant.prenom }} {{ session.etudiant.nom }}</td>
                             <td>{{ session.tp.titre }}</td>
-                            <td>{{ session.date_fin.strftime('%d/%m/%Y %H:%M') }}</td>
-                            <td><span class="badge bg-primary">{{ session.note_ia }}/20</span></td>
+                            <td>{{ session.date_fin.strftime('%d/%m/%Y %H:%M') if session.date_fin else 'En cours' }}</td>
+                            <td><span class="badge bg-primary">{{ session.note_ia|round(1) if session.note_ia else 'N/A' }}/20</span></td>
                             <td>{{ session.nb_mesures }} mesures</td>
                             <td>
                                 <a href="{{ url_for('laboratoire.resultat_tp', session_id=session.id) }}" 

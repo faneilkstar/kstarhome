@@ -1,10 +1,259 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Configuration Branding{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-palette"></i> Configuration du Branding</h2>
+    
+    <ul class="nav nav-tabs mt-4" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#infos">Informations</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#logos">Logos</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#couleurs">Couleurs</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#preview">Aperçu</a>
+        </li>
+    </ul>
+    
+    <div class="tab-content mt-4">
+        <!-- ONGLET 1 : INFORMATIONS -->
+        <div id="infos" class="tab-pane fade show active">
+            <form method="POST" action="{{ url_for('branding.update') }}">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Identité</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Nom complet de l'école</label>
+                            <input type="text" name="nom_ecole" class="form-control" value="{{ config.nom_ecole }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nom court / Sigle</label>
+                            <input type="text" name="nom_court" class="form-control" value="{{ config.nom_court }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Slogan</label>
+                            <input type="text" name="slogan" class="form-control" value="{{ config.slogan or '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5>Coordonnées</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Adresse</label>
+                            <textarea name="adresse" class="form-control" rows="2">{{ config.adresse or '' }}</textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Ville</label>
+                                <input type="text" name="ville" class="form-control" value="{{ config.ville or '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Code postal</label>
+                                <input type="text" name="code_postal" class="form-control" value="{{ config.code_postal or '' }}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Pays</label>
+                            <input type="text" name="pays" class="form-control" value="{{ config.pays }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Téléphone</label>
+                            <input type="tel" name="telephone" class="form-control" value="{{ config.telephone or '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control" value="{{ config.email or '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Site web</label>
+                            <input type="url" name="site_web" class="form-control" value="{{ config.site_web or '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="col-12"><hr></div>
+                    
+                    <div class="col-md-4">
+                        <h5>Légal</h5>
+                        <div class="mb-3">
+                            <label class="form-label">N° Agrément</label>
+                            <input type="text" name="numero_agrement" class="form-control" value="{{ config.numero_agrement or '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">N° Registre</label>
+                            <input type="text" name="numero_registre" class="form-control" value="{{ config.numero_registre or '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Année de création</label>
+                            <input type="number" name="annee_creation" class="form-control" value="{{ config.annee_creation or 2024 }}">
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <h5>Directeur</h5>
+                        <div class="mb-3">
+                            <label class="form-label">Nom complet</label>
+                            <input type="text" name="nom_directeur" class="form-control" value="{{ config.nom_directeur or '' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Titre</label>
+                            <input type="text" name="titre_directeur" class="form-control" value="{{ config.titre_directeur }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save"></i> Enregistrer les modifications
+                </button>
+            </form>
+        </div>
+        
+        <!-- ONGLET 2 : LOGOS -->
+        <div id="logos" class="tab-pane fade">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">Logo Principal</div>
+                        <div class="card-body text-center">
+                            {% if config.logo_path %}
+                                <img src="/{{ config.logo_path }}" class="img-fluid mb-3" style="max-height: 200px;">
+                            {% else %}
+                                <p class="text-muted">Aucun logo</p>
+                            {% endif %}
+                            
+                            <input type="file" id="logo-principal" class="form-control" accept="image/*">
+                            <button class="btn btn-primary mt-2" onclick="uploadLogo('principal')">
+                                <i class="fas fa-upload"></i> Uploader
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">Logo En-tête</div>
+                        <div class="card-body text-center">
+                            {% if config.logo_header_path %}
+                                <img src="/{{ config.logo_header_path }}" class="img-fluid mb-3" style="max-height: 100px;">
+                            {% else %}
+                                <p class="text-muted">Aucun logo</p>
+                            {% endif %}
+                            
+                            <input type="file" id="logo-header" class="form-control" accept="image/*">
+                            <button class="btn btn-success mt-2" onclick="uploadLogo('header')">
+                                <i class="fas fa-upload"></i> Uploader
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-warning">Filigrane</div>
+                        <div class="card-body text-center">
+                            {% if config.filigrane_path %}
+                                <img src="/{{ config.filigrane_path }}" class="img-fluid mb-3" style="max-height: 150px; opacity: 0.3;">
+                            {% else %}
+                                <p class="text-muted">Aucun filigrane</p>
+                            {% endif %}
+                            
+                            <input type="file" id="logo-filigrane" class="form-control" accept="image/*">
+                            <button class="btn btn-warning mt-2" onclick="uploadLogo('filigrane')">
+                                <i class="fas fa-upload"></i> Uploader
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ONGLET 3 : COULEURS -->
+        <div id="couleurs" class="tab-pane fade">
+            <form method="POST" action="{{ url_for('branding.update') }}">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5>Couleur Primaire</h5>
+                                <input type="color" name="couleur_primaire" class="form-control form-control-color" value="{{ config.couleur_primaire }}">
+                                <p class="mt-2 mb-0 small text-muted">Utilisée pour les en-têtes, boutons principaux</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5>Couleur Secondaire</h5>
+                                <input type="color" name="couleur_secondaire" class="form-control form-control-color" value="{{ config.couleur_secondaire }}">
+                                <p class="mt-2 mb-0 small text-muted">Textes, bordures</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5>Couleur Accent</h5>
+                                <input type="color" name="couleur_accent" class="form-control form-control-color" value="{{ config.couleur_accent }}">
+                                <p class="mt-2 mb-0 small text-muted">Mise en évidence, badges</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary mt-4">
+                    <i class="fas fa-palette"></i> Appliquer les couleurs
+                </button>
+            </form>
+        </div>
+        
+        <!-- ONGLET 4 : APERÇU -->
+        <div id="preview" class="tab-pane fade">
+            <h5>Aperçu du Footer</h5>
+            <div id="footer-preview">
+                {{ branding_service.get_footer_html() | safe }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function uploadLogo(type) {
+    const fileInput = document.getElementById(`logo-${type}`);
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Sélectionnez un fichier');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('logo', file);
+    formData.append('type', type);
+    
+    try {
+        const response = await fetch('{{ url_for("branding.upload_logo") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Erreur : ' + data.error);
+        }
+    } catch(e) {
+        alert('Erreur upload : ' + e);
+    }
+}
+</script>
+{% endblock %}
