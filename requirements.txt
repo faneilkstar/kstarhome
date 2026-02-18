@@ -13,9 +13,11 @@ gunicorn==25.0.3
 # Sécurité et utils
 python-dotenv==1.0.0
 Werkzeug==3.0.0
-# IA Gemini (nouvelle version)
-google-genai
+# IA Gemini (version stable)
+google-generativeai
 # Génération PDF et images (pour cartes et documents)
 reportlab==4.0.7
 Pillow==10.1.0
 qrcode==7.4.2
+
+matplotlib
