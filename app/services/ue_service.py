@@ -142,15 +142,16 @@ class UEService:
         Crée une UE composite avec ses éléments constitutifs
 
         Args:
-            nom_ue_mere: Nom de l'UE mère (ex: "Analyse Numérique")
+            nom_ue_mere: Nom de l'UE mère (ex: "Optique et Physique Moderne")
             semestre: 'S1', 'S2', etc.
             credits: Crédits ECTS (portés par l'UE mère)
             categorie: Catégorie de l'UE
             departement_id: ID du département
             elements_constitutifs_data: Liste de dict avec les EC
                 [
-                    {'nom': 'Séries Numériques', 'coefficient': 2.0, 'type': 'ec_matiere'},
-                    {'nom': 'Intégrales', 'coefficient': 1.0, 'type': 'ec_matiere'}
+                    {'nom': 'Optique Ondulatoire', 'coefficient': 2.0},
+                    {'nom': 'Optique Géométrique', 'coefficient': 2.0},
+                    {'nom': 'Physique Quantique', 'coefficient': 1.0}
                 ]
             **kwargs: Autres paramètres optionnels
 
@@ -167,7 +168,7 @@ class UEService:
             filiere_code=kwargs.get('filiere_code')
         )
 
-        # 2. Créer l'UE mère
+        # 2. Créer l'UE mère (COMPOSITE)
         ue_mere = UE(
             code_ue=code_ue_mere,
             intitule=nom_ue_mere,
@@ -177,6 +178,7 @@ class UEService:
             categorie=categorie,
             nature='composite',
             type_element='ue_composite',
+            type_structure='ue_composite',  # ✅ NOUVEAU
             departement_id=departement_id,
             coefficient=0,  # La mère ne porte pas de coefficient
             **{k: v for k, v in kwargs.items() if k not in ['filiere_code']}
@@ -205,6 +207,7 @@ class UEService:
                 categorie=categorie,
                 nature='simple',
                 type_element=ec_data.get('type', 'ec_matiere'),
+                type_structure='element_constitutif',  # ✅ NOUVEAU
                 departement_id=departement_id,
                 parent_id=ue_mere.id,
                 ordre=ordre
@@ -222,7 +225,18 @@ class UEService:
         """
         Calcule la moyenne d'un étudiant pour une UE composite
 
-        Formule: (Note1 * Coef1 + Note2 * Coef2) / (Coef1 + Coef2)
+        Formule: (Note1×Coef1 + Note2×Coef2 + Note3×Coef3) / (Coef1+Coef2+Coef3)
+
+        Exemple:
+            UE PHYS201 (Optique & Physique Moderne)
+            - Optique Ondulatoire (12/20, Coef 2)
+            - Optique Géométrique (14/20, Coef 2)
+            - Physique Quantique (10/20, Coef 1)
+
+            Moyenne = (12×2 + 14×2 + 10×1) / (2+2+1)
+                    = (24 + 28 + 10) / 5
+                    = 62 / 5
+                    = 12.4/20
 
         Args:
             ue_mere_id: ID de l'UE composite
@@ -233,11 +247,13 @@ class UEService:
         """
         ue_mere = UE.query.get(ue_mere_id)
 
-        if not ue_mere or ue_mere.type_element != 'ue_composite':
+        if not ue_mere or ue_mere.type_structure != 'ue_composite':
             return None
 
-        # Récupérer tous les EC
-        elements_constitutifs = ue_mere.elements_constitutifs.all()
+        # Récupérer tous les EC (Éléments Constitutifs)
+        elements_constitutifs = ue_mere.elements_constitutifs.filter_by(
+            type_structure='element_constitutif'
+        ).all()
 
         if not elements_constitutifs:
             return None
@@ -273,6 +289,43 @@ class UEService:
         moyenne = total_points / total_coefs
 
         return round(moyenne, 2)
+
+    @staticmethod
+    def calculer_moyenne_ue(ue_id, etudiant_id):
+        """
+        Calcule la moyenne d'un étudiant pour n'importe quelle UE
+        selon son type_structure
+
+        - UE Simple : Retourne la note directe
+        - UE Composite : Calcule la moyenne des EC
+        - EC : Retourne la note directe
+
+        Args:
+            ue_id: ID de l'UE
+            etudiant_id: ID de l'étudiant
+
+        Returns:
+            float or None: Moyenne/note ou None
+        """
+        ue = UE.query.get(ue_id)
+
+        if not ue:
+            return None
+
+        # CAS 1 : UE SIMPLE ou EC → Note directe
+        if ue.type_structure in ['ue_simple', 'element_constitutif']:
+            note_obj = Note.query.filter_by(
+                ue_id=ue_id,
+                etudiant_id=etudiant_id
+            ).first()
+
+            return note_obj.note if note_obj and note_obj.note is not None else None
+
+        # CAS 2 : UE COMPOSITE → Moyenne pondérée des EC
+        elif ue.type_structure == 'ue_composite':
+            return UEService.calculer_moyenne_ue_composite(ue_id, etudiant_id)
+
+        return None
 
     @staticmethod
     def valider_coherence_ue(ue_data):

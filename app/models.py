@@ -364,6 +364,28 @@ class UE(db.Model):
        # - 'ec_tp': Élément Constitutif - Travaux Pratiques
        # - 'ec_matiere': Élément Constitutif - Matière autonome (ex: Séries Numériques)
 
+    # 🏗️ TYPE DE STRUCTURE (Clarification Pédagogique)
+    # Différence fondamentale entre le CONTENU et la FORME
+    type_structure = db.Column(
+        db.String(25),
+        nullable=False,
+        default='ue_simple'
+    )  # Valeurs possibles:
+       # - 'ue_simple': Une seule matière (ex: Anglais, Java)
+       #                L'étudiant a UNE note pour cette UE
+       #                Elle porte des crédits ECTS
+       #
+       # - 'ue_composite': Un regroupement de matières (ex: Optique Globale)
+       #                   L'étudiant n'a PAS de note directe
+       #                   La note = moyenne pondérée des EC
+       #                   Elle porte des crédits ECTS
+       #
+       # - 'element_constitutif': Une sous-matière d'une UE composite
+       #                          (ex: Optique Ondulatoire, Optique Géométrique)
+       #                          L'étudiant a une note pour cet EC
+       #                          Elle porte un COEFFICIENT (pas de crédits)
+       #                          Elle a un parent_id (UE mère)
+
     # 🔗 NOUVEAU V2: Lien vers le département propriétaire
     departement_id = db.Column(db.Integer, db.ForeignKey('departements.id'), nullable=True)
 
@@ -463,6 +485,44 @@ class UE(db.Model):
         """Vérifie si l'UE PEUT être composite (règle métier)"""
         # UE libre ne peut PAS être composite
         return self.categorie != 'libre'
+
+    # ============================================================
+    # NOUVELLES MÉTHODES - TYPE_STRUCTURE
+    # ============================================================
+
+    def est_ue_simple(self):
+        """Vérifie si c'est une UE simple (une seule matière)"""
+        return self.type_structure == 'ue_simple'
+
+    def est_ue_composite(self):
+        """Vérifie si c'est une UE composite (regroupement de matières)"""
+        return self.type_structure == 'ue_composite'
+
+    def est_element_constitutif(self):
+        """Vérifie si c'est un EC (sous-matière d'une UE composite)"""
+        return self.type_structure == 'element_constitutif'
+
+    def est_validable(self):
+        """
+        Une UE est validable (donne des crédits ECTS)
+        Un EC ne l'est pas (il donne une note pour la moyenne)
+        """
+        return self.type_structure in ['ue_simple', 'ue_composite']
+
+    def peut_avoir_note_directe(self):
+        """
+        Retourne True si l'étudiant peut avoir une note directe
+        - UE Simple : OUI (note unique)
+        - UE Composite : NON (note calculée à partir des EC)
+        - EC : OUI (note qui compte dans la moyenne de l'UE mère)
+        """
+        return self.type_structure in ['ue_simple', 'element_constitutif']
+
+    def get_ec_liste(self):
+        """Retourne la liste des Éléments Constitutifs (si UE composite)"""
+        if self.est_ue_composite():
+            return self.elements_constitutifs.order_by(UE.ordre).all()
+        return []
 
     def get_toutes_classes(self):
         """Retourne toutes les classes où cette UE est enseignée"""
