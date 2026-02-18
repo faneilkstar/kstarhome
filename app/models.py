@@ -332,8 +332,10 @@ class UE(db.Model):
     # Charge de travail
     heures = db.Column(db.Integer, default=0)
     credits = db.Column(db.Integer, nullable=False, default=3)
-    coefficient = db.Column(db.Integer, default=1)
-    semestre = db.Column(db.Integer)
+    coefficient = db.Column(db.Float, default=1.0)  # Float pour permettre 0.5, 1.5, etc.
+
+    # 📅 SYSTÈME LMD - SEMESTRE (S1 à S6 pour Licence, S7-S10 pour Master)
+    semestre = db.Column(db.String(5), nullable=False, default='S1')  # Ex: 'S1', 'S2', 'S3'...
 
     # 🏷️ NOUVEAU V2: CATÉGORISATION (Le cœur du système)
     categorie = db.Column(
@@ -349,6 +351,19 @@ class UE(db.Model):
         default='simple'
     )  # Valeurs: 'simple', 'composite'
 
+    # 🏷️ TYPE D'ÉLÉMENT (Pour le système LMD avec EC)
+    type_element = db.Column(
+        db.String(20),
+        nullable=False,
+        default='ue_standard'
+    )  # Valeurs:
+       # - 'ue_standard': UE simple sans enfant
+       # - 'ue_composite': UE Mère qui contient des EC (Éléments Constitutifs)
+       # - 'ec_cours': Élément Constitutif - Cours théorique
+       # - 'ec_td': Élément Constitutif - Travaux Dirigés
+       # - 'ec_tp': Élément Constitutif - Travaux Pratiques
+       # - 'ec_matiere': Élément Constitutif - Matière autonome (ex: Séries Numériques)
+
     # 🔗 NOUVEAU V2: Lien vers le département propriétaire
     departement_id = db.Column(db.Integer, db.ForeignKey('departements.id'), nullable=True)
 
@@ -358,8 +373,13 @@ class UE(db.Model):
         default=False
     )  # True si UE libre accessible depuis n'importe quel département
 
-    # 🔗 Pour les UE composites : référence vers l'UE parent
-    ue_parent_id = db.Column(db.Integer, db.ForeignKey('ues.id'), nullable=True)
+    # 🔗 SYSTÈME LMD - HIÉRARCHIE PARENT/ENFANT (UE Composite)
+    # Si parent_id est NULL -> C'est une UE autonome (standard ou composite mère)
+    # Si parent_id est rempli -> C'est un EC (Élément Constitutif) d'une UE composite
+    parent_id = db.Column(db.Integer, db.ForeignKey('ues.id'), nullable=True)
+
+    # Position dans la hiérarchie (pour trier les EC)
+    ordre = db.Column(db.Integer, default=1)
 
     # 🎯 Type d'affectation (Mode d'assignation aux classes)
     type_affectation = db.Column(
@@ -392,11 +412,23 @@ class UE(db.Model):
         lazy='dynamic'
     )
 
-    # Relations pour UE composites
+    # Relations pour UE composites (Hiérarchie Parent/Enfant)
+    # Une UE Mère peut avoir plusieurs EC (Éléments Constitutifs)
+    elements_constitutifs = db.relationship(
+        'UE',
+        backref=db.backref('ue_parent', remote_side=[id]),
+        lazy='dynamic',
+        foreign_keys=[parent_id],
+        order_by='UE.ordre'
+    )
+
+    # Alias pour compatibilité
     sous_ues = db.relationship(
         'UE',
         backref=db.backref('ue_parent_obj', remote_side=[id]),
-        lazy='dynamic'
+        lazy='dynamic',
+        foreign_keys=[parent_id],
+        viewonly=True
     )
 
     # Enseignants

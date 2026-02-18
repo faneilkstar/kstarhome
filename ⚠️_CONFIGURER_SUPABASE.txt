@@ -1,0 +1,72 @@
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║   ⚠️ CONFIGURATION SUPABASE OBLIGATOIRE                       ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ SQLITE DÉSACTIVÉ - SUPABASE UNIQUEMENT
+
+L'application utilise UNIQUEMENT Supabase comme base de données.
+SQLite n'est plus utilisé.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ PROBLÈME ACTUEL :
+
+L'URL Supabase actuelle est INCORRECTE (mot de passe invalide).
+
+Erreur obtenue : "FATAL: Tenant or user not found"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 SOLUTION - 3 ÉTAPES SIMPLES :
+
+1️⃣ Allez sur https://supabase.com → Votre projet
+
+2️⃣ Settings → Database → Connection string
+   ✅ COCHEZ "Use connection pooling"
+   ✅ Sélectionnez "Transaction" (Port 6543)
+
+3️⃣ Copiez l'URL et modifiez le fichier .env :
+
+   Ouvrez :  .env
+
+   Décommentez et complétez :
+   DATABASE_URL=postgresql://postgres.xxxxx:VOTRE_VRAI_MOT_DE_PASSE@aws-X-xxx.pooler.supabase.com:6543/postgres
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❓ MOT DE PASSE OUBLIÉ ?
+
+Settings → Database → "Reset Database Password"
+Créez un nouveau mot de passe et notez-le !
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 DOCUMENTATION COMPLÈTE :
+
+   SUPABASE_CONFIGURATION.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏭️ APRÈS CONFIGURATION :
+
+Une fois DATABASE_URL correcte dans .env :
+
+1. Tester la connexion :
+   python -c "from app import create_app; create_app()"
+
+2. Créer les tables sur Supabase :
+   flask db migrate -m "Architecture V2"
+   flask db upgrade
+
+3. Lancer l'application :
+   python run.py
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Date : 18 Février 2026
+Status : ⚠️ Configuration Supabase requise pour continuer
+
