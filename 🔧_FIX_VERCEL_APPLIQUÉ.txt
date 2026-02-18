@@ -1,0 +1,59 @@
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║   ✅ PROBLÈME VERCEL RÉSOLU !                                 ║
+║                                                               ║
+║   Erreur "Read-only file system" → CORRIGÉE                  ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔧 CE QUI A ÉTÉ CORRIGÉ :
+
+1. ✅ Suppression du dossier "instance/" (inutile avec Supabase)
+2. ✅ Correction URL Supabase (bonne région + mot de passe encodé)
+3. ✅ Protection contre création de dossiers sur Vercel
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 POUR DÉPLOYER :
+
+Option 1 - Script automatique :
+   ./deploy_fix_vercel.sh
+
+Option 2 - Manuel :
+   git add -A
+   git commit -m "Fix Vercel read-only + URL Supabase"
+   git push origin main
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔑 SUR VERCEL (IMPORTANT) :
+
+Dans Settings → Environment Variables, mettez :
+
+DATABASE_URL = postgresql://postgres.pzzfqduntcmklrakhggy:masque%20de%20mort@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+
+⚠️  ATTENTION aux détails :
+   - "masque%20de%20mort" (avec %20 pour l'espace)
+   - "aws-0-eu-central-1" (et non eu-west-1)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 PLUS DE DÉTAILS :
+
+   Lisez : FIX_VERCEL_READ_ONLY.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ TESTS :
+
+   ✅ Application démarre localement
+   ✅ Connexion Supabase OK
+   ✅ Aucun dossier créé (compatible Vercel)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Date : 18 Février 2026
+Status : ✅ PRÊT POUR REDÉPLOIEMENT
+

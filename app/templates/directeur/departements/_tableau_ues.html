@@ -1,0 +1,101 @@
+{% if ues %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Code</th>
+                <th>Intitulé</th>
+                <th>Nature</th>
+                <th>Credits</th>
+                <th>Heures</th>
+                <th>Affectation</th>
+                <th>Enseignant(s)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ue in ues %}
+            <tr>
+                <td>
+                    <code>{{ ue.code_ue }}</code>
+                    {% if ue.est_ouverte_a_tous %}
+                    <i class="fas fa-globe text-success" title="Ouverte à tous"></i>
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>{{ ue.intitule }}</strong>
+                    {% if ue.description %}
+                    <br><small class="text-muted">{{ ue.description[:60] }}...</small>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if ue.nature == 'composite' %}
+                    <span class="badge bg-warning text-dark">
+                        <i class="fas fa-layer-group"></i> Composite
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary">Simple</span>
+                    {% endif %}
+                </td>
+                <td>{{ ue.credits }} ECTS</td>
+                <td>{{ ue.heures }}h</td>
+                <td>
+                    {% if ue.type_affectation == 'tronc_commun' %}
+                    <span class="badge bg-info">
+                        <i class="fas fa-users"></i> Tronc Commun
+                    </span>
+                    <br>
+                    <small class="text-muted">
+                        {{ ue.classes.count() }} classes
+                    </small>
+                    {% elif ue.type_affectation == 'libre' %}
+                    <span class="badge bg-warning">
+                        <i class="fas fa-gift"></i> Libre
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary">
+                        Classe spécifique
+                    </span>
+                    {% if ue.classe %}
+                    <br><small>{{ ue.classe.nom_classe }}</small>
+                    {% endif %}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if ue.enseignants %}
+                    {% for ens in ue.enseignants %}
+                    <span class="badge bg-primary mb-1">
+                        {{ ens.nom }} {{ ens.prenom[0] }}.
+                    </span>
+                    {% endfor %}
+                    {% else %}
+                    <span class="text-muted">Non assigné</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{{ url_for('directeur.detail_ue', id=ue.id) }}"
+                           class="btn btn-outline-primary"
+                           title="Détails">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{{ url_for('directeur.modifier_ue', id=ue.id) }}"
+                           class="btn btn-outline-secondary"
+                           title="Modifier">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i>
+    Aucune UE de catégorie <strong>{{ categorie }}</strong> dans ce département.
+    <a href="{{ url_for('directeur.creer_ue') }}" class="alert-link">Créer une UE</a>
+</div>
+{% endif %}
+

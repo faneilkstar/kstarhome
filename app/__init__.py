@@ -5,6 +5,9 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from config import config
 
+# Chemin de base du projet
+basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+
 # Initialisation des instances d'extension (accessibles partout dans l'app)
 db = SQLAlchemy()
 migrate = Migrate()
@@ -20,18 +23,24 @@ def create_app(config_name='default'):
     config[config_name].init_app(app)
 
     # ---------------------------------------------------------
-    # CONFIGURATION BASE DE DONNÉES (VERCEL COMPATIBLE)
+    # CONFIGURATION BASE DE DONNÉES - SUPABASE UNIQUEMENT
     # ---------------------------------------------------------
 
-    # Utiliser la variable d'environnement DATABASE_URL (configurée dans Vercel)
+    # TOUJOURS utiliser Supabase (jamais SQLite)
     DB_URL = os.environ.get('DATABASE_URL')
 
-    # Fallback pour développement local
     if not DB_URL:
-        DB_URL = "postgresql://postgres.pzzfqduntcmklrakhggy:masqquedemort@aws-1-eu-west-1.pooler.supabase.com:6543/postgres"
-        print("⚠️ [DEV] Utilisation de la DB locale/dev")
-    else:
-        print("✅ [PROD] Utilisation de DATABASE_URL depuis les variables d'environnement")
+        # ⚠️ ERREUR : DATABASE_URL est obligatoire
+        # Vous DEVEZ configurer DATABASE_URL dans votre fichier .env
+        print("❌ [ERREUR] DATABASE_URL non configurée !")
+        print("❌ Veuillez créer/modifier le fichier .env avec votre URL Supabase")
+        print("❌ Consultez le fichier SUPABASE_CONFIGURATION.md pour les instructions")
+        raise EnvironmentError(
+            "DATABASE_URL non configurée. "
+            "Consultez SUPABASE_CONFIGURATION.md pour obtenir votre URL Supabase correcte."
+        )
+
+    print("✅ [SUPABASE] Connexion configurée depuis DATABASE_URL")
 
     app.config['SQLALCHEMY_DATABASE_URI'] = DB_URL
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
@@ -41,7 +50,7 @@ def create_app(config_name='default'):
         'pool_recycle': 1800,
         'pool_pre_ping': True
     }
-    print(f"🔗 [SUPABASE] Connexion sur : aws-1-eu-west-1 (Port 6543)")
+    print(f"🔗 [SUPABASE] Connexion configurée (Port 6543 - Transaction Pooler)")
     # ---------------------------------------------------------
 
     # 2. Initialisation des composants avec l'instance de l'app
@@ -89,6 +98,10 @@ def create_app(config_name='default'):
     # CARTES : Cartes d'étudiant
     from app.routes.cartes import cartes_bp
     app.register_blueprint(cartes_bp, url_prefix='/cartes')
+
+    # DÉPARTEMENTS : Gestion des départements (Architecture V2)
+    from app.routes.departements import bp as departements_bp
+    app.register_blueprint(departements_bp)
 
     # API IA : Intelligence Artificielle Gemini
     from app.routes.api_ia import bp as api_ia_bp

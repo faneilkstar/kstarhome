@@ -80,19 +80,72 @@ class User(UserMixin, db.Model):
 
 
 # ============================================================
-# 3. FILIÈRE
+# 3. DÉPARTEMENT (NOUVEAU - Architecture V2)
+# ============================================================
+class Departement(db.Model):
+    """
+    Département universitaire - Conteneur principal
+    Géré par un Chef de département (Enseignant)
+    """
+    __tablename__ = 'departements'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(100), nullable=False, unique=True)
+    code = db.Column(db.String(10), unique=True, nullable=False)  # Ex: INFO, MATH, GESTION
+    description = db.Column(db.Text)
+
+    # 👑 Chef de département (Un enseignant)
+    chef_id = db.Column(db.Integer, db.ForeignKey('enseignants.id'), nullable=True)
+
+    # Métadonnées
+    active = db.Column(db.Boolean, default=True)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    chef = db.relationship('Enseignant', foreign_keys=[chef_id], backref='departement_dirige', uselist=False)
+    filieres = db.relationship('Filiere', back_populates='departement', lazy='dynamic', cascade='all, delete-orphan')
+    ues = db.relationship('UE', back_populates='departement', lazy='dynamic')
+
+    def get_nombre_filieres(self):
+        return self.filieres.filter_by(active=True).count()
+
+    def get_nombre_ues(self):
+        return self.ues.count()
+
+    def __repr__(self):
+        return f'<Departement {self.code} - {self.nom}>'
+
+
+# ============================================================
+# 4. FILIÈRE (REFONTE - Architecture V2)
 # ============================================================
 class Filiere(db.Model):
+    """
+    Filière de formation - Spécialisation dans un département
+    Type: Fondamental (Recherche) ou Professionnel (Pratique)
+    """
     __tablename__ = 'filieres'
     id = db.Column(db.Integer, primary_key=True)
-    nom_filiere = db.Column(db.String(100), nullable=False, unique=True, index=True)
+    nom_filiere = db.Column(db.String(100), nullable=False, index=True)
     code_filiere = db.Column(db.String(20), unique=True, index=True)
-    cycle = db.Column(db.String(50), index=True)
+    cycle = db.Column(db.String(50), index=True)  # Licence, Master
+
+    # 🔗 NOUVEAU: Lien vers le département parent
+    departement_id = db.Column(db.Integer, db.ForeignKey('departements.id'), nullable=False)
+
+    # 📜 NOUVEAU: Type de diplôme
+    type_diplome = db.Column(
+        db.String(20),
+        default='fondamental',
+        nullable=False
+    )  # Valeurs: 'fondamental' ou 'professionnel'
+
     description = db.Column(db.Text)
     active = db.Column(db.Boolean, default=True)
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relations (Corrigées)
+    # Relations
+    departement = db.relationship('Departement', back_populates='filieres')
     classes = db.relationship('Classe', back_populates='filiere', lazy='dynamic', cascade='all, delete-orphan')
     etudiants = db.relationship('Etudiant', back_populates='filiere_objet', lazy='dynamic')
 
@@ -248,54 +301,141 @@ class Enseignant(db.Model):
 
 
 # ============================================================
-# 7. UNITÉ D'ENSEIGNEMENT (UE)
+# 7. UNITÉ D'ENSEIGNEMENT (UE) - REFONTE V2
 # ============================================================
 class UE(db.Model):
+    """
+    Unité d'Enseignement - Le moule qui forme l'étudiant
+
+    CATÉGORIES (Business Logic):
+    - 🔴 fondamentale: Le Core (Algo, Maths) - Indispensable
+    - 🔵 specialite: L'implémentation précise (Java, Réseaux)
+    - 🟢 transversale: Les Utils partagées (Anglais, Droit)
+    - 🟡 libre: Les Plugins optionnels (Sport, Arts) - Peut être prise par tous
+
+    NATURE (Structure):
+    - simple: UE atomique classique
+    - composite: UE parent avec plusieurs sous-UE (ex: Physique = Optique + Mécanique)
+
+    RÈGLES:
+    - UE libre DOIT être simple (pas composite)
+    - UE libre n'est jamais spécifique à une classe (open_source=True)
+    """
     __tablename__ = 'ues'
+
     id = db.Column(db.Integer, primary_key=True)
     code_ue = db.Column(db.String(20), unique=True, nullable=False)
     intitule = db.Column(db.String(200), nullable=False)
     nom_ue = db.Column(db.String(100))  # Alias
     description = db.Column(db.Text)
+
+    # Charge de travail
     heures = db.Column(db.Integer, default=0)
-    credits = db.Column(db.Integer)
+    credits = db.Column(db.Integer, nullable=False, default=3)
     coefficient = db.Column(db.Integer, default=1)
     semestre = db.Column(db.Integer)
-    type_ue = db.Column(db.String(20), default='Obligatoire')
 
-    # NOUVEAU : Type de création UE
-    # 'simple' = UE normale (1 UE par classe)
-    # 'tronc_commun' = UE partagée entre plusieurs classes (1 seul prof)
-    # 'composite' = UE composée de plusieurs sous-UE
-    type_ue_creation = db.Column(db.String(20), default='simple')
+    # 🏷️ NOUVEAU V2: CATÉGORISATION (Le cœur du système)
+    categorie = db.Column(
+        db.String(20),
+        nullable=False,
+        default='fondamentale'
+    )  # Valeurs: 'fondamentale', 'specialite', 'transversale', 'libre'
 
-    # Pour les UE composites : référence vers l'UE parent
+    # 📦 NOUVEAU V2: NATURE DE L'UE
+    nature = db.Column(
+        db.String(20),
+        nullable=False,
+        default='simple'
+    )  # Valeurs: 'simple', 'composite'
+
+    # 🔗 NOUVEAU V2: Lien vers le département propriétaire
+    departement_id = db.Column(db.Integer, db.ForeignKey('departements.id'), nullable=True)
+
+    # 🌐 NOUVEAU V2: UE Libre accessible à tous ?
+    est_ouverte_a_tous = db.Column(
+        db.Boolean,
+        default=False
+    )  # True si UE libre accessible depuis n'importe quel département
+
+    # 🔗 Pour les UE composites : référence vers l'UE parent
     ue_parent_id = db.Column(db.Integer, db.ForeignKey('ues.id'), nullable=True)
 
-    # ANCIEN : classe_id unique (gardé pour compatibilité)
-    classe_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='CASCADE'), nullable=True)
+    # 🎯 Type d'affectation (Mode d'assignation aux classes)
+    type_affectation = db.Column(
+        db.String(20),
+        default='classe'
+    )  # Valeurs: 'classe' (spécifique), 'tronc_commun' (partagé), 'libre' (tous)
 
-    # Relations
-    # ANCIEN : Relation one-to-many (gardée pour compatibilité)
-    classe = db.relationship('Classe', back_populates='ues')
+    # ANCIEN: classe_id unique (DÉPRÉCIÉ - gardé pour compatibilité)
+    classe_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='SET NULL'), nullable=True)
 
-    # NOUVEAU : Relation many-to-many avec les classes
-    classes = db.relationship('Classe', secondary=ue_classe, backref='ues_attribuees', lazy='dynamic')
+    # Métadonnées
+    active = db.Column(db.Boolean, default=True)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # ============================================================
+    # RELATIONS
+    # ============================================================
+
+    # Département propriétaire
+    departement = db.relationship('Departement', back_populates='ues')
+
+    # ANCIEN : Relation one-to-many avec classe (DÉPRÉCIÉ)
+    classe = db.relationship('Classe', back_populates='ues', foreign_keys=[classe_id])
+
+    # NOUVEAU : Relation many-to-many avec les classes (Tronc commun)
+    classes = db.relationship(
+        'Classe',
+        secondary=ue_classe,
+        backref='ues_attribuees',
+        lazy='dynamic'
+    )
 
     # Relations pour UE composites
-    sous_ues = db.relationship('UE', backref=db.backref('ue_parent_obj', remote_side=[id]), lazy='dynamic')
+    sous_ues = db.relationship(
+        'UE',
+        backref=db.backref('ue_parent_obj', remote_side=[id]),
+        lazy='dynamic'
+    )
 
-    # Autres relations
-    enseignants = db.relationship('Enseignant', secondary=enseignant_ue, back_populates='ues')
+    # Enseignants
+    enseignants = db.relationship(
+        'Enseignant',
+        secondary=enseignant_ue,
+        back_populates='ues'
+    )
+
+    # Inscriptions et notes
     inscriptions = db.relationship('InscriptionUE', back_populates='ue', lazy='dynamic', cascade='all, delete-orphan')
     notes = db.relationship('Note', backref='ue_parent', lazy='dynamic', cascade='all, delete-orphan')
     absences = db.relationship('Absence', backref='ue_concernee', lazy='dynamic', cascade='all, delete-orphan')
     emploi_temps = db.relationship('EmploiTemps', backref='ue_associee', lazy='dynamic', cascade='all, delete-orphan')
 
+    # Composantes pour UE composites
+    composantes = db.relationship('ComposanteNote', backref='ue', lazy='dynamic', cascade='all, delete-orphan')
+
+    # ============================================================
+    # MÉTHODES
+    # ============================================================
+
+    def est_libre(self):
+        """Vérifie si c'est une UE libre"""
+        return self.categorie == 'libre'
+
+    def est_composite(self):
+        """Vérifie si c'est une UE composite"""
+        return self.nature == 'composite'
+
+    def peut_etre_composite(self):
+        """Vérifie si l'UE PEUT être composite (règle métier)"""
+        # UE libre ne peut PAS être composite
+        return self.categorie != 'libre'
+
     def get_toutes_classes(self):
         """Retourne toutes les classes où cette UE est enseignée"""
-        # Si classe_id existe (ancien système), l'inclure
         classes_list = list(self.classes.all())
+        # Ajouter classe_id si existant (compatibilité ancien système)
         if self.classe_id and self.classe and self.classe not in classes_list:
             classes_list.append(self.classe)
         return classes_list
@@ -421,8 +561,7 @@ class ComposanteNote(db.Model):
     active = db.Column(db.Boolean, default=True)
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relations
-    ue = db.relationship('UE', backref=db.backref('composantes', lazy='dynamic', cascade='all, delete-orphan'))
+    # Relations (backref déjà défini dans UE.composantes)
     notes = db.relationship('Note', back_populates='composante', lazy='dynamic', cascade='all, delete-orphan')
 
     def __repr__(self):

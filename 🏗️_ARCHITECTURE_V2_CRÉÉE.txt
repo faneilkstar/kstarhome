@@ -1,0 +1,90 @@
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║   🏗️ ARCHITECTURE UNIVERSITAIRE V2 CRÉÉE !                   ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ NOUVEAUX MODÈLES CRÉÉS :
+
+1. 🏛️ DÉPARTEMENT
+   - Conteneur principal
+   - Géré par un Chef de département (enseignant)
+   - Regroupe les filières et UE
+
+2. 🎓 FILIÈRE (Refonte)
+   - Appartient à un département
+   - Type: Fondamental (Recherche) ou Professionnel (Pratique)
+
+3. 📖 UE (Refonte Majeure)
+
+   CATÉGORIES (Le moule qui forme l'étudiant):
+   🔴 FONDAMENTALE  - Le Core (Algo, Maths)
+   🔵 SPÉCIALITÉ    - L'Implémentation (Java, Réseaux)
+   🟢 TRANSVERSALE  - Les Utils (Anglais, Droit)
+   🟡 LIBRE         - Les Plugins (Sport, Arts)
+
+   NATURE:
+   📦 SIMPLE        - UE atomique
+   📦 COMPOSITE     - UE avec sous-UE (ex: Physique = Optique + Mécanique)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ RÈGLES MÉTIER IMPORTANTES :
+
+✅ UE libre DOIT être simple (jamais composite)
+✅ UE libre DOIT être accessible à tous (est_ouverte_a_tous=True)
+✅ UE composite peut avoir plusieurs enseignants (un par sous-UE)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🗂️ HIÉRARCHIE :
+
+UNIVERSITÉ
+  └── DÉPARTEMENT (INFO, MATH, GESTION...)
+        ├── Chef de département
+        ├── FILIÈRES
+        │     ├── Génie Logiciel (Professionnel)
+        │     └── IA (Fondamental/Recherche)
+        └── UE du département
+              ├── 🔴 Fondamentales (Obligatoires)
+              ├── 🔵 Spécialités (Métier)
+              ├── 🟢 Transversales (Partagées)
+              └── 🟡 Libres (Au choix)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DOCUMENTATION COMPLÈTE :
+
+   ARCHITECTURE_V2_UNIVERSITE.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 PROCHAINES ÉTAPES :
+
+1. Créer la migration de base de données :
+   flask db migrate -m "Architecture V2: Départements + Catégories UE"
+   flask db upgrade
+
+2. Créer les interfaces (formulaires) pour :
+   - Créer des départements
+   - Assigner un chef de département
+   - Créer des UE avec catégories
+   - Gérer les UE libres
+
+3. Adapter les dashboards pour afficher la nouvelle structure
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 EXEMPLE CONCRET :
+
+Un étudiant en Génie Logiciel (Département INFO) va :
+- DEVOIR prendre : Algo (🔴), Java (🔵), Anglais (🟢)
+- POUVOIR choisir : Poterie (🟡) ou Sport (🟡) depuis n'importe quel département
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Date : 18 Février 2026 - 22:00
+Status : ✅ MODÈLES CRÉÉS - Prêt pour migration BDD
+

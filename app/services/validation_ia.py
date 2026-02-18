@@ -9,11 +9,11 @@ import json
 from datetime import datetime, timedelta
 
 try:
-    from google import genai
+    import google.generativeai as genai
     GEMINI_DISPONIBLE = True
 except ImportError:
     GEMINI_DISPONIBLE = False
-    print("⚠️ google.genai non disponible")
+    print("⚠️ google.generativeai non disponible")
 
 
 class ValidationIA:
@@ -29,7 +29,8 @@ class ValidationIA:
             api_key = os.environ.get('GEMINI_API_KEY')
             if api_key and api_key.strip():
                 try:
-                    self.client = genai.Client(api_key=api_key)
+                    genai.configure(api_key=api_key)
+                    self.client = genai.GenerativeModel('gemini-pro')
                     self.ia_activee = True
                     print("✅ [IA VALIDATION] Gemini initialisé")
                 except Exception as e:
@@ -132,11 +133,9 @@ RECOMMANDATIONS:
 """
 
         try:
-            # Appeler Gemini avec la nouvelle API
-            response = self.client.models.generate_content(
-                model='gemini-2.0-flash-exp',
-                contents=prompt
-            )
+            # Appeler Gemini avec l'API stable
+            model = self.client
+            response = model.generate_content(prompt)
             texte_reponse = response.text
 
             # Parser la réponse

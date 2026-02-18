@@ -57,7 +57,7 @@ Dans **Settings** → **Environment Variables**, ajoutez :
 
 | Name | Value |
 |------|-------|
-| `DATABASE_URL` | `postgresql://postgres.pzzfqduntcmklrakhggy:masqquedemort@aws-1-eu-west-1.pooler.supabase.com:6543/postgres` |
+| `DATABASE_URL` | `postgresql://postgres.pzzfqduntcmklrakhggy:masque%20de%20mort@aws-0-eu-central-1.pooler.supabase.com:6543/postgres` |
 
 #### 🟡 OPTIONNEL (IA Gemini)
 

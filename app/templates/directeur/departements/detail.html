@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}{{ departement.nom }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="fas fa-building text-primary"></i>
+                {{ departement.code }} - {{ departement.nom }}
+            </h2>
+            {% if departement.description %}
+            <p class="text-muted">{{ departement.description }}</p>
+            {% endif %}
+        </div>
+        <div>
+            <a href="{{ url_for('departements.modifier_departement', id=departement.id) }}"
+               class="btn btn-outline-primary">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+            <a href="{{ url_for('departements.liste_departements') }}"
+               class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+
+    <!-- Chef de département -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-user-tie"></i> Chef de département</h5>
+                    {% if departement.chef %}
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">{{ departement.chef.nom_complet }}</h6>
+                            <small class="text-muted">{{ departement.chef.grade }} - {{ departement.chef.specialite }}</small>
+                        </div>
+                        <span class="badge bg-success">Assigné</span>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Aucun chef de département assigné
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 text-end">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalChef">
+                        <i class="fas fa-user-edit"></i>
+                        {% if departement.chef %}Changer{% else %}Assigner{% endif %} le chef
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-graduation-cap fa-2x text-primary mb-2"></i>
+                    <h3>{{ filieres|length }}</h3>
+                    <small>Filières</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-book fa-2x text-danger mb-2"></i>
+                    <h3>{{ ues_fondamentales|length }}</h3>
+                    <small>UE Fondamentales</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-cogs fa-2x text-info mb-2"></i>
+                    <h3>{{ ues_specialite|length }}</h3>
+                    <small>UE Spécialité</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-share-alt fa-2x text-success mb-2"></i>
+                    <h3>{{ ues_transversales|length }}</h3>
+                    <small>UE Transversales</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onglets -->
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#filieres">
+                <i class="fas fa-graduation-cap"></i> Filières ({{ filieres|length }})
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#ue-fondamentales">
+                <i class="fas fa-book text-danger"></i> UE Fondamentales ({{ ues_fondamentales|length }})
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#ue-specialite">
+                <i class="fas fa-cogs text-info"></i> UE Spécialité ({{ ues_specialite|length }})
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#ue-transversales">
+                <i class="fas fa-share-alt text-success"></i> UE Transversales ({{ ues_transversales|length }})
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#ue-libres">
+                <i class="fas fa-gift text-warning"></i> UE Libres ({{ ues_libres|length }})
+            </a>
+        </li>
+    </ul>
+
+    <!-- Contenu des onglets -->
+    <div class="tab-content mt-3">
+        <!-- Filières -->
+        <div id="filieres" class="tab-pane fade show active">
+            {% if filieres %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Nom</th>
+                            <th>Type</th>
+                            <th>Cycle</th>
+                            <th>Classes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for filiere in filieres %}
+                        <tr>
+                            <td><code>{{ filiere.code_filiere }}</code></td>
+                            <td>{{ filiere.nom_filiere }}</td>
+                            <td>
+                                <span class="badge bg-{% if filiere.type_diplome == 'professionnel' %}primary{% else %}secondary{% endif %}">
+                                    {{ filiere.type_diplome|capitalize }}
+                                </span>
+                            </td>
+                            <td>{{ filiere.cycle }}</td>
+                            <td>{{ filiere.get_nombre_classes() }}</td>
+                            <td>
+                                <a href="{{ url_for('directeur.detail_filiere', id=filiere.id) }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">Aucune filière dans ce département</div>
+            {% endif %}
+        </div>
+
+        <!-- UE Fondamentales -->
+        <div id="ue-fondamentales" class="tab-pane fade">
+            {% include 'directeur/departements/_tableau_ues.html' with ues=ues_fondamentales, categorie="fondamentale" %}
+        </div>
+
+        <!-- UE Spécialité -->
+        <div id="ue-specialite" class="tab-pane fade">
+            {% include 'directeur/departements/_tableau_ues.html' with ues=ues_specialite, categorie="specialite" %}
+        </div>
+
+        <!-- UE Transversales -->
+        <div id="ue-transversales" class="tab-pane fade">
+            {% include 'directeur/departements/_tableau_ues.html' with ues=ues_transversales, categorie="transversale" %}
+        </div>
+
+        <!-- UE Libres -->
+        <div id="ue-libres" class="tab-pane fade">
+            {% include 'directeur/departements/_tableau_ues.html' with ues=ues_libres, categorie="libre" %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Assigner Chef -->
+<div class="modal fade" id="modalChef" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('departements.assigner_chef', id=departement.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Assigner un chef de département</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <select class="form-select" name="chef_id" required>
+                        <option value="">-- Sélectionner un enseignant --</option>
+                        {% for ens in departement.enseignants if ens.actif %}
+                        <option value="{{ ens.id }}" {% if departement.chef_id == ens.id %}selected{% endif %}>
+                            {{ ens.nom_complet }} - {{ ens.grade }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Assigner</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

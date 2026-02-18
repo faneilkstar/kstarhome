@@ -1,0 +1,74 @@
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║   🤖 CLÉ GEMINI AI CONFIGURÉE !                               ║
+║                                                               ║
+║   ✅ Votre application aura l'IA activée sur Vercel          ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 CE QUE VOUS AVEZ MAINTENANT :
+
+✅ Base de données Supabase configurée
+✅ Problème "Read-only filesystem" résolu
+✅ CLÉ API GEMINI ajoutée
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔑 VARIABLES À CONFIGURER SUR VERCEL
+
+Sur https://vercel.com → Settings → Environment Variables :
+
+1️⃣  DATABASE_URL
+    postgresql://postgres.pzzfqduntcmklrakhggy:masque%20de%20mort@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+
+2️⃣  GEMINI_API_KEY
+    AIzaSyCARZUlNsBp6X4wzWtkgvOZcDYjpLANijA
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 DÉPLOIEMENT EN 3 ÉTAPES :
+
+1. Push sur GitHub :
+   git add -A
+   git commit -m "🤖 Config Gemini AI + fix Vercel"
+   git push origin main
+
+2. Sur Vercel :
+   - Ajouter les 2 variables ci-dessus
+   - Redéployer
+
+3. Attendre 3-5 minutes → Site en ligne avec IA ! 🎉
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🤖 FONCTIONNALITÉS IA ACTIVÉES :
+
+✅ Validation automatique des inscriptions
+✅ Chatbot pédagogique 24/7
+✅ Correction automatique des devoirs
+✅ Génération d'exercices intelligents
+✅ Analyse des TPs de laboratoire
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 PLUS DE DÉTAILS :
+
+   CONFIG_GEMINI_AI.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚡ QUOTA GRATUIT GEMINI :
+
+   60 requêtes/minute
+   1500 requêtes/jour
+   1M tokens/mois
+
+   → Largement suffisant pour une université !
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Date : 18 Février 2026
+Status : ✅ PRÊT POUR DÉPLOIEMENT AVEC IA
+

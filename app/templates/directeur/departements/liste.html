@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des Départements{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-building"></i> Départements de l'Université</h2>
+        <a href="{{ url_for('departements.creer_departement') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Créer un département
+        </a>
+    </div>
+
+    {% if departements %}
+    <div class="row">
+        {% for dept in departements %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 {% if not dept.active %}bg-light{% endif %} shadow-sm">
+                <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h5 class="mb-0">
+                        <i class="fas fa-building"></i> {{ dept.code }}
+                        {% if not dept.active %}
+                        <span class="badge bg-secondary float-end">Inactif</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-title">{{ dept.nom }}</h6>
+
+                    {% if dept.description %}
+                    <p class="card-text small text-muted">{{ dept.description[:100] }}...</p>
+                    {% endif %}
+
+                    <hr>
+
+                    <!-- Chef de département -->
+                    <div class="mb-3">
+                        <strong><i class="fas fa-user-tie"></i> Chef :</strong>
+                        {% if dept.chef %}
+                        <span class="badge bg-success">{{ dept.chef.nom_complet }}</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">Non assigné</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Statistiques -->
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="p-2 bg-light rounded">
+                                <i class="fas fa-graduation-cap text-primary"></i>
+                                <h4 class="mb-0">{{ dept.get_nombre_filieres() }}</h4>
+                                <small>Filières</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 bg-light rounded">
+                                <i class="fas fa-book text-success"></i>
+                                <h4 class="mb-0">{{ dept.get_nombre_ues() }}</h4>
+                                <small>UE</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="btn-group w-100" role="group">
+                        <a href="{{ url_for('departements.detail_departement', id=dept.id) }}"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i> Voir
+                        </a>
+                        <a href="{{ url_for('departements.modifier_departement', id=dept.id) }}"
+                           class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                        <form method="POST" action="{{ url_for('departements.desactiver_departement', id=dept.id) }}"
+                              class="d-inline" onsubmit="return confirm('Confirmer ?');">
+                            <button type="submit" class="btn btn-sm btn-outline-{% if dept.active %}warning{% else %}success{% endif %}">
+                                <i class="fas fa-{% if dept.active %}pause{% else %}play{% endif %}"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center">
+        <i class="fas fa-info-circle fa-3x mb-3"></i>
+        <h4>Aucun département</h4>
+        <p>Créez votre premier département pour structurer l'université.</p>
+        <a href="{{ url_for('departements.creer_departement') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Créer un département
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

@@ -58,7 +58,7 @@ DATABASE_URL
 
 **Value:**
 ```
-postgresql://postgres.pzzfqduntcmklrakhggy:masqquedemort@aws-1-eu-west-1.pooler.supabase.com:6543/postgres
+postgresql://postgres.pzzfqduntcmklrakhggy:masque%20de%20mort@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
 ```
 
 4. (Optionnel) Ajoutez la clé Gemini :
