@@ -22,8 +22,15 @@ class Config:
 
     # --- GESTION DES FICHIERS (Uploads) ---
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB max
-    UPLOAD_FOLDER = os.path.join(basedir, 'app', 'static', 'uploads')
-    DOCUMENTS_FOLDER = os.path.join(basedir, 'documents')
+
+    # Utilisation de /tmp sur Vercel pour éviter les erreurs Read-Only, sinon dossier static local
+    if os.environ.get('VERCEL') == '1':
+        UPLOAD_FOLDER = '/tmp/uploads'
+        DOCUMENTS_FOLDER = '/tmp/documents'
+    else:
+        UPLOAD_FOLDER = os.path.join(basedir, 'app', 'static', 'uploads')
+        DOCUMENTS_FOLDER = os.path.join(basedir, 'documents')
+
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'doc', 'docx'}
 
     # --- PARAMÈTRES ACADÉMIQUES ---
@@ -45,12 +52,18 @@ class Config:
 
     @staticmethod
     def init_app(app):
-        """Création automatique des dossiers nécessaires"""
-        os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
-        os.makedirs(Config.DOCUMENTS_FOLDER, exist_ok=True)
-        os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
-        os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'photos'), exist_ok=True)
-        os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'justificatifs'), exist_ok=True)
+        """Création automatique des dossiers nécessaires (sauf sur Vercel)"""
+        is_vercel = os.environ.get('VERCEL') == '1'
+
+        if not is_vercel:
+            # Créer les dossiers uniquement en local (pas sur Vercel !)
+            try:
+                os.makedirs(Config.DOCUMENTS_FOLDER, exist_ok=True)
+                os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
+                os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'photos'), exist_ok=True)
+                os.makedirs(os.path.join(Config.UPLOAD_FOLDER, 'justificatifs'), exist_ok=True)
+            except OSError:
+                pass
 
 
 class DevelopmentConfig(Config):
@@ -59,47 +72,49 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_ECHO = False
 
     # Configuration Supabase (si disponible)
-    DB_URL = os.environ.get('SUPABASE_DB_URL')
+    DB_URL = os.environ.get('DATABASE_URL') or os.environ.get('SUPABASE_DB_URL')
 
-    # Fix pour Supabase
-    if DB_URL and DB_URL.startswith("postgres://"):
-        DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
-
-    # Utiliser Supabase si configuré, sinon SQLite local
-    if DB_URL and 'supabase' in DB_URL:
+    if DB_URL:
+        # Fix pour Supabase (postgres:// -> postgresql://)
+        if DB_URL.startswith("postgres://"):
+            DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
         SQLALCHEMY_DATABASE_URI = DB_URL
-        SQLALCHEMY_ENGINE_OPTIONS = {
-            'pool_size': 5,
-            'max_overflow': 10,
-            'pool_timeout': 30,
-            'pool_recycle': 1800,
-            'pool_pre_ping': True
-        }
     else:
-        # SQLite local (fallback)
+        # SQLite local (fallback uniquement en local)
         SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'instance', 'harmony.db')
 
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 5,
+        'max_overflow': 10,
+        'pool_timeout': 30,
+        'pool_recycle': 1800,
+        'pool_pre_ping': True
+    }
 
 
 class TestingConfig(Config):
-    """Configuration pour les tests (reste en local)"""
+    """Configuration pour les tests"""
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'instance', 'academique_test.db')
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'  # En mémoire pour les tests (plus rapide)
     WTF_CSRF_ENABLED = False
 
 
 class ProductionConfig(Config):
-    """Configuration pour la production (Render)"""
+    """Configuration pour la production (Vercel)"""
     DEBUG = False
 
-    # Priorité: SUPABASE_DB_URL > DATABASE_URL
-    DB_URL = os.environ.get('SUPABASE_DB_URL') or os.environ.get('DATABASE_URL')
+    # On cherche d'abord DATABASE_URL (mis dans Vercel), sinon SUPABASE_DB_URL
+    DB_URL = os.environ.get('DATABASE_URL') or os.environ.get('SUPABASE_DB_URL')
 
-    # Fix pour Supabase
-    if DB_URL and DB_URL.startswith("postgres://"):
-        DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
-
-    SQLALCHEMY_DATABASE_URI = DB_URL or 'sqlite:///' + os.path.join(basedir, 'instance', 'prod.db')
+    if DB_URL:
+        # Fix obligatoire pour SQLAlchemy (postgres:// est obsolète)
+        if DB_URL.startswith("postgres://"):
+            DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
+        SQLALCHEMY_DATABASE_URI = DB_URL
+    else:
+        # ⚠️ SECURITÉ ANTI-CRASH : Si pas d'URL, on utilise la RAM (sqlite::memory:)
+        # Cela évite l'erreur "Read-only file system" sur Vercel
+        SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
 
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_size': 10,
