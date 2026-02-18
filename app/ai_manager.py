@@ -1,21 +1,32 @@
 import os
+import logging
 
 try:
-    from google import genai
+    import google.generativeai as genai
     GEMINI_DISPONIBLE = True
 except ImportError:
     GEMINI_DISPONIBLE = False
 
+# Configuration des logs
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Configuration de l'IA avec la clé API depuis les variables d'environnement
 api_key = os.environ.get("GEMINI_API_KEY")
-client = None
 
 if api_key and GEMINI_DISPONIBLE:
     try:
-        client = genai.Client(api_key=api_key)
-        print("✅ [GEMINI] API configurée avec succès")
+        genai.configure(api_key=api_key)
+        # Tester si la clé fonctionne
+        try:
+            test_model = genai.GenerativeModel('gemini-pro')
+            print("✅ [GEMINI] API configurée avec succès")
+        except Exception as test_error:
+            print(f"⚠️ [GEMINI] Clé API présente mais modèle inaccessible: {test_error}")
+            api_key = None  # Désactiver l'IA
     except Exception as e:
         print(f"⚠️ [GEMINI] Erreur configuration: {e}")
+        api_key = None
 else:
     print("⚠️ [GEMINI] Aucune clé API trouvée (variable GEMINI_API_KEY non définie)")
 
@@ -30,24 +41,35 @@ def interroger_ia(prompt, contexte="Tu es un assistant pédagogique utile et bie
     Returns:
         str: La réponse de l'IA ou un message d'erreur
     """
-    if not client:
+    if not api_key or not GEMINI_DISPONIBLE:
         return "❌ L'IA est désactivée (Aucune clé API configurée). Veuillez configurer GEMINI_API_KEY."
 
     try:
-        # Utilisation du modèle Gemini 2.0 Flash
+        # Utilisation du modèle Gemini 1.5 Flash (stable et rapide)
+        model = genai.GenerativeModel('gemini-pro')
+
         # Construction du prompt complet avec le contexte
         full_prompt = f"{contexte}\n\nQuestion de l'utilisateur : {prompt}"
 
         # Génération de la réponse
-        response = client.models.generate_content(
-            model='gemini-2.0-flash-exp',
-            contents=full_prompt
-        )
+        logger.info(f"Envoi de la demande à Gemini : {prompt[:50]}...")
+        response = model.generate_content(full_prompt)
 
-        return response.text
+        if response and response.text:
+            return response.text
+        else:
+            return "L'IA n'a renvoyé aucune réponse."
 
     except Exception as e:
         error_msg = str(e)
+        logger.error(f"❌ Erreur Gemini : {error_msg}")
+
+        if "404" in error_msg:
+            return "Erreur technique : Le modèle d'IA demandé est introuvable. Contactez l'admin."
+        elif "403" in error_msg or "API key" in error_msg:
+            return "Erreur d'authentification : Vérifiez la clé API."
+
+        return f"Désolé, une erreur s'est produite avec l'IA : {error_msg}"
         print(f"❌ [GEMINI] Erreur : {error_msg}")
         return f"❌ Erreur de l'IA : {error_msg}"
 
@@ -69,7 +91,7 @@ def valider_reponse_etudiant(question, reponse_etudiant, reponse_attendue=None):
             'suggestions': str
         }
     """
-    if not client:
+    if not api_key or not GEMINI_DISPONIBLE:
         return {
             'valide': False,
             'note': 0,
@@ -78,6 +100,8 @@ def valider_reponse_etudiant(question, reponse_etudiant, reponse_attendue=None):
         }
 
     try:
+        model = genai.GenerativeModel('gemini-pro')
+
         # Construction du prompt de validation
         if reponse_attendue:
             prompt = f"""Tu es un correcteur académique bienveillant.
@@ -110,10 +134,7 @@ Réponse de l'étudiant : {reponse_etudiant}
     "suggestions": "conseils pour améliorer"
 }}"""
 
-        response = client.models.generate_content(
-            model='gemini-2.0-flash-exp',
-            contents=prompt
-        )
+        response = model.generate_content(prompt)
 
         # Parse la réponse JSON
         import json
@@ -128,7 +149,7 @@ Réponse de l'étudiant : {reponse_etudiant}
         return result
 
     except Exception as e:
-        print(f"❌ [GEMINI] Erreur validation : {str(e)}")
+        logger.error(f"❌ [GEMINI] Erreur validation : {str(e)}")
         return {
             'valide': False,
             'note': 0,
@@ -154,7 +175,7 @@ def generer_exercice(matiere, niveau, type_exercice="QCM"):
             'correction': str
         }
     """
-    if not client:
+    if not api_key or not GEMINI_DISPONIBLE:
         return {
             'enonce': 'IA non disponible',
             'questions': [],
@@ -163,6 +184,8 @@ def generer_exercice(matiere, niveau, type_exercice="QCM"):
         }
 
     try:
+        model = genai.GenerativeModel('gemini-pro')
+
         prompt = f"""Tu es un professeur de {matiere} pour le niveau {niveau}.
 
 Génère un exercice de type "{type_exercice}" et réponds au format JSON suivant (sans markdown) :
@@ -176,10 +199,7 @@ Génère un exercice de type "{type_exercice}" et réponds au format JSON suivan
 
 L'exercice doit être pédagogique, clair et adapté au niveau universitaire."""
 
-        response = client.models.generate_content(
-            model='gemini-2.0-flash-exp',
-            contents=prompt
-        )
+        response = model.generate_content(prompt)
 
         import json
         response_text = response.text.strip()
