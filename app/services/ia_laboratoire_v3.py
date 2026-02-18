@@ -15,10 +15,10 @@ GEMINI_ENABLED = bool(GEMINI_API_KEY)
 
 # Tentative de chargement de Gemini
 try:
-    from google import genai
+    import google.generativeai as genai
     if GEMINI_ENABLED:
         genai.configure(api_key=GEMINI_API_KEY)
-        GEMINI_MODEL = genai.GenerativeModel('gemini-pro')
+        GEMINI_MODEL = genai.GenerativeModel('gemini-1.5-flash')
         print("✅ [IA V3] Gemini Pro initialisé")
     else:
         GEMINI_MODEL = None
@@ -369,7 +369,7 @@ Aide l'étudiant à comprendre sans donner directement la réponse complète.
 
         try:
             response = GEMINI_CLIENT.models.generate_content(
-                model='gemini-2.0-flash-exp',
+                model='gemini-1.5-flash',
                 contents=prompt
             )
             return response.text
