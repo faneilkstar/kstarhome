@@ -7,7 +7,7 @@ from flask_login import login_required, current_user
 
 from app import db
 from app.models import (
-    Enseignant, Matiere, CampagneEvaluation,
+    Enseignant, UE, CampagneEvaluation,
     EvaluationEnseignant
 )
 from app.services.evaluation_service import EvaluationService

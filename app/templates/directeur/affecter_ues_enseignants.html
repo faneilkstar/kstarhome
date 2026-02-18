@@ -187,28 +187,28 @@
                                             <div class="fw-bold text-primary mb-1">{{ ue.code_ue }}</div>
                                             <div class="small text-muted mb-2">{{ ue.intitule[:40] }}{% if ue.intitule|length > 40 %}...{% endif %}</div>
                                             <div class="mt-2">
-                                            <span class="badge bg-info">{{ ue.credits }} ECTS</span>
-                                            <span class="badge bg-secondary">{{ ue.heures }}h</span>
-                                            {% if ue.classe %}
-                                                <span class="badge bg-warning text-dark">
-                                                    {{ ue.classe.nom_classe }}
-                                                </span>
-                                            {% endif %}
+                                                <span class="badge bg-info">{{ ue.credits }} ECTS</span>
+                                                <span class="badge bg-secondary">{{ ue.heures }}h</span>
+                                                {% if ue.classe %}
+                                                    <span class="badge bg-warning text-dark">
+                                                        {{ ue.classe.nom_classe }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
                                         </div>
+                                        {% if ue in enseignant.ues %}
+                                            <i class="fas fa-check-circle text-success fs-4"></i>
+                                        {% endif %}
                                     </div>
-                                    {% if ue in enseignant.ues %}
-                                        <i class="fas fa-check-circle text-success fs-4"></i>
+                                    {% if ue.classe and ue.classe.filiere %}
+                                    <div class="small text-muted mt-2">
+                                        <i class="fas fa-graduation-cap me-1"></i>
+                                        {{ ue.classe.filiere.nom_filiere }}
+                                    </div>
                                     {% endif %}
-                                </div>
-                                {% if ue.classe and ue.classe.filiere %}
-                                <div class="small text-muted mt-2">
-                                    <i class="fas fa-graduation-cap me-1"></i>
-                                    {{ ue.classe.filiere.nom_filiere }}
-                                </div>
-                                {% endif %}
-                            </label>
+                                </label>
+                            </div>
                         </div>
-                    </div>
                     {% endfor %}
                     {% else %}
                     <div class="col-12">

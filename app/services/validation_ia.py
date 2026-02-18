@@ -5,12 +5,15 @@ Date : 11 Février 2026
 """
 
 import os
+import json
 from datetime import datetime, timedelta
+
 try:
     from google import genai
     GEMINI_DISPONIBLE = True
 except ImportError:
     GEMINI_DISPONIBLE = False
+    print("⚠️ google.genai non disponible")
 
 
 class ValidationIA:
@@ -28,8 +31,9 @@ class ValidationIA:
                 try:
                     self.client = genai.Client(api_key=api_key)
                     self.ia_activee = True
+                    print("✅ [IA VALIDATION] Gemini initialisé")
                 except Exception as e:
-                    print(f"⚠️  Erreur configuration Gemini : {e}")
+                    print(f"⚠️ [IA VALIDATION] Erreur configuration Gemini : {e}")
 
     def evaluer_inscription(self, etudiant):
         """

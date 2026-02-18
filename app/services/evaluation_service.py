@@ -5,7 +5,7 @@ Service de gestion des évaluations des enseignants
 from app import db
 from app.models import (
     EvaluationEnseignant, CampagneEvaluation, RapportEvaluation,
-    Enseignant, Etudiant, Matiere
+    Enseignant, Etudiant, UE
 )
 from sqlalchemy import func
 from datetime import datetime

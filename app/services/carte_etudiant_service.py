@@ -1,4 +1,4 @@
-o"""
+"""
 Service de génération de cartes d'étudiant
 Design blanc et doré avec photo, QR code et NFC
 """
@@ -494,25 +494,4 @@ class CarteEtudiantService:
         draw.text((self.width - 200, y), directeur_nom, fill=self.color_gold, font=font_signature)
 
 
-# Classe de signature (existante) - garder pour compatibilité
-class SignatureDocument(db.Model):
-    """Signatures numériques des documents"""
-    __tablename__ = 'signatures_documents'
-
-    id = db.Column(db.Integer, primary_key=True)
-    document_type = db.Column(db.String(50), nullable=False)
-    document_id = db.Column(db.Integer, nullable=False)
-    code_verification = db.Column(db.String(50), unique=True, nullable=False)
-    signature_numerique = db.Column(db.Text)
-    qr_code_path = db.Column(db.String(500))
-    date_signature = db.Column(db.DateTime, default=datetime.utcnow)
-    valide = db.Column(db.Boolean, default=True)
-
-    __table_args__ = (
-        db.Index('idx_code_verification', 'code_verification'),
-        db.Index('idx_document', 'document_type', 'document_id'),
-    )
-
-    def __repr__(self):
-        return f'<SignatureDocument {self.code_verification}>'
-
+# Note: SignatureDocument est maintenant défini dans app/models.py
