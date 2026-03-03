@@ -12,6 +12,7 @@ from typing import Dict, List, Optional, Any
 # Configuration Gemini
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 GEMINI_ENABLED = bool(GEMINI_API_KEY)
+GEMINI_CLIENT = None  # Alias utilisé dans la classe
 
 # Tentative de chargement de Gemini
 try:
@@ -19,6 +20,7 @@ try:
     if GEMINI_ENABLED:
         genai.configure(api_key=GEMINI_API_KEY)
         GEMINI_MODEL = genai.GenerativeModel('gemini-1.5-flash')
+        GEMINI_CLIENT = GEMINI_MODEL  # Alias
         print("✅ [IA V3] Gemini Pro initialisé")
     else:
         GEMINI_MODEL = None
@@ -368,10 +370,7 @@ Aide l'étudiant à comprendre sans donner directement la réponse complète.
 """
 
         try:
-            response = GEMINI_CLIENT.models.generate_content(
-                model='gemini-1.5-flash',
-                contents=prompt
-            )
+            response = GEMINI_CLIENT.generate_content(prompt)
             return response.text
         except Exception as e:
             print(f"⚠️ [IA V3] Gemini generation error: {e}")

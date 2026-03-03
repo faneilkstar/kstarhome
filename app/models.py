@@ -104,13 +104,31 @@ class Departement(db.Model):
     # Relations
     chef = db.relationship('Enseignant', foreign_keys=[chef_id], backref='departement_dirige', uselist=False)
     filieres = db.relationship('Filiere', back_populates='departement', lazy='dynamic', cascade='all, delete-orphan')
-    ues = db.relationship('UE', back_populates='departement', lazy='dynamic')
+    ues = db.relationship('UE', back_populates='departement', lazy='dynamic',
+                          foreign_keys='UE.departement_id')
 
     def get_nombre_filieres(self):
         return self.filieres.filter_by(active=True).count()
 
     def get_nombre_ues(self):
         return self.ues.count()
+
+    def get_ues_tronc_commun_dept(self):
+        """Retourne les UEs tronc commun propres à ce département"""
+        # ues_tronc_commun est défini via backref dans UE.tronc_commun_dept
+        return [u for u in self.ues_tronc_commun if u.active] if hasattr(self, 'ues_tronc_commun') else []
+
+    def get_toutes_ues(self):
+        """UEs propres + UEs tronc commun département"""
+        ues_propres = self.ues.filter_by(active=True).all()
+        ues_tc = self.get_ues_tronc_commun_dept()
+        ids_vus = set()
+        resultat = []
+        for ue in ues_propres + ues_tc:
+            if ue.id not in ids_vus:
+                ids_vus.add(ue.id)
+                resultat.append(ue)
+        return resultat
 
     def __repr__(self):
         return f'<Departement {self.code} - {self.nom}>'
@@ -127,13 +145,16 @@ class Filiere(db.Model):
     __tablename__ = 'filieres'
     id = db.Column(db.Integer, primary_key=True)
     nom_filiere = db.Column(db.String(100), nullable=False, index=True)
-    code_filiere = db.Column(db.String(20), unique=True, index=True)
+    # Pas d'unicité stricte sur code_filiere : une filière peut exister
+    # en version fondamentale ET professionnelle (même code de base, type_diplome différent)
+    code_filiere = db.Column(db.String(20), index=True)
     cycle = db.Column(db.String(50), index=True)  # Licence, Master
 
-    # 🔗 NOUVEAU: Lien vers le département parent
+    # 🔗 Lien vers le département parent
     departement_id = db.Column(db.Integer, db.ForeignKey('departements.id'), nullable=False)
 
-    # 📜 NOUVEAU: Type de diplôme
+    # 📜 Type de diplôme : 'fondamental' ou 'professionnel'
+    # UNE filière peut exister deux fois (fondamental + professionnel)
     type_diplome = db.Column(
         db.String(20),
         default='fondamental',
@@ -412,6 +433,11 @@ class UE(db.Model):
     # ANCIEN: classe_id unique (DÉPRÉCIÉ - gardé pour compatibilité)
     classe_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='SET NULL'), nullable=True)
 
+    # 🏢 TRONC COMMUN DÉPARTEMENT : UE partagée par toutes les filières d'un département
+    # Permet de créer des UE communes à toutes les filières d'un même département
+    # (ex: UE "Maths Fondamentales" commune à toutes les filières de Génie Mécanique)
+    tronc_commun_dept_id = db.Column(db.Integer, db.ForeignKey('departements.id'), nullable=True)
+
     # Métadonnées
     active = db.Column(db.Boolean, default=True)
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
@@ -421,7 +447,11 @@ class UE(db.Model):
     # ============================================================
 
     # Département propriétaire
-    departement = db.relationship('Departement', back_populates='ues')
+    departement = db.relationship('Departement', back_populates='ues', foreign_keys=[departement_id])
+
+    # Département tronc commun (UE commune à tout le département)
+    tronc_commun_dept = db.relationship('Departement', foreign_keys=[tronc_commun_dept_id],
+                                         backref='ues_tronc_commun')
 
     # ANCIEN : Relation one-to-many avec classe (DÉPRÉCIÉ)
     classe = db.relationship('Classe', back_populates='ues', foreign_keys=[classe_id])
@@ -1415,8 +1445,8 @@ class Devoir(db.Model):
 
     # Relations
     ue = db.relationship('UE', backref='devoirs')
-    enseignant = db.relationship('Enseignant', backref='devoirs_crees')
-    classe = db.relationship('Classe', backref='devoirs')
+    enseignant = db.relationship('Enseignant', backref=db.backref('devoirs_crees', lazy='dynamic'))
+    classe = db.relationship('Classe', backref=db.backref('devoirs', lazy='dynamic'))
 
     def __repr__(self):
         return f'<Devoir {self.titre}>'
@@ -1578,7 +1608,7 @@ class CampagneEvaluation(db.Model):
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relations
-    semestre = db.relationship('Semestre', backref='campagnes_evaluation')
+    semestre = db.relationship('Semestre', backref=db.backref('campagnes_evaluation', lazy='dynamic'))
 
     def __repr__(self):
         return f'<CampagneEvaluation {self.titre}>'
@@ -1609,7 +1639,7 @@ class RapportEvaluation(db.Model):
     date_generation = db.Column(db.DateTime)
 
     # Relations
-    enseignant = db.relationship('Enseignant', backref='rapports_evaluation')
+    enseignant = db.relationship('Enseignant', backref=db.backref('rapports_evaluation', lazy='dynamic'))
     campagne = db.relationship('CampagneEvaluation')
 
     def __repr__(self):
@@ -1647,6 +1677,8 @@ class SignatureDocument(db.Model):
 
     def __repr__(self):
         return f'<SignatureDocument {self.code_verification}>'
+
+
 
 
 
