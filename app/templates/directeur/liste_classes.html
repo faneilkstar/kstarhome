@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+er{% extends "base.html" %}
 
 {% block title %}Direction - Gestion des Classes{% endblock %}
 
@@ -130,24 +130,41 @@
                 </thead>
                 <tbody>
                     {% for classe in classes %}
-                    <tr>
+                     <tr {% if classe.est_assemblee %}style="background: #fffbeb;"{% endif %}>
                         <td class="ps-0">
                             <div class="d-flex align-items-center">
-                                <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px; font-weight: 800; font-size: 0.8rem;">
-                                    {{ classe.nom_classe[:2]|upper }}
+                                <div class="{{ 'bg-warning text-dark' if classe.est_assemblee else 'bg-primary text-white' }} rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px; font-weight: 800; font-size: 0.8rem;">
+                                    {% if classe.est_assemblee %}<i class="fas fa-object-group"></i>{% else %}{{ classe.nom_classe[:2]|upper }}{% endif %}
                                 </div>
                                 <div>
                                     <div class="fw-bold text-dark">{{ classe.nom_classe }}</div>
-                                    <div class="text-muted small">Grade: {{ classe.grade }}</div>
+                                    <div class="text-muted small">
+                                        <code>{{ classe.code_classe }}</code>
+                                        {% if classe.est_assemblee %}
+                                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">TRONC COMMUN</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <div class="grade-badge d-inline-block">{{ classe.cycle }}</div>
-                            <div class="small text-muted mt-1">{{ classe.annee }}e Année</div>
+                            <div class="grade-badge d-inline-block">{{ classe.cycle or 'Licence' }}</div>
+                            <div class="small text-muted mt-1">{{ classe.annee }}e Année{% if classe.semestres_assemblee %} ({{ classe.semestres_assemblee }}){% endif %}</div>
                         </td>
                         <td>
-                            {% if classe.filiere %}
+                            {% if classe.est_assemblee and classe.departement_source %}
+                                <span class="fw-bold text-dark" style="font-size: 0.9rem;">
+                                    <i class="fas fa-building me-1 text-warning"></i> {{ classe.departement_source.nom }}
+                                </span>
+                                <div class="text-muted small">
+                                    {% if classe.type_diplome_assemblee == 'fondamental' %}
+                                    <span class="badge bg-info" style="font-size: 0.65rem;">LF</span>
+                                    {% else %}
+                                    <span class="badge bg-success" style="font-size: 0.65rem;">LP</span>
+                                    {% endif %}
+                                    Tronc commun départemental
+                                </div>
+                            {% elif classe.filiere %}
                                 <span class="fw-bold text-dark" style="font-size: 0.9rem;">{{ classe.filiere.nom_filiere }}</span>
                             {% else %}
                                 <span class="badge bg-light text-muted fw-normal rounded-pill">Non assignée</span>

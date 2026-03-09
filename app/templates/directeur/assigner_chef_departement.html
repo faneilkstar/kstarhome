@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Assigner Chef - {{ departement.nom }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('directeur.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('directeur.liste_departements') }}">Départements</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('directeur.detail_departement', dept_id=departement.id) }}">{{ departement.nom }}</a></li>
+                    <li class="breadcrumb-item active">Assigner Chef</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-crown"></i>
+                        Gestion du Chef de Département
+                    </h4>
+                    <p class="mb-0 mt-2"><strong>{{ departement.nom }}</strong> ({{ departement.code }})</p>
+                </div>
+
+                <div class="card-body p-4">
+
+                    <!-- Information actuelle -->
+                    <div class="alert alert-info border-start border-4 border-info">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-info-circle fa-2x me-3"></i>
+                            <div>
+                                <strong>Chef actuel :</strong>
+                                {% if departement.chef %}
+                                    <div class="mt-2">
+                                        <span class="badge bg-primary fs-6">
+                                            <i class="fas fa-user-tie"></i>
+                                            {{ departement.chef.nom }} {{ departement.chef.prenom }}
+                                        </span>
+                                        {% if departement.chef.specialite %}
+                                        <br><small class="text-muted">Spécialité : {{ departement.chef.specialite }}</small>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="badge bg-secondary mt-2">Aucun chef assigné</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Avertissement -->
+                    <div class="alert alert-warning border-start border-4 border-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Attention :</strong>
+                        Le chef de département aura accès à un tableau de bord spécial avec des droits de gestion étendus sur son département.
+                    </div>
+
+                    <!-- Formulaire -->
+                    <form method="POST" action="{{ url_for('directeur.assigner_chef_departement', dept_id=departement.id) }}">
+
+                        <div class="mb-4">
+                            <label for="chef_id" class="form-label fw-bold">
+                                <i class="fas fa-user-tie text-primary"></i>
+                                Sélectionner le nouveau chef de département
+                            </label>
+                            <select class="form-select form-select-lg" id="chef_id" name="chef_id" required>
+                                <option value="">-- Choisir un enseignant --</option>
+                                {% for enseignant in enseignants %}
+                                <option value="{{ enseignant.id }}"
+                                        {% if departement.chef and departement.chef.id == enseignant.id %}selected{% endif %}>
+                                    {{ enseignant.nom }} {{ enseignant.prenom }}
+                                    {% if enseignant.specialite %} - {{ enseignant.specialite }}{% endif %}
+                                    {% if enseignant.dirige_departement and enseignant.dirige_departement.id != departement.id %}
+                                        (Déjà chef de {{ enseignant.dirige_departement.nom }})
+                                    {% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">
+                                <i class="fas fa-lightbulb"></i>
+                                Un enseignant ne peut être chef que d'un seul département à la fois
+                            </small>
+                        </div>
+
+                        <!-- Permissions futures -->
+                        <div class="card bg-light border-0 mb-4">
+                            <div class="card-body">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-key"></i> Droits du Chef de Département
+                                </h6>
+                                <ul class="mb-0">
+                                    <li>Accès au tableau de bord du département</li>
+                                    <li>Validation des UE du département</li>
+                                    <li>Gestion des enseignants du département</li>
+                                    <li>Statistiques avancées</li>
+                                    <li>Rapports et bilans académiques</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Boutons d'action -->
+                        <hr>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <a href="{{ url_for('directeur.detail_departement', dept_id=departement.id) }}"
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left"></i> Retour
+                                </a>
+
+                                {% if departement.chef %}
+                                <button type="button"
+                                        class="btn btn-outline-danger ms-2"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#retireChefModal">
+                                    <i class="fas fa-user-minus"></i> Retirer le chef actuel
+                                </button>
+                                {% endif %}
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-check-circle"></i>
+                                {% if departement.chef %}Changer le chef{% else %}Nommer chef de département{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation pour retirer le chef -->
+{% if departement.chef %}
+<div class="modal fade" id="retireChefModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> Retirer le chef de département
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir retirer <strong>{{ departement.chef.nom }} {{ departement.chef.prenom }}</strong> du poste de chef de département ?</p>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-info-circle"></i>
+                    Cette personne perdra immédiatement tous les droits associés au poste.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="POST" action="{{ url_for('directeur.assigner_chef_departement', dept_id=departement.id) }}" class="d-inline">
+                    <input type="hidden" name="chef_id" value="">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-user-minus"></i> Confirmer le retrait
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.bg-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+</style>
+{% endblock %}
+

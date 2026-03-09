@@ -144,8 +144,32 @@
         </div>
 
         <form method="POST" class="mt-5">
+            <!-- Département -->
             <div class="mb-4">
-                <label class="form-label-pro">NOM DE LA FILIÈRE ACADÉMIQUE</label>
+                <label class="form-label-pro">DÉPARTEMENT DE RATTACHEMENT *</label>
+                <div class="input-group-pro d-flex align-items-center">
+                    <div class="input-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <select name="departement_id" class="form-select" required>
+                        <option value="" selected disabled>Sélectionner un département...</option>
+                        {% for dept in departements %}
+                        <option value="{{ dept.id }}">{{ dept.nom }} ({{ dept.code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if not departements %}
+                <small class="text-danger">
+                    <i class="fas fa-exclamation-circle"></i>
+                    Aucun département disponible.
+                    <a href="{{ url_for('directeur.ajouter_departement') }}">Créez-en un d'abord</a>
+                </small>
+                {% endif %}
+            </div>
+
+            <!-- Nom filière -->
+            <div class="mb-4">
+                <label class="form-label-pro">NOM DE LA FILIÈRE ACADÉMIQUE *</label>
                 <div class="input-group-pro d-flex align-items-center">
                     <div class="input-icon">
                         <i class="fas fa-graduation-cap"></i>
@@ -155,8 +179,22 @@
                 </div>
             </div>
 
+            <!-- Code filière -->
             <div class="mb-4">
-                <label class="form-label-pro">CYCLE D'ÉTUDES & GRADE</label>
+                <label class="form-label-pro">CODE DE LA FILIÈRE</label>
+                <div class="input-group-pro d-flex align-items-center">
+                    <div class="input-icon">
+                        <i class="fas fa-tag"></i>
+                    </div>
+                    <input type="text" name="code_filiere" class="form-control"
+                           placeholder="Ex: GL24 (généré auto si vide)" style="text-transform: uppercase;">
+                </div>
+                <small class="text-muted">Laissez vide pour génération automatique</small>
+            </div>
+
+            <!-- Cycle -->
+            <div class="mb-4">
+                <label class="form-label-pro">CYCLE D'ÉTUDES & GRADE *</label>
                 <div class="input-group-pro d-flex align-items-center">
                     <div class="input-icon">
                         <i class="fas fa-medal"></i>
@@ -167,6 +205,29 @@
                         <option value="Master">Master (Grade Bac +5)</option>
                         <option value="Doctorat">Doctorat (Grade Bac +8)</option>
                     </select>
+                </div>
+            </div>
+
+            <!-- Type de diplôme -->
+            <div class="mb-4">
+                <label class="form-label-pro">TYPE DE DIPLÔME *</label>
+                <div class="input-group-pro d-flex align-items-center">
+                    <div class="input-icon">
+                        <i class="fas fa-certificate"></i>
+                    </div>
+                    <select name="type_diplome" class="form-select" required>
+                        <option value="fondamental" selected>Fondamental (Recherche)</option>
+                        <option value="professionnel">Professionnel (Pratique)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-4">
+                <label class="form-label-pro">DESCRIPTION (OPTIONNEL)</label>
+                <div class="input-group-pro">
+                    <textarea name="description" class="form-control" rows="3"
+                              placeholder="Objectifs et débouchés de la filière..." style="border: none; background: transparent;"></textarea>
                 </div>
             </div>
 

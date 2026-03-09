@@ -49,7 +49,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from app import db
 from app.models import (
     User, Etudiant, Enseignant, Filiere, Classe, UE, Note,
-    InscriptionUE, Statistique, Annonce, Document, Diplome
+    InscriptionUE, Statistique, Annonce, Document, Diplome, Departement
 )
 
 # =========================================================
@@ -98,6 +98,7 @@ def dashboard():
     nb_enseignants = Enseignant.query.filter_by(actif=True).count()
     nb_ues = UE.query.count()
     nb_filieres = Filiere.query.count()
+    nb_departements = Departement.query.filter_by(active=True).count()  # NOUVEAU
 
     # On charge uniquement les listes nécessaires pour l'affichage (limitées)
     classes_recentes = Classe.query.filter_by(active=True).order_by(Classe.id.desc()).limit(5).all()
@@ -116,9 +117,136 @@ def dashboard():
                            nb_etudiants=nb_etudiants,
                            nb_enseignants=nb_enseignants,
                            nb_ues=nb_ues,
-                           nb_filieres=nb_filieres)
+                           nb_filieres=nb_filieres,
+                           nb_departements=nb_departements)  # NOUVEAU
 
 # ÉTAPE 1 : Créer le compte utilisateur
+
+
+# =========================================================================
+# GESTION DÉPARTEMENTS (NOUVEAU - Architecture V2)
+# =========================================================================
+@bp.route('/departements')
+@directeur_required
+def liste_departements():
+    """Liste de tous les départements"""
+    departements = Departement.query.order_by(Departement.nom).all()
+    return render_template('directeur/liste_departements.html', departements=departements)
+
+
+@bp.route('/departement/ajouter', methods=['GET', 'POST'])
+@directeur_required
+def ajouter_departement():
+    """Créer un nouveau département"""
+    if request.method == 'POST':
+        nom = request.form.get('nom').strip()
+        code = request.form.get('code').strip().upper()
+        description = request.form.get('description', '').strip()
+
+        # Validation
+        if not nom or not code:
+            flash("Le nom et le code sont obligatoires.", "warning")
+            return redirect(url_for('directeur.ajouter_departement'))
+        
+        # Vérification doublon
+        if Departement.query.filter_by(code=code).first():
+            flash(f"Un département avec le code {code} existe déjà.", "warning")
+            return redirect(url_for('directeur.ajouter_departement'))
+        
+        try:
+            departement = Departement(
+                nom=nom,
+                code=code,
+                description=description,
+                chef_id=None,  # Le chef sera assigné plus tard
+                active=True
+            )
+            db.session.add(departement)
+            db.session.commit()
+            
+            flash(f"Département {nom} créé avec succès! Vous pouvez maintenant assigner un chef.", "success")
+            return redirect(url_for('directeur.detail_departement', dept_id=departement.id))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erreur lors de la création : {str(e)}", "danger")
+    
+    # GET : Afficher le formulaire
+    return render_template('directeur/ajouter_departement.html')
+
+
+@bp.route('/departement/<int:dept_id>')
+@directeur_required
+def detail_departement(dept_id):
+    """Détails d'un département"""
+    departement = Departement.query.get_or_404(dept_id)
+    return render_template('directeur/detail_departement.html', departement=departement)
+
+
+@bp.route('/departement/<int:dept_id>/modifier', methods=['GET', 'POST'])
+@directeur_required
+def modifier_departement(dept_id):
+    """Modifier un département existant"""
+    departement = Departement.query.get_or_404(dept_id)
+    
+    if request.method == 'POST':
+        departement.nom = request.form.get('nom').strip()
+        departement.code = request.form.get('code').strip().upper()
+        departement.description = request.form.get('description', '').strip()
+
+        try:
+            db.session.commit()
+            flash(f"Département {departement.nom} modifié avec succès!", "success")
+            return redirect(url_for('directeur.detail_departement', dept_id=dept_id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erreur : {str(e)}", "danger")
+    
+    return render_template('directeur/modifier_departement.html', departement=departement)
+
+
+@bp.route('/departement/<int:dept_id>/assigner-chef', methods=['GET', 'POST'])
+@directeur_required
+def assigner_chef_departement(dept_id):
+    """Assigner ou changer le chef d'un département"""
+    departement = Departement.query.get_or_404(dept_id)
+
+    if request.method == 'POST':
+        chef_id = request.form.get('chef_id')
+        ancien_chef = departement.chef
+
+        if chef_id:
+            nouveau_chef = Enseignant.query.get_or_404(int(chef_id))
+            departement.chef_id = int(chef_id)
+
+            try:
+                db.session.commit()
+
+                # Message différent selon si c'est une première assignation ou un changement
+                if ancien_chef:
+                    flash(f"Chef de département changé : {ancien_chef.nom} → {nouveau_chef.nom} {nouveau_chef.prenom}", "success")
+                else:
+                    flash(f"{nouveau_chef.nom} {nouveau_chef.prenom} a été nommé(e) chef du département {departement.nom}", "success")
+
+                return redirect(url_for('directeur.detail_departement', dept_id=dept_id))
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Erreur : {str(e)}", "danger")
+        else:
+            # Retirer le chef actuel
+            if ancien_chef:
+                departement.chef_id = None
+                db.session.commit()
+                flash(f"{ancien_chef.nom} {ancien_chef.prenom} n'est plus chef de département.", "info")
+                return redirect(url_for('directeur.detail_departement', dept_id=dept_id))
+            else:
+                flash("Aucun enseignant sélectionné.", "warning")
+
+    # Liste des enseignants disponibles
+    enseignants = Enseignant.query.filter_by(actif=True).order_by(Enseignant.nom).all()
+    return render_template('directeur/assigner_chef_departement.html',
+                         departement=departement,
+                         enseignants=enseignants)
 
 
 # =========================================================================
@@ -135,35 +263,82 @@ def liste_filieres():
 @directeur_required
 def ajouter_filiere():
     if request.method == 'POST':
-        nom = request.form.get('nom_filiere').upper()
-        # Génération code intelligent (ex: GENIE LOGICIEL -> GL)
-        code = "".join([word[0] for word in nom.split() if word])[:4] + str(datetime.now().year)[-2:]
+        nom = request.form.get('nom_filiere').strip().upper()
+        code = request.form.get('code_filiere', '').strip().upper()
         cycle = request.form.get('cycle')
+        departement_id = request.form.get('departement_id')
+        type_diplome = request.form.get('type_diplome', 'fondamental')
+        description = request.form.get('description', '').strip()
 
-        # Vérification doublon
-        if Filiere.query.filter_by(nom_filiere=nom).first():
-            flash(f"La filière {nom} existe déjà.", "warning")
-            return redirect(url_for('directeur.ajouter_filiere'))
+        if not departement_id:
+            flash("Vous devez sélectionner un département.", "warning")
+            departements = Departement.query.filter_by(active=True).all()
+            return render_template('directeur/ajouter_filiere.html', departements=departements)
+
+        # Préfixe type diplôme : F = fondamental, P = professionnel
+        type_prefixe = 'F' if type_diplome == 'fondamental' else 'P'
+
+        # Génération code filière : initiales + F/P + année courte
+        # Ex: GEC + F = GECF → code filière GECF25
+        if not code:
+            initiales = "".join([word[0] for word in nom.split() if word])[:3].upper()
+            code = f"{initiales}{type_prefixe}{str(datetime.now().year)[-2:]}"
+
+        # Vérification doublon : même nom + même type_diplome dans le même département
+        doublon = Filiere.query.filter_by(
+            nom_filiere=nom,
+            departement_id=int(departement_id),
+            type_diplome=type_diplome
+        ).first()
+        if doublon:
+            flash(f"Une filière '{nom}' ({type_diplome}) existe déjà dans ce département.", "warning")
+            departements = Departement.query.filter_by(active=True).all()
+            return render_template('directeur/ajouter_filiere.html', departements=departements)
 
         try:
-            # 1. Création Filière
-            filiere = Filiere(nom_filiere=nom, code_filiere=code, cycle=cycle, active=True)
+            filiere = Filiere(
+                nom_filiere=nom,
+                code_filiere=code,
+                cycle=cycle,
+                departement_id=int(departement_id),
+                type_diplome=type_diplome,
+                description=description,
+                active=True
+            )
             db.session.add(filiere)
             db.session.flush()
 
-            # 2. Génération automatique des classes
-            classes_config = {
-                'Licence': [('L1', 1), ('L2', 2), ('L3', 3)],
-                'Master': [('M1', 1), ('M2', 2)],
-                'Doctorat': [('DOC1', 1), ('DOC2', 2), ('DOC3', 3)]
+            # Génération automatique des classes avec préfixe LF/LP/MF/MP
+            # LF = Licence Fondamentale, LP = Licence Professionnelle, etc.
+            cycle_prefixes = {
+                'Licence': 'L',
+                'Master':  'M',
+                'Doctorat': 'D'
             }
+            classes_config = {
+                'Licence': [(1,), (2,), (3,)],
+                'Master':  [(1,), (2,)],
+                'Doctorat': [(1,), (2,), (3,)]
+            }
+            cp = cycle_prefixes.get(cycle, 'N')  # ex: 'L'
+            # Préfixe classe : LF (Licence Fond.) ou LP (Licence Pro.)
+            classe_prefixe = f"{cp}{type_prefixe}"  # ex: LF, LP, MF, MP
 
             if cycle in classes_config:
-                for grade, annee in classes_config[cycle]:
-                    nom_classe = f"{grade} {code}"  # Ex: L1 GL24
+                for (annee,) in classes_config[cycle]:
+                    # nom_classe : ex "LF1 GEC" ou "LP2 INF"
+                    nom_classe  = f"{classe_prefixe}{annee} {code}"
+                    code_classe = f"{classe_prefixe}{annee}{code}"
+                    # Garantir unicité
+                    suffix = 0
+                    base_code = code_classe
+                    while Classe.query.filter_by(code_classe=code_classe).first():
+                        suffix += 1
+                        code_classe = f"{base_code}-{suffix}"
+
                     nouvelle_classe = Classe(
                         nom_classe=nom_classe,
-                        code_classe=f"{code}-{grade}",
+                        code_classe=code_classe,
                         cycle=cycle,
                         annee=annee,
                         filiere_id=filiere.id,
@@ -172,14 +347,16 @@ def ajouter_filiere():
                     db.session.add(nouvelle_classe)
 
             db.session.commit()
-            flash(f"Filière {nom} créée avec ses classes associées.", "success")
+            type_label_fr = 'Fondamentale' if type_diplome == 'fondamental' else 'Professionnelle'
+            flash(f"✅ Filière {nom} ({type_label_fr}) créée avec classes {classe_prefixe}1/{classe_prefixe}2…", "success")
             return redirect(url_for('directeur.liste_filieres'))
 
         except Exception as e:
             db.session.rollback()
             flash(f"Erreur technique : {str(e)}", "danger")
 
-    return render_template('directeur/ajouter_filiere.html')
+    departements = Departement.query.filter_by(active=True).all()
+    return render_template('directeur/ajouter_filiere.html', departements=departements)
 
 
 @bp.route('/filiere/<int:filiere_id>')
@@ -187,6 +364,241 @@ def ajouter_filiere():
 def detail_filiere(filiere_id):
     filiere = Filiere.query.get_or_404(filiere_id)
     return render_template('directeur/detail_filiere.html', filiere=filiere)
+
+
+@bp.route('/filiere/<int:filiere_id>/supprimer', methods=['POST'])
+@directeur_required
+def supprimer_filiere(filiere_id):
+    """Supprimer une filière et ses classes associées"""
+    filiere = Filiere.query.get_or_404(filiere_id)
+    nom = filiere.nom_filiere
+    dept_id = filiere.departement_id
+
+    try:
+        # Vérifier s'il y a des étudiants dans les classes de cette filière
+        from app.models import Etudiant
+        nb_etudiants = 0
+        for classe in filiere.classes:
+            nb_etudiants += Etudiant.query.filter_by(classe_id=classe.id).count()
+
+        if nb_etudiants > 0:
+            flash(f"Impossible de supprimer la filière {nom} : {nb_etudiants} étudiant(s) inscrit(s).", "danger")
+            return redirect(url_for('directeur.detail_filiere', filiere_id=filiere_id))
+
+        # Supprimer les classes de la filière (si pas d'étudiants)
+        for classe in filiere.classes.all():
+            # Détacher les UE liées (many-to-many)
+            classe.ues = []
+            db.session.delete(classe)
+
+        db.session.delete(filiere)
+        db.session.commit()
+        flash(f"✅ Filière « {nom} » supprimée avec succès.", "success")
+
+        # Rediriger vers le département si existe, sinon vers la liste
+        if dept_id:
+            return redirect(url_for('directeur.detail_departement', dept_id=dept_id))
+        return redirect(url_for('directeur.liste_filieres'))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erreur lors de la suppression : {str(e)}", "danger")
+        return redirect(url_for('directeur.detail_filiere', filiere_id=filiere_id))
+
+
+@bp.route('/filiere/<int:filiere_id>/creer-variante', methods=['POST'])
+@directeur_required
+def creer_variante_filiere(filiere_id):
+    """Créer la version LF ou LP d'une filière existante (extension)"""
+    filiere_source = Filiere.query.get_or_404(filiere_id)
+
+    # Déterminer le type opposé
+    type_oppose = 'professionnel' if filiere_source.type_diplome == 'fondamental' else 'fondamental'
+    type_prefixe = 'P' if type_oppose == 'professionnel' else 'F'
+
+    # Vérifier que la variante n'existe pas déjà
+    doublon = Filiere.query.filter_by(
+        nom_filiere=filiere_source.nom_filiere,
+        departement_id=filiere_source.departement_id,
+        type_diplome=type_oppose
+    ).first()
+    if doublon:
+        label = 'Professionnelle' if type_oppose == 'professionnel' else 'Fondamentale'
+        flash(f"La version {label} de {filiere_source.nom_filiere} existe déjà.", "warning")
+        return redirect(url_for('directeur.detail_filiere', filiere_id=filiere_id))
+
+    try:
+        # Générer le code filière pour la variante
+        base_code = filiere_source.code_filiere or ''
+        # Remplacer F↔P dans le code
+        if 'F' in base_code:
+            new_code = base_code.replace('F', 'P', 1) if type_oppose == 'professionnel' else base_code
+        elif 'P' in base_code:
+            new_code = base_code.replace('P', 'F', 1) if type_oppose == 'fondamental' else base_code
+        else:
+            initiales = "".join([w[0] for w in filiere_source.nom_filiere.split() if w])[:3].upper()
+            new_code = f"{initiales}{type_prefixe}{str(datetime.now().year)[-2:]}"
+
+        # Vérifier unicité code
+        if Filiere.query.filter_by(code_filiere=new_code).first():
+            new_code = f"{new_code}{type_prefixe}"
+
+        # Créer la variante
+        nouvelle_filiere = Filiere(
+            nom_filiere=filiere_source.nom_filiere,
+            code_filiere=new_code,
+            cycle=filiere_source.cycle,
+            departement_id=filiere_source.departement_id,
+            type_diplome=type_oppose,
+            description=filiere_source.description,
+            active=True
+        )
+        db.session.add(nouvelle_filiere)
+        db.session.flush()
+
+        # Générer automatiquement les classes (LP1, LP2... ou LF1, LF2...)
+        cycle_prefixes = {'Licence': 'L', 'Master': 'M', 'Doctorat': 'D'}
+        classes_config = {'Licence': [1, 2, 3], 'Master': [1, 2], 'Doctorat': [1, 2, 3]}
+        cp = cycle_prefixes.get(filiere_source.cycle, 'N')
+        classe_prefixe = f"{cp}{type_prefixe}"
+
+        if filiere_source.cycle in classes_config:
+            for annee in classes_config[filiere_source.cycle]:
+                nom_classe = f"{classe_prefixe}{annee} {new_code}"
+                code_classe = f"{classe_prefixe}{annee}{new_code}"
+                suffix = 0
+                base = code_classe
+                while Classe.query.filter_by(code_classe=code_classe).first():
+                    suffix += 1
+                    code_classe = f"{base}-{suffix}"
+                db.session.add(Classe(
+                    nom_classe=nom_classe,
+                    code_classe=code_classe,
+                    cycle=filiere_source.cycle,
+                    annee=annee,
+                    filiere_id=nouvelle_filiere.id,
+                    active=True
+                ))
+
+        db.session.commit()
+        label = 'Professionnelle (LP)' if type_oppose == 'professionnel' else 'Fondamentale (LF)'
+        flash(f"✅ Version {label} de {filiere_source.nom_filiere} créée avec succès !", "success")
+        return redirect(url_for('directeur.detail_filiere', filiere_id=nouvelle_filiere.id))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erreur : {str(e)}", "danger")
+        return redirect(url_for('directeur.detail_filiere', filiere_id=filiere_id))
+
+
+# =========================================================================
+# CLASSES ASSEMBLÉES (Tronc Commun Départemental)
+# =========================================================================
+@bp.route('/departement/<int:dept_id>/classe-assemblee/creer', methods=['GET', 'POST'])
+@directeur_required
+def creer_classe_assemblee(dept_id):
+    """Créer une classe assemblée (tronc commun départemental)"""
+    departement = Departement.query.get_or_404(dept_id)
+
+    if request.method == 'POST':
+        nom = request.form.get('nom', '').strip()
+        type_diplome = request.form.get('type_diplome', 'fondamental')
+        annee = int(request.form.get('annee', 1) or 1)
+        semestres = request.form.get('semestres', 'S1-S2')
+
+        # ============================================
+        # VÉRIFICATION ANTI-DOUBLON
+        # ============================================
+        doublon = Classe.query.filter_by(
+            departement_source_id=dept_id,
+            est_assemblee=True,
+            type_diplome_assemblee=type_diplome,
+            annee=annee,
+            semestres_assemblee=semestres,
+            active=True
+        ).first()
+        if doublon:
+            flash(f"⚠️ Cette classe assemblée existe déjà : {doublon.nom_classe} ({doublon.code_classe}). Pas de doublon autorisé.", "warning")
+            return redirect(url_for('directeur.creer_classe_assemblee', dept_id=dept_id))
+
+        if not nom:
+            # Générer automatiquement le nom
+            type_label = 'LF' if type_diplome == 'fondamental' else 'LP'
+            nom = f"{departement.nom} {type_label}{annee} ({semestres})"
+
+        # Générer le code
+        type_label = 'LF' if type_diplome == 'fondamental' else 'LP'
+        code = f"TC-{departement.code}-{type_label}{annee}"
+        suffix = 0
+        base_code = code
+        while Classe.query.filter_by(code_classe=code).first():
+            suffix += 1
+            code = f"{base_code}-{suffix}"
+
+        # On a besoin d'une filière "hôte" → prendre la première du département du même type
+        filiere_hote = Filiere.query.filter_by(
+            departement_id=dept_id,
+            type_diplome=type_diplome,
+            active=True
+        ).first()
+
+        if not filiere_hote:
+            flash(f"Aucune filière {type_diplome} dans ce département. Créez-en une d'abord.", "warning")
+            return redirect(url_for('directeur.detail_departement', dept_id=dept_id))
+
+        try:
+            classe_assemblee = Classe(
+                nom_classe=nom,
+                code_classe=code,
+                cycle=filiere_hote.cycle or 'Licence',
+                annee=annee,
+                filiere_id=filiere_hote.id,
+                active=True,
+                est_assemblee=True,
+                departement_source_id=dept_id,
+                type_diplome_assemblee=type_diplome,
+                semestres_assemblee=semestres
+            )
+            db.session.add(classe_assemblee)
+            db.session.commit()
+
+            flash(f"✅ Classe assemblée '{nom}' créée ! Elle apparaît maintenant dans 'Ajouter UE'.", "success")
+            return redirect(url_for('directeur.detail_departement', dept_id=dept_id))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erreur : {str(e)}", "danger")
+
+    # GET
+    filieres = Filiere.query.filter_by(departement_id=dept_id, active=True).all()
+    classes_existantes = Classe.query.filter_by(
+        departement_source_id=dept_id, est_assemblee=True
+    ).all()
+    return render_template('directeur/creer_classe_assemblee.html',
+                         departement=departement,
+                         filieres=filieres,
+                         classes_existantes=classes_existantes)
+
+
+@bp.route('/classe-assemblee/<int:classe_id>/supprimer', methods=['POST'])
+@directeur_required
+def supprimer_classe_assemblee(classe_id):
+    """Supprimer une classe assemblée"""
+    classe = Classe.query.get_or_404(classe_id)
+    if not classe.est_assemblee:
+        flash("Cette classe n'est pas une classe assemblée.", "danger")
+        return redirect(request.referrer or url_for('directeur.liste_classes'))
+
+    dept_id = classe.departement_source_id
+    try:
+        db.session.delete(classe)
+        db.session.commit()
+        flash("Classe assemblée supprimée.", "info")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erreur : {str(e)}", "danger")
+
+    return redirect(url_for('directeur.detail_departement', dept_id=dept_id))
 
 
 @bp.route('/classes')
@@ -200,8 +612,11 @@ def liste_classes():
 @directeur_required
 def detail_classe(classe_id):
     classe = Classe.query.get_or_404(classe_id)
-    # Étudiants validés uniquement
-    etudiants = Etudiant.query.filter_by(classe_id=classe.id, statut_inscription='accepté').all()
+    # Pour les classes assemblées : unifier les étudiants de toutes les classes composantes
+    if classe.est_assemblee:
+        etudiants = classe.get_etudiants_assembles()
+    else:
+        etudiants = Etudiant.query.filter_by(classe_id=classe.id, statut_inscription='accepté').all()
     return render_template('directeur/detail_classe.html', classe=classe, etudiants=etudiants)
 
 
@@ -212,7 +627,8 @@ def detail_classe(classe_id):
 @directeur_required
 def liste_enseignants():
     enseignants = Enseignant.query.order_by(Enseignant.nom).all()
-    toutes_les_ues = UE.query.all()
+    # Exclure les UE composites mères — seuls les EC/sous-UE sont affectables
+    toutes_les_ues = UE.query.filter(db.or_(UE.nature != 'composite', UE.nature == None)).all()
     return render_template('directeur/enseignants.html', enseignants=enseignants, toutes_les_ues=toutes_les_ues)
 
 
@@ -311,7 +727,8 @@ def detail_enseignant(enseignant_id):
 @bp.route('/ues')
 @directeur_required
 def liste_ues():
-    ues = UE.query.order_by(UE.code_ue).all()
+    # Ne charger que les UE de premier niveau (pas les EC/sous-UE qui ont un parent_id)
+    ues = UE.query.filter(UE.parent_id.is_(None)).order_by(UE.code_ue).all()
     classes = Classe.query.filter_by(active=True).all()  # Pour les filtres éventuels
     return render_template('directeur/liste_ues.html', ues=ues, classes=classes)
 
@@ -320,7 +737,8 @@ def liste_ues():
 @directeur_required
 def page_attribuer_ue():
     """Page pour attribuer les UE aux enseignants"""
-    ues = UE.query.all()
+    # Exclure les UE composites mères — seuls les EC sont affectables
+    ues = UE.query.filter(db.or_(UE.nature != 'composite', UE.nature == None)).all()
     enseignants = Enseignant.query.filter_by(actif=True).all()
     etudiants = Etudiant.query.all()
     filieres = Filiere.query.all()
@@ -334,290 +752,175 @@ def page_attribuer_ue():
 @bp.route('/ue/ajouter', methods=['GET', 'POST'])
 @directeur_required
 def ajouter_ue():
-    classes = Classe.query.filter_by(active=True).all()
+    """Créer une nouvelle UE et l'attribuer à des classes (cochage par filière)"""
+
+    def _render_form():
+        departements = Departement.query.filter_by(active=True).all()
+        # Filieres groupées par type_diplome pour les 2 tableaux
+        filieres_fond = Filiere.query.filter_by(active=True, type_diplome='fondamental').order_by(Filiere.nom_filiere).all()
+        filieres_pro  = Filiere.query.filter_by(active=True, type_diplome='professionnel').order_by(Filiere.nom_filiere).all()
+        # Classes assemblées (tronc commun départemental) — groupées par type
+        classes_assemblees_fond = Classe.query.filter_by(
+            est_assemblee=True, active=True, type_diplome_assemblee='fondamental'
+        ).order_by(Classe.annee).all()
+        classes_assemblees_pro = Classe.query.filter_by(
+            est_assemblee=True, active=True, type_diplome_assemblee='professionnel'
+        ).order_by(Classe.annee).all()
+        # Pré-sélection d'une classe (venant du bouton "Créer UE" d'un tronc commun)
+        preselect_classe_id = request.args.get('classe_id', type=int)
+        return render_template('directeur/ajouter_ue_v2.html',
+                               departements=departements,
+                               filieres_fond=filieres_fond,
+                               filieres_pro=filieres_pro,
+                               classes_assemblees_fond=classes_assemblees_fond,
+                               classes_assemblees_pro=classes_assemblees_pro,
+                               preselect_classe_id=preselect_classe_id)
 
     if request.method == 'POST':
-        code_base = request.form.get('code_ue').upper()
-        intitule = request.form.get('intitule')
-        semestre = int(request.form.get('semestre'))
+        code_ue      = request.form.get('code_ue', '').strip().upper()
+        nom_ue       = request.form.get('nom_ue', '').strip()
+        semestre     = request.form.get('semestre', 'S1')
+        categorie    = request.form.get('categorie', 'fondamentale')
+        nature       = request.form.get('nature', 'simple')
+        type_affectation = request.form.get('type_affectation', 'specifique')
+        credits      = int(request.form.get('credits', 3) or 3)
+        description  = request.form.get('description', '').strip()
 
-        # NOUVEAUX CHOIX (3 modes)
-        mode_creation = request.form.get('mode_creation', 'ue_specifique')
-        type_evaluation = request.form.get('type_evaluation', 'simple')
+        # Classes cochées (attribution aux classes, pas aux filières)
+        classes_ids = request.form.getlist('classes_ids[]')
+
+        if not code_ue or not nom_ue:
+            flash("Le code et le nom sont obligatoires.", "warning")
+            return _render_form()
+
+        # UE libre : pas de classe obligatoire
+        if categorie != 'libre' and not classes_ids and type_affectation != 'libre':
+            flash("Sélectionnez au moins une classe.", "warning")
+            return _render_form()
+
+        # Spécifique = 1 seule classe
+        if type_affectation == 'specifique' and len(classes_ids) > 1:
+            flash("Mode Spécifique : une seule classe autorisée.", "warning")
+            return _render_form()
+
+        # Tronc commun = au moins 2 classes
+        if type_affectation == 'tronc_commun' and len(classes_ids) < 2:
+            flash("Tronc Commun : sélectionnez au moins 2 classes.", "warning")
+            return _render_form()
 
         try:
-            classes_ids = request.form.getlist('classes_ids')
+            heures      = credits * 12
+            coefficient = float(credits)
 
-            if not classes_ids:
-                flash("❌ Veuillez sélectionner au moins une classe.", "warning")
-                return redirect(url_for('directeur.ajouter_ue'))
+            if nature == 'simple':
+                ue = UE(
+                    code_ue=code_ue,
+                    nom_ue=nom_ue,
+                    intitule=nom_ue,
+                    credits=credits,
+                    coefficient=coefficient,
+                    heures=heures,
+                    semestre=semestre,
+                    categorie=categorie,
+                    nature='simple',
+                    type_structure='ue_simple',
+                    type_affectation=type_affectation,
+                    est_ouverte_a_tous=(categorie == 'libre'),
+                    classe_id=int(classes_ids[0]) if classes_ids and type_affectation == 'specifique' else None,
+                    description=description,
+                    active=True
+                )
+                db.session.add(ue)
+                db.session.flush()
 
-            ues_creees = []
+                # Lier aux classes (many-to-many)
+                for cid in classes_ids:
+                    classe = Classe.query.get(int(cid))
+                    if classe:
+                        ue.classes.append(classe)
 
-            # =============================================
-            # TYPE COMPOSITE : Créer UE Parent + Sous-UE
-            # =============================================
-            if type_evaluation == 'composite':
-                # Récupérer les sous-UE
+                db.session.commit()
+                flash(f"✅ UE {code_ue} créée et attribuée à {len(classes_ids)} classe(s).", "success")
+
+            elif nature == 'composite':
+                nom_final     = request.form.get('nom_composite_final', nom_ue).strip() or nom_ue
+                sous_ues_count = int(request.form.get('sous_ues_count', 2) or 2)
+
                 sous_ues_data = []
-                for i in range(1, 4):  # Jusqu'à 3 sous-UE
-                    intitule_sous = request.form.get(f'sous_ue_{i}_intitule', '').strip()
-                    credits_sous = int(request.form.get(f'sous_ue_{i}_credits', 0))
-
-                    if intitule_sous and credits_sous > 0:
-                        sous_ues_data.append({
-                            'prefixe': str(i),
-                            'intitule': intitule_sous,
-                            'credits': credits_sous
-                        })
+                for i in range(1, sous_ues_count + 1):
+                    nom_s     = request.form.get(f'sous_ue_{i}_nom', '').strip()
+                    credits_s = request.form.get(f'sous_ue_{i}_credits', '')
+                    if nom_s and credits_s:
+                        sous_ues_data.append({'nom': nom_s, 'credits': int(credits_s), 'ordre': i})
 
                 if len(sous_ues_data) < 2:
-                    flash("❌ Une UE composite nécessite au moins 2 sous-UE.", "warning")
-                    return redirect(url_for('directeur.ajouter_ue'))
+                    flash("UE Composite : au moins 2 éléments constitutifs requis.", "warning")
+                    return _render_form()
 
-                # Calculer le total des crédits
-                credits_total = sum([s['credits'] for s in sous_ues_data])
-                heures = credits_total * 12
-                coefficient = credits_total
+                credits_total = sum(s['credits'] for s in sous_ues_data)
 
-                # MODE SPÉCIFIQUE
-                if mode_creation == 'ue_specifique':
-                    if len(classes_ids) > 1:
-                        flash("⚠️  Mode UE Spécifique : une seule classe autorisée.", "warning")
-                        return redirect(url_for('directeur.ajouter_ue'))
+                # UE mère
+                ue_mere = UE(
+                    code_ue=code_ue,
+                    nom_ue=nom_final,
+                    intitule=nom_final,
+                    credits=credits_total,
+                    coefficient=float(credits_total),
+                    heures=credits_total * 12,
+                    semestre=semestre,
+                    categorie=categorie,
+                    nature='composite',
+                    type_structure='ue_composite',
+                    type_affectation=type_affectation,
+                    est_ouverte_a_tous=(categorie == 'libre'),
+                    classe_id=int(classes_ids[0]) if classes_ids and type_affectation == 'specifique' else None,
+                    description=description,
+                    active=True
+                )
+                db.session.add(ue_mere)
+                db.session.flush()
 
-                    classe = Classe.query.get(int(classes_ids[0]))
-
-                    # Créer UE Parent
-                    ue_parent = UE(
-                        code_ue=code_base,
-                        intitule=intitule,
-                        credits=credits_total,
-                        coefficient=coefficient,
-                        heures=heures,
-                        semestre=semestre,
-                        classe_id=int(classes_ids[0]),
-                        type_ue_creation='composite'
-                    )
-                    db.session.add(ue_parent)
-                    db.session.flush()
-
-                    # Créer les Sous-UE
-                    for sous_ue in sous_ues_data:
-                        code_sous = f"{sous_ue['prefixe']}{code_base}"
-                        heures_sous = sous_ue['credits'] * 12
-
-                        ue_enfant = UE(
-                            code_ue=code_sous,
-                            intitule=sous_ue['intitule'],
-                            credits=sous_ue['credits'],
-                            coefficient=sous_ue['credits'],
-                            heures=heures_sous,
-                            semestre=semestre,
-                            classe_id=int(classes_ids[0]),
-                            type_ue_creation='simple',
-                            ue_parent_id=ue_parent.id
-                        )
-                        db.session.add(ue_enfant)
-
-                    ues_creees.append(f"{code_base} Composite ({len(sous_ues_data)} sous-UE, {credits_total} ECTS)")
-
-                # MODE TRONC COMMUN
-                elif mode_creation == 'tronc_commun':
-                    classes_obj = [Classe.query.get(int(cid)) for cid in classes_ids if Classe.query.get(int(cid))]
-                    annees = set([c.annee for c in classes_obj if c.annee])
-
-                    if annees:
-                        niveaux = sorted([f"L{a}" for a in annees])
-                        libelle_tronc = f"Tronc Commun {'/'.join(niveaux)}"
-                    else:
-                        libelle_tronc = "Tronc Commun"
-
-                    # Créer UE Parent Tronc Commun
-                    ue_parent = UE(
-                        code_ue=code_base,
-                        intitule=f"{intitule} ({libelle_tronc})",
-                        credits=credits_total,
-                        coefficient=coefficient,
-                        heures=heures,
-                        semestre=semestre,
-                        classe_id=None,
-                        type_ue_creation='composite_tronc'
-                    )
-                    db.session.add(ue_parent)
-                    db.session.flush()
-
-                    # Associer classes
-                    for classe_id in classes_ids:
-                        classe = Classe.query.get(int(classe_id))
-                        if classe:
-                            ue_parent.classes.append(classe)
-
-                    # Créer les Sous-UE
-                    for sous_ue in sous_ues_data:
-                        code_sous = f"{sous_ue['prefixe']}{code_base}"
-                        heures_sous = sous_ue['credits'] * 12
-
-                        ue_enfant = UE(
-                            code_ue=code_sous,
-                            intitule=f"{sous_ue['intitule']} ({libelle_tronc})",
-                            credits=sous_ue['credits'],
-                            coefficient=sous_ue['credits'],
-                            heures=heures_sous,
-                            semestre=semestre,
-                            classe_id=None,
-                            type_ue_creation='simple',
-                            ue_parent_id=ue_parent.id
-                        )
-                        db.session.add(ue_enfant)
-                        db.session.flush()
-
-                        # Associer classes aux sous-UE
-                        for classe_id in classes_ids:
-                            classe = Classe.query.get(int(classe_id))
-                            if classe:
-                                ue_enfant.classes.append(classe)
-
-                    ues_creees.append(f"{code_base} Composite {libelle_tronc} ({len(sous_ues_data)} sous-UE)")
-
-                # MODE UE FILLES
-                elif mode_creation == 'ue_filles':
-                    for classe_id in classes_ids:
-                        classe = Classe.query.get(int(classe_id))
-                        if classe:
-                            code_parent = f"{code_base}-{classe.code_classe}"
-
-                            # Créer UE Parent
-                            ue_parent = UE(
-                                code_ue=code_parent,
-                                intitule=intitule,
-                                credits=credits_total,
-                                coefficient=coefficient,
-                                heures=heures,
-                                semestre=semestre,
-                                classe_id=int(classe_id),
-                                type_ue_creation='composite'
-                            )
-                            db.session.add(ue_parent)
-                            db.session.flush()
-
-                            # Créer Sous-UE
-                            for sous_ue in sous_ues_data:
-                                code_sous = f"{sous_ue['prefixe']}{code_base}-{classe.code_classe}"
-                                heures_sous = sous_ue['credits'] * 12
-
-                                ue_enfant = UE(
-                                    code_ue=code_sous,
-                                    intitule=sous_ue['intitule'],
-                                    credits=sous_ue['credits'],
-                                    coefficient=sous_ue['credits'],
-                                    heures=heures_sous,
-                                    semestre=semestre,
-                                    classe_id=int(classe_id),
-                                    type_ue_creation='simple',
-                                    ue_parent_id=ue_parent.id
-                                )
-                                db.session.add(ue_enfant)
-
-                            ues_creees.append(f"{code_parent} Composite ({classe.nom_classe})")
-
-            # =============================================
-            # TYPE SIMPLE (Sans sous-UE)
-            # =============================================
-            else:
-                credits = int(request.form.get('credits'))
-                heures = credits * 12
-                coefficient = credits
-
-                # MODE SPÉCIFIQUE
-                if mode_creation == 'ue_specifique':
-                    if len(classes_ids) > 1:
-                        flash("⚠️  Mode UE Spécifique : une seule classe autorisée.", "warning")
-                        return redirect(url_for('directeur.ajouter_ue'))
-
-                    classe = Classe.query.get(int(classes_ids[0]))
+                for cid in classes_ids:
+                    classe = Classe.query.get(int(cid))
                     if classe:
-                        nouvelle_ue = UE(
-                            code_ue=code_base,
-                            intitule=intitule,
-                            credits=credits,
-                            coefficient=coefficient,
-                            heures=heures,
-                            semestre=semestre,
-                            classe_id=int(classes_ids[0]),
-                            type_ue_creation='simple'
-                        )
-                        db.session.add(nouvelle_ue)
-                        ues_creees.append(f"{code_base} ({classe.nom_classe})")
+                        ue_mere.classes.append(classe)
 
-                # MODE TRONC COMMUN
-                elif mode_creation == 'tronc_commun':
-                    classes_obj = [Classe.query.get(int(cid)) for cid in classes_ids if Classe.query.get(int(cid))]
-                    annees = set([c.annee for c in classes_obj if c.annee])
-
-                    if annees:
-                        niveaux = sorted([f"L{a}" for a in annees])
-                        libelle_tronc = f"Tronc Commun {'/'.join(niveaux)}"
-                    else:
-                        libelle_tronc = "Tronc Commun"
-
-                    ue_tronc = UE(
-                        code_ue=code_base,
-                        intitule=f"{intitule} ({libelle_tronc})",
-                        credits=credits,
-                        coefficient=coefficient,
-                        heures=heures,
+                # Sous-UE (EC)
+                for s in sous_ues_data:
+                    ue_fille = UE(
+                        code_ue=f"{s['ordre']}{code_ue}",
+                        nom_ue=s['nom'],
+                        intitule=s['nom'],
+                        credits=s['credits'],
+                        coefficient=float(s['credits']),
+                        heures=s['credits'] * 12,
                         semestre=semestre,
-                        classe_id=None,
-                        type_ue_creation='tronc_commun'
+                        categorie=categorie,
+                        nature='simple',
+                        type_structure='element_constitutif',
+                        type_affectation=type_affectation,
+                        parent_id=ue_mere.id,
+                        ordre=s['ordre'],
+                        active=True
                     )
-                    db.session.add(ue_tronc)
+                    db.session.add(ue_fille)
                     db.session.flush()
-
-                    for classe_id in classes_ids:
-                        classe = Classe.query.get(int(classe_id))
+                    for cid in classes_ids:
+                        classe = Classe.query.get(int(cid))
                         if classe:
-                            ue_tronc.classes.append(classe)
+                            ue_fille.classes.append(classe)
 
-                    classes_noms = [c.nom_classe for c in classes_obj]
-                    ues_creees.append(f"{code_base} ({libelle_tronc})")
-
-                # MODE UE FILLES
-                elif mode_creation == 'ue_filles':
-                    for classe_id in classes_ids:
-                        classe = Classe.query.get(int(classe_id))
-                        if classe:
-                            code_ue_unique = f"{code_base}-{classe.code_classe}"
-
-                            nouvelle_ue = UE(
-                                code_ue=code_ue_unique,
-                                intitule=intitule,
-                                credits=credits,
-                                coefficient=coefficient,
-                                heures=heures,
-                                semestre=semestre,
-                                classe_id=int(classe_id),
-                                type_ue_creation='simple'
-                            )
-                            db.session.add(nouvelle_ue)
-                            ues_creees.append(f"{code_ue_unique} ({classe.nom_classe})")
-
-            db.session.commit()
-
-            if len(ues_creees) > 0:
-                flash(f"✅ {len(ues_creees)} UE créée(s) : {', '.join(ues_creees)}", "success")
-            else:
-                flash("❌ Aucune UE n'a été créée.", "info")
+                db.session.commit()
+                flash(f"✅ UE Composite {code_ue} créée ({len(sous_ues_data)} EC, {credits_total} crédits) pour {len(classes_ids)} classe(s).", "success")
 
             return redirect(url_for('directeur.liste_ues'))
 
         except Exception as e:
             db.session.rollback()
-            flash(f"❌ Erreur : {str(e)}", "danger")
-            import traceback
-            traceback.print_exc()
+            flash(f"Erreur : {str(e)}", "danger")
+            import traceback; traceback.print_exc()
 
-    return render_template('directeur/ajouter_ue.html', classes=classes)
+    return _render_form()
 
 
 @bp.route('/ue/<int:ue_id>')
@@ -625,17 +928,15 @@ def ajouter_ue():
 def detail_ue(ue_id):
     ue = UE.query.get_or_404(ue_id)
     enseignants = Enseignant.query.filter_by(actif=True).all()
-
-    # Calcul moyenne rapide
     notes_valides = [n.note for n in ue.notes if n.note is not None]
     moyenne = round(sum(notes_valides) / len(notes_valides), 2) if notes_valides else None
-
     return render_template('directeur/detail_ue.html', ue=ue, enseignants=enseignants, moyenne_ue=moyenne)
 
 
 @bp.route('/ue/<int:ue_id>/affecter/<int:enseignant_id>', methods=['POST'])
 @directeur_required
 def affecter_ue_a_prof(ue_id, enseignant_id):
+
     """Affecte un enseignant à une UE depuis la page de détail de l'UE"""
     ue = UE.query.get_or_404(ue_id)
     enseignant = Enseignant.query.get_or_404(enseignant_id)
@@ -674,7 +975,8 @@ def supprimer_ue(ue_id):
 @bp.route('/affectations')
 @directeur_required
 def affectations():
-    ues = UE.query.all()
+    # Exclure les UE composites mères — seuls les EC/sous-UE sont affectables
+    ues = UE.query.filter(db.or_(UE.nature != 'composite', UE.nature == None)).all()
     enseignants = Enseignant.query.filter_by(actif=True).all()
     return render_template('directeur/affectations.html', ues=ues, enseignants=enseignants)
 
@@ -684,7 +986,8 @@ def affectations():
 @directeur_required
 def affectations_simplifiees():
     """Page d'affectation simplifiée avec checkboxes"""
-    ues = UE.query.order_by(UE.code_ue).all()
+    # Exclure les UE composites mères — seuls les EC/sous-UE sont affectables
+    ues = UE.query.filter(db.or_(UE.nature != 'composite', UE.nature == None)).order_by(UE.code_ue).all()
     enseignants = Enseignant.query.filter_by(actif=True).order_by(Enseignant.nom).all()
 
     # Calculer les UE non affectées (sans aucun enseignant)
@@ -692,8 +995,8 @@ def affectations_simplifiees():
     ues_non_affectees = [ue for ue in ues if len(ue.enseignants) == 0]
 
     # Séparer les troncs communs des autres
-    troncs_communs_non_affectes = [ue for ue in ues_non_affectees if ue.type_ue_creation == 'tronc_commun']
-    ue_filles_non_affectees = [ue for ue in ues_non_affectees if ue.type_ue_creation != 'tronc_commun']
+    troncs_communs_non_affectes = [ue for ue in ues_non_affectees if ue.type_affectation == 'tronc_commun']
+    ue_filles_non_affectees = [ue for ue in ues_non_affectees if ue.type_affectation != 'tronc_commun']
 
     return render_template('directeur/affecter_ues_enseignants.html',
                          ues=ues,
@@ -983,16 +1286,85 @@ def export_statistiques_file():
 
 
 # =========================================================================
-# ANNONCES
+# ANNONCES & GUIDE D'ORIENTATION
 # =========================================================================
-@bp.route('/publier_annonce', methods=['POST'])
+@bp.route('/annonces')
+@directeur_required
+def liste_annonces():
+    """Liste de toutes les annonces/articles"""
+    annonces = Annonce.query.order_by(Annonce.date_publication.desc()).all()
+    return render_template('directeur/liste_annonces.html', annonces=annonces)
+
+
+@bp.route('/annonce/publier', methods=['GET', 'POST'])
 @directeur_required
 def publier_annonce():
-    titre = request.form.get('titre')
-    message = request.form.get('message')
-    # Logique pour enregistrer l'annonce en BDD ici...
-    flash(f"DIFFUSION EXÉCUTÉE : {titre}", "success")
-    return redirect(url_for('directeur.dashboard'))
+    """Publier une annonce, un article ou un guide d'orientation"""
+    if request.method == 'POST':
+        titre = request.form.get('titre', '').strip()
+        contenu = request.form.get('contenu', '').strip()
+        categorie = request.form.get('categorie', 'article')
+        visible_public = request.form.get('visible_public') == 'on'
+        visible_etudiants = request.form.get('visible_etudiants') == 'on'
+        visible_enseignants = request.form.get('visible_enseignants') == 'on'
+
+        if not titre or not contenu:
+            flash("Le titre et le contenu sont obligatoires.", "warning")
+            return render_template('directeur/publier_annonce.html')
+
+        # Upload fichier joint (PDF, DOC, etc.)
+        fichier_path = None
+        fichier = request.files.get('fichier_joint')
+        if fichier and fichier.filename:
+            from werkzeug.utils import secure_filename
+            upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'annonces')
+            os.makedirs(upload_dir, exist_ok=True)
+            filename = secure_filename(fichier.filename)
+            # Ajouter timestamp pour unicité
+            base, ext = os.path.splitext(filename)
+            filename = f"{base}_{int(datetime.now().timestamp())}{ext}"
+            fichier.save(os.path.join(upload_dir, filename))
+            fichier_path = f"uploads/annonces/{filename}"
+
+        try:
+            annonce = Annonce(
+                titre=titre,
+                contenu=contenu,
+                categorie=categorie,
+                visible_public=visible_public,
+                visible_etudiants=visible_etudiants,
+                visible_enseignants=visible_enseignants,
+                fichier_joint=fichier_path,
+                auteur_id=current_user.id
+            )
+            db.session.add(annonce)
+            db.session.commit()
+
+            type_label = {'article': 'Article', 'guide': 'Guide d\'orientation', 'actualite': 'Actualité'}.get(categorie, 'Publication')
+            flash(f"✅ {type_label} « {titre} » publié avec succès !", "success")
+            return redirect(url_for('directeur.liste_annonces'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erreur : {str(e)}", "danger")
+
+    return render_template('directeur/publier_annonce.html')
+
+
+@bp.route('/annonce/<int:annonce_id>/supprimer', methods=['POST'])
+@directeur_required
+def supprimer_annonce(annonce_id):
+    """Supprimer une annonce"""
+    annonce = Annonce.query.get_or_404(annonce_id)
+    titre = annonce.titre
+    # Supprimer le fichier joint si existe
+    if annonce.fichier_joint:
+        filepath = os.path.join(current_app.root_path, 'static', annonce.fichier_joint)
+        if os.path.exists(filepath):
+            os.remove(filepath)
+    db.session.delete(annonce)
+    db.session.commit()
+    flash(f"✅ « {titre} » supprimé.", "success")
+    return redirect(url_for('directeur.liste_annonces'))
 
 @bp.route('/ue/modifier/<int:ue_id>', methods=['GET', 'POST'])
 @directeur_required
@@ -1048,9 +1420,14 @@ def imprimer_fiche_enseignant(enseignant_id):
 
     date_edition = datetime.now().strftime('%d/%m/%Y')
 
+    # Récupérer la config pour le cachet
+    from app.models import ConfigurationEcole
+    config = ConfigurationEcole.query.first()
+
     return render_template('directeur/fiche_enseignant_print.html',
                            enseignant=enseignant, user=user,
-                           password=password_display, date_edition=date_edition)
+                           password=password_display, date_edition=date_edition,
+                           config=config)
 
 # =========================================================
 # 2. GESTION DES DIPLÔMES
@@ -1278,34 +1655,42 @@ def generer_diplome(etudiant_id):
     c.setLineWidth(1)
     c.line(width - 220, y_footer + 10, width - 80, y_footer + 10)
 
-    # === SCEAU OFFICIEL (design amélioré) ===
+    # === SCEAU OFFICIEL (Image réelle si disponible) ===
 
     sceau_x = 150
     sceau_y = 100
 
-    # Cercle externe or
-    c.setStrokeColor(PolytechColors.GOLD)
-    c.setLineWidth(4)
-    c.circle(sceau_x, sceau_y, 45, stroke=1, fill=0)
+    from app.models import ConfigurationEcole as CfgEcole
+    cfg = CfgEcole.query.first()
+    cachet_drawn = False
+    if cfg and cfg.cachet_path:
+        try:
+            cachet_img_path = os.path.join(current_app.root_path, 'static', cfg.cachet_path)
+            if os.path.exists(cachet_img_path):
+                c.drawImage(cachet_img_path, sceau_x - 100, sceau_y - 100, width=200, height=200,
+                           preserveAspectRatio=True, mask='auto')
+                cachet_drawn = True
+        except:
+            pass
 
-    # Cercle interne
-    c.setFillColor(PolytechColors.GOLD)
-    c.setFillAlpha(0.2)
-    c.circle(sceau_x, sceau_y, 42, stroke=0, fill=1)
-    c.setFillAlpha(1)
-
-    # Texte du sceau
-    c.setFont("Helvetica-Bold", 9)
-    c.setFillColor(PolytechColors.GOLD)
-    c.drawCentredString(sceau_x, sceau_y + 8, "SCEAU")
-    c.drawCentredString(sceau_x, sceau_y - 5, "OFFICIEL")
-    c.setFont("Helvetica", 7)
-    c.drawCentredString(sceau_x, sceau_y - 15, "2026")
-
-    # Étoile au centre du sceau
-    c.setFont("Helvetica-Bold", 18)
-    c.setFillColor(PolytechColors.GOLD)
-    c.drawCentredString(sceau_x, sceau_y + 22, "★")
+    if not cachet_drawn:
+        # Fallback : cercle dessiné
+        c.setStrokeColor(PolytechColors.GOLD)
+        c.setLineWidth(5)
+        c.circle(sceau_x, sceau_y, 65, stroke=1, fill=0)
+        c.setFillColor(PolytechColors.GOLD)
+        c.setFillAlpha(0.2)
+        c.circle(sceau_x, sceau_y, 60, stroke=0, fill=1)
+        c.setFillAlpha(1)
+        c.setFont("Helvetica-Bold", 12)
+        c.setFillColor(PolytechColors.GOLD)
+        c.drawCentredString(sceau_x, sceau_y + 8, "SCEAU")
+        c.drawCentredString(sceau_x, sceau_y - 5, "OFFICIEL")
+        c.setFont("Helvetica", 7)
+        c.drawCentredString(sceau_x, sceau_y - 15, "2026")
+        c.setFont("Helvetica-Bold", 18)
+        c.setFillColor(PolytechColors.GOLD)
+        c.drawCentredString(sceau_x, sceau_y + 22, "★")
 
     # === FILIGRANE SÉCURISÉ ===
 
@@ -1751,7 +2136,7 @@ def supprimer_examen(exam_id):
 
 
 # Dans app/routes/directeur.py
-from app.models import Livre
+from app.models import Livre, Etagere
 from werkzeug.utils import secure_filename
 import os
 
@@ -1759,8 +2144,13 @@ import os
 @bp.route('/bibliotheque')
 @directeur_required
 def bibliotheque():
-    livres = Livre.query.order_by(Livre.date_ajout.desc()).all()
-    return render_template('directeur/bibliotheque.html', livres=livres)
+    etageres = Etagere.query.filter_by(active=True).order_by(Etagere.ordre).all()
+    livres_sans_etagere = Livre.query.filter_by(etagere_id=None).order_by(Livre.date_ajout.desc()).all()
+    total_livres = Livre.query.count()
+    return render_template('directeur/bibliotheque.html',
+                           etageres=etageres,
+                           livres_sans_etagere=livres_sans_etagere,
+                           total_livres=total_livres)
 
 
 @bp.route('/bibliotheque/ajouter', methods=['POST'])
@@ -1773,13 +2163,12 @@ def ajouter_livre():
         auteur = request.form.get('auteur')
         categorie = request.form.get('categorie')
         description = request.form.get('description')
+        etagere_id = request.form.get('etagere_id')
 
         # 🤖 TRI AUTOMATIQUE PAR IA si pas de catégorie sélectionnée
         if not categorie or categorie == "":
             biblio_ia = BibliothequeIA()
             categorie = biblio_ia.determiner_categorie(titre, auteur, description)
-
-            # Générer description si absente
             if not description:
                 description = biblio_ia.generer_description(titre, auteur, categorie)
 
@@ -1797,7 +2186,7 @@ def ajouter_livre():
 
             # 2. Sauvegarde Couverture (Optionnel)
             cover_name = 'default_book.jpg'
-            if cover:
+            if cover and cover.filename:
                 c_name = secure_filename(cover.filename)
                 unique_cover = f"cover_{datetime.now().strftime('%Y%m%d%H%M')}_{c_name}"
                 path_cover = os.path.join(current_app.root_path, 'static', 'library', 'covers')
@@ -1808,7 +2197,10 @@ def ajouter_livre():
             nouveau_livre = Livre(
                 titre=titre, auteur=auteur, categorie=categorie,
                 description=description,
-                fichier_pdf=unique_pdf, image_couverture=cover_name
+                fichier_pdf=unique_pdf, image_couverture=cover_name,
+                etagere_id=int(etagere_id) if etagere_id else None,
+                ajoute_par_id=current_user.id,
+                ajoute_par_role='DIRECTEUR'
             )
             db.session.add(nouveau_livre)
             db.session.commit()
@@ -1845,6 +2237,52 @@ def supprimer_livre(livre_id):
 
     return redirect(url_for('directeur.bibliotheque'))
 
+
+@bp.route('/bibliotheque/etagere/creer', methods=['POST'])
+@directeur_required
+def creer_etagere():
+    """Créer une nouvelle étagère"""
+    nom = request.form.get('nom', '').strip()
+    description = request.form.get('description', '').strip()
+    icone = request.form.get('icone', 'fas fa-bookmark')
+    couleur = request.form.get('couleur', '#667eea')
+
+    if not nom:
+        flash("Le nom de l'étagère est requis.", "warning")
+        return redirect(url_for('directeur.bibliotheque'))
+
+    if Etagere.query.filter_by(nom=nom).first():
+        flash(f"L'étagère '{nom}' existe déjà.", "warning")
+        return redirect(url_for('directeur.bibliotheque'))
+
+    try:
+        ordre = (db.session.query(db.func.max(Etagere.ordre)).scalar() or 0) + 1
+        etagere = Etagere(nom=nom, description=description, icone=icone, couleur=couleur, ordre=ordre)
+        db.session.add(etagere)
+        db.session.commit()
+        flash(f"✅ Étagère '{nom}' créée !", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erreur : {str(e)}", "danger")
+
+    return redirect(url_for('directeur.bibliotheque'))
+
+
+@bp.route('/bibliotheque/etagere/<int:etagere_id>/supprimer', methods=['POST'])
+@directeur_required
+def supprimer_etagere(etagere_id):
+    """Supprimer une étagère (les livres sont déplacés dans 'non classés')"""
+    etagere = Etagere.query.get_or_404(etagere_id)
+    try:
+        # Détacher les livres de cette étagère
+        Livre.query.filter_by(etagere_id=etagere.id).update({'etagere_id': None})
+        db.session.delete(etagere)
+        db.session.commit()
+        flash(f"Étagère '{etagere.nom}' supprimée. Les livres sont non-classés.", "info")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erreur : {str(e)}", "danger")
+    return redirect(url_for('directeur.bibliotheque'))
 
 
 @bp.route('/deliberations')
@@ -1950,4 +2388,205 @@ def voir_pv(classe_id):
                            classe=classe,
                            deliberations=deliberations,
                            stats={'admis': admis, 'total': total, 'taux': taux})
+
+
+# =========================================================================
+# DÉTAIL ÉCOLE (Encyclopédie / Tableau de bord école)
+# =========================================================================
+@bp.route('/detail-ecole')
+@directeur_required
+def detail_ecole():
+    """Page encyclopédie de l'école avec toutes les infos"""
+    from app.models import ConfigurationEcole
+    config = ConfigurationEcole.query.first()
+    departements = Departement.query.filter_by(active=True).order_by(Departement.nom).all()
+    filieres = Filiere.query.filter_by(active=True).order_by(Filiere.nom_filiere).all()
+    classes   = Classe.query.filter_by(active=True).order_by(Classe.nom_classe).all()
+    ues       = UE.query.filter_by(active=True, parent_id=None).order_by(UE.code_ue).all()
+    nb_etudiants   = Etudiant.query.count()
+    nb_enseignants = Enseignant.query.filter_by(actif=True).count()
+    return render_template('directeur/detail_ecole.html',
+                           config=config,
+                           departements=departements,
+                           filieres=filieres,
+                           classes=classes,
+                           ues=ues,
+                           nb_etudiants=nb_etudiants,
+                           nb_enseignants=nb_enseignants)
+
+@bp.route('/labo-architecture')
+@directeur_required
+def labo_architecture():
+    """Page laboratoire architecture virtuelle EPS"""
+    return render_template('directeur/labo_architecture.html')
+
+
+# =========================================================================
+# GUIDE D'ORIENTATION (accessible sans connexion depuis /guide)
+# =========================================================================
+# Route publique enregistrée dans auth.py → on crée ici la logique PDF
+@bp.route('/guide-orientation')
+@directeur_required
+def guide_orientation_admin():
+    """Prévisualisation du guide depuis le dashboard directeur"""
+    return _render_guide()
+
+
+def _render_guide():
+    """Génère la page HTML du guide d'orientation"""
+    from app.models import ConfigurationEcole
+    config      = ConfigurationEcole.query.first()
+    departements = Departement.query.filter_by(active=True).order_by(Departement.nom).all()
+    filieres_fond = Filiere.query.filter_by(active=True, type_diplome='fondamental').order_by(Filiere.nom_filiere).all()
+    filieres_pro  = Filiere.query.filter_by(active=True, type_diplome='professionnel').order_by(Filiere.nom_filiere).all()
+    ues_majeures  = UE.query.filter_by(active=True, parent_id=None).order_by(UE.semestre, UE.code_ue).all()
+    nb_etudiants  = Etudiant.query.count()
+    return render_template('public/guide_orientation.html',
+                           config=config,
+                           departements=departements,
+                           filieres_fond=filieres_fond,
+                           filieres_pro=filieres_pro,
+                           ues_majeures=ues_majeures,
+                           nb_etudiants=nb_etudiants,
+                           annee=datetime.now().year)
+
+
+@bp.route('/guide-orientation/pdf')
+@directeur_required
+def guide_orientation_pdf():
+    """Télécharge le guide d'orientation en PDF (ReportLab)"""
+    return _generer_guide_pdf()
+
+
+def _generer_guide_pdf():
+    from app.models import ConfigurationEcole
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import cm
+    from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
+                                    Table, TableStyle, PageBreak, HRFlowable)
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+
+    config = ConfigurationEcole.query.first()
+    nom_ecole = config.nom_ecole if config else "École Polytechnique de la State"
+    nom_directeur = config.nom_directeur if config else "La Direction"
+
+    departements = Departement.query.filter_by(active=True).order_by(Departement.nom).all()
+    filieres     = Filiere.query.filter_by(active=True).order_by(Filiere.nom_filiere).all()
+    ues_majeures = UE.query.filter_by(active=True, parent_id=None).order_by(UE.semestre, UE.code_ue).all()
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4,
+                            leftMargin=2*cm, rightMargin=2*cm,
+                            topMargin=2*cm, bottomMargin=2*cm)
+
+    # Styles
+    styles = getSampleStyleSheet()
+    BLUE  = colors.HexColor('#003366')
+    GOLD  = colors.HexColor('#CC9933')
+    LIGHT = colors.HexColor('#EEF2FF')
+
+    s_titre   = ParagraphStyle('Titre',   parent=styles['Title'],   textColor=BLUE,  fontSize=22, spaceAfter=8, alignment=TA_CENTER)
+    s_h1      = ParagraphStyle('H1',      parent=styles['Heading1'], textColor=BLUE,  fontSize=14, spaceBefore=14, spaceAfter=6)
+    s_h2      = ParagraphStyle('H2',      parent=styles['Heading2'], textColor=GOLD,  fontSize=12, spaceBefore=10, spaceAfter=4)
+    s_body    = ParagraphStyle('Body',    parent=styles['Normal'],  fontSize=10, spaceAfter=4)
+    s_center  = ParagraphStyle('Center',  parent=styles['Normal'],  fontSize=10, alignment=TA_CENTER)
+    s_badge   = ParagraphStyle('Badge',   parent=styles['Normal'],  fontSize=9,  textColor=colors.white, backColor=BLUE, spaceAfter=2)
+
+    story = []
+
+    # ---- PAGE DE GARDE ----
+    story.append(Spacer(1, 3*cm))
+    story.append(Paragraph(nom_ecole.upper(), s_titre))
+    story.append(HRFlowable(width="80%", thickness=2, color=GOLD, hAlign='CENTER'))
+    story.append(Spacer(1, 0.5*cm))
+    story.append(Paragraph("<b>Guide d'Orientation Officiel</b>", ParagraphStyle('GT', parent=s_titre, fontSize=16, textColor=GOLD)))
+    story.append(Paragraph(f"Année Universitaire {datetime.now().year}-{datetime.now().year+1}", s_center))
+    story.append(Spacer(1, 4*cm))
+    story.append(Paragraph(f"Direction Générale : <b>{nom_directeur}</b>", s_center))
+    story.append(Paragraph(f"Mis à jour le : {datetime.now().strftime('%d/%m/%Y')}", s_center))
+    story.append(PageBreak())
+
+    # ---- MOT DE LA DIRECTION ----
+    story.append(Paragraph("1. Mot de la Direction", s_h1))
+    story.append(HRFlowable(width="100%", thickness=1, color=BLUE))
+    story.append(Spacer(1, 0.3*cm))
+    story.append(Paragraph(
+        f"Bienvenue à {nom_ecole}. Notre mission est de former les ingénieurs et innovateurs de demain. "
+        "Ce guide présente l'ensemble de notre offre de formation, qui évolue constamment pour s'adapter "
+        "aux défis technologiques et aux besoins du marché.", s_body))
+    story.append(Spacer(1, 0.5*cm))
+
+    # ---- DÉPARTEMENTS & FILIÈRES ----
+    story.append(Paragraph("2. Nos Départements et Filières", s_h1))
+    story.append(HRFlowable(width="100%", thickness=1, color=BLUE))
+    story.append(Spacer(1, 0.3*cm))
+
+    for dept in departements:
+        story.append(Paragraph(f"Département : {dept.nom}", s_h2))
+        if dept.chef:
+            story.append(Paragraph(f"<b>Chef de département :</b> {dept.chef.nom} {dept.chef.prenom}", s_body))
+        if dept.description:
+            story.append(Paragraph(dept.description, s_body))
+
+        # Tableau des filières du département
+        fil_dept = [f for f in filieres if f.departement_id == dept.id]
+        if fil_dept:
+            data_table = [['Code', 'Filière', 'Cycle', 'Type']]
+            for f in fil_dept:
+                type_lbl = 'Fondamentale' if f.type_diplome == 'fondamental' else 'Professionnelle'
+                data_table.append([f.code_filiere or '-', f.nom_filiere, f.cycle or '-', type_lbl])
+
+            tbl = Table(data_table, colWidths=[2.5*cm, 8*cm, 3*cm, 4*cm])
+            tbl.setStyle(TableStyle([
+                ('BACKGROUND',  (0,0), (-1,0), BLUE),
+                ('TEXTCOLOR',   (0,0), (-1,0), colors.white),
+                ('FONTNAME',    (0,0), (-1,0), 'Helvetica-Bold'),
+                ('FONTSIZE',    (0,0), (-1,-1), 9),
+                ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, LIGHT]),
+                ('GRID',        (0,0), (-1,-1), 0.5, colors.lightgrey),
+                ('VALIGN',      (0,0), (-1,-1), 'MIDDLE'),
+            ]))
+            story.append(tbl)
+        story.append(Spacer(1, 0.4*cm))
+
+    story.append(PageBreak())
+
+    # ---- UE MAJEURES ----
+    story.append(Paragraph("3. Structure des Unités d'Enseignement (UE)", s_h1))
+    story.append(HRFlowable(width="100%", thickness=1, color=BLUE))
+    story.append(Spacer(1, 0.3*cm))
+
+    if ues_majeures:
+        data_ue = [['Code UE', 'Intitulé', 'Semestre', 'Crédits', 'Catégorie']]
+        for ue in ues_majeures[:60]:  # max 60 lignes
+            cat_map = {'fondamentale': '🔴 Fond.', 'specialite': '🔵 Spéc.',
+                       'transversale': '🟢 Trans.', 'libre': '🟡 Libre'}
+            cat = cat_map.get(ue.categorie or '', '-')
+            data_ue.append([ue.code_ue, (ue.nom_ue or ue.intitule or '')[:45],
+                             ue.semestre or '-', str(ue.credits or 0), cat])
+
+        tbl_ue = Table(data_ue, colWidths=[2.5*cm, 9*cm, 2*cm, 2*cm, 2.5*cm])
+        tbl_ue.setStyle(TableStyle([
+            ('BACKGROUND',  (0,0), (-1,0), BLUE),
+            ('TEXTCOLOR',   (0,0), (-1,0), colors.white),
+            ('FONTNAME',    (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE',    (0,0), (-1,-1), 8),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, LIGHT]),
+            ('GRID',        (0,0), (-1,-1), 0.4, colors.lightgrey),
+        ]))
+        story.append(tbl_ue)
+
+    story.append(Spacer(1, 1*cm))
+    story.append(HRFlowable(width="80%", thickness=1, color=GOLD, hAlign='CENTER'))
+    story.append(Paragraph(f"Pour plus d'informations, consultez votre portail en ligne.", s_center))
+
+    doc.build(story)
+    buffer.seek(0)
+
+    filename = f"guide_orientation_{nom_ecole.replace(' ', '_')}_{datetime.now().year}.pdf"
+    return send_file(buffer, as_attachment=True,
+                     download_name=filename,
+                     mimetype='application/pdf')
 

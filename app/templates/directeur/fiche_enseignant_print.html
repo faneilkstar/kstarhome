@@ -2,215 +2,412 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <title>Fiche Recrutement Enseignant - {{ enseignant.nom }}</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap');
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
-        body { background: #525659; margin: 0; padding: 0; }
+        :root {
+            --primary: #1e293b;
+            --secondary: #334155;
+            --accent: #0f172a;
+            --gold: #d4af37;
+        }
+
+        body { background: #525659; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
 
         .A4-page {
             background: white;
             width: 210mm;
             min-height: 297mm;
-            padding: 25mm 20mm;
-            margin: 20px auto;
+            padding: 20mm;
+            margin: 30px auto;
             position: relative;
             color: #000;
-            font-family: 'Inter', sans-serif;
             box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            overflow: hidden; /* Pour les cachets qui débordent */
         }
 
-        /* En-tête de la State */
-        .header-institution {
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 40px;
+        /* UI de Contrôle (Non imprimé) */
+        .controls-toolbar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.95);
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            gap: 15px;
+            align-items: center;
+            z-index: 1000;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
         }
 
-        .school-identity { text-align: left; }
-        .school-identity h1 {
-            font-family: 'Cinzel', serif;
-            font-size: 20px;
-            margin: 0;
-            color: #1a1a1a;
-            letter-spacing: 1px;
-        }
-        .republique { font-size: 11px; font-weight: 800; letter-spacing: 3px; margin-top: 5px; }
-
-        .reference-box { text-align: right; font-size: 12px; line-height: 1.4; }
-
-        /* Titre du Document */
-        .doc-title {
-            text-align: center;
-            font-family: 'Libre Baskerville', serif;
-            font-size: 22px;
-            font-weight: 700;
-            text-transform: uppercase;
-            margin: 50px 0;
-            text-decoration: underline;
-            letter-spacing: 1px;
-        }
-
-        .salutations { font-family: 'Libre Baskerville', serif; font-style: italic; margin-bottom: 25px; }
-
-        /* Tableau des UE Style Administratif */
-        .ue-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 30px 0;
+        .btn-tool {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
             font-size: 13px;
-        }
-        .ue-table th { background: #f2f2f2; border: 1px solid #000; padding: 10px; text-transform: uppercase; }
-        .ue-table td { border: 1px solid #000; padding: 10px; }
-
-        /* Bloc des Accès - Look Sécurisé */
-        .security-frame {
-            border: 2px solid #000;
-            padding: 20px;
-            margin: 40px 0;
-            background: #fafafa;
-        }
-        .security-frame h5 { margin-top: 0; text-decoration: underline; font-size: 14px; }
-        .id-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .id-label { font-size: 11px; font-weight: 800; color: #555; }
-        .id-value { font-family: monospace; font-size: 18px; font-weight: bold; }
-
-        /* ZONE DE SIGNATURES REDRESSÉE ET EMBELLIE */
-        .signature-area {
-            margin-top: 80px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        .sign-box {
-            width: 45%;
-            text-align: center;
-        }
-
-        .sign-title { font-weight: 800; text-transform: uppercase; font-size: 13px; margin-bottom: 60px; }
-
-        .sign-line { border-top: 1.5px solid #000; width: 80%; margin: 0 auto 10px; }
-
-        .sign-name { font-family: 'Libre Baskerville', serif; font-weight: 700; font-size: 14px; }
-
-        .seal-circle {
-            width: 110px;
-            height: 110px;
-            border: 1px dashed #999;
-            border-radius: 50%;
+            font-weight: 600;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 9px;
-            color: #999;
-            text-align: center;
-            margin-top: 20px;
+            gap: 8px;
         }
+
+        .btn-tool:hover { background: rgba(255,255,255,0.1); border-color: white; transform: translateY(-2px); }
+        .btn-primary-tool { background: var(--gold); border-color: var(--gold); color: #000; }
+        .btn-primary-tool:hover { background: #bf9525; border-color: #bf9525; }
+
+        /* En-tête officiel */
+        .header-official {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 3px double #000;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        .republic-col { text-align: center; width: 30%; }
+        .republic-col h4 { font-family: 'Cinzel', serif; margin: 0; font-size: 14px; color: #000; font-weight: 900; }
+        .motto { font-size: 10px; font-weight: 700; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .school-col { text-align: center; width: 40%; }
+        .school-logo { height: 60px; object-fit: contain; margin-bottom: 5px; }
+        .school-name { font-family: 'Cinzel', serif; font-weight: 900; font-size: 16px; text-transform: uppercase; color: #1e3a8a; }
+
+        .admin-col { text-align: right; width: 30%; font-size: 11px; line-height: 1.4; color: #444; }
+
+        /* Contenu */
+        .doc-title-box {
+            text-align: center;
+            margin: 30px 0;
+            padding: 15px;
+            border: 2px solid #000;
+            background: #f8fafc;
+            position: relative;
+        }
+        .doc-title-box h2 {
+            font-family: 'Cinzel', serif;
+            font-size: 22px;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .doc-subtitle { font-family: 'Libre Baskerville', serif; font-style: italic; font-size: 14px; margin-top: 5px; }
+
+        .content-body { font-size: 14px; line-height: 1.6; text-align: justify; margin-bottom: 20px; }
+        .recipient { margin: 20px 0; font-family: 'Libre Baskerville', serif; font-size: 15px; background: #eee; padding: 10px; border-left: 4px solid #000; }
+
+        /* Tableau Pro */
+        .ue-table { width: 100%; border-collapse: collapse; margin: 25px 0; font-size: 12px; }
+        .ue-table th { background: #1e293b; color: white; padding: 10px; text-transform: uppercase; font-size: 11px; font-weight: 600; text-align: left; }
+        .ue-table td { border-bottom: 1px solid #ddd; padding: 10px; color: #333; }
+        .ue-table tr:nth-child(even) { background: #f8fafc; }
+
+        /* Sécurité */
+        .security-box {
+            border: 1px dashed #64748b;
+            background: #f1f5f9;
+            padding: 15px;
+            margin: 30px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sec-label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+        .sec-val { font-family: 'Courier New', monospace; font-weight: 700; font-size: 16px; margin-top: 2px; }
+
+        /* Signatures et Cachets */
+        .signatures-area {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            position: relative;
+            min-height: 200px; /* Espace pour les cachets */
+        }
+
+        .sign-block { width: 45%; text-align: center; position: relative; z-index: 10; }
+        .sign-role { font-size: 12px; font-weight: 800; text-transform: uppercase; color: #000; margin-bottom: 50px; }
+        .sign-name { font-family: 'Cinzel', serif; font-weight: 700; border-top: 1px solid #000; padding-top: 10px; width: 80%; margin: 0 auto; }
+
+        /* CACHETS DYNAMIQUES */
+        .stamp-draggable {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            cursor: pointer; /* grab cursor non-printing */
+            z-index: 20;
+            transition: transform 0.1s;
+            mix-blend-mode: multiply;
+        }
+        .stamp-draggable:active { cursor: grabbing; transform: scale(1.05); }
+        .stamp-draggable img { width: 100%; height: 100%; object-fit: contain; transform: rotate(-15deg); }
+
+        .stamp-delete {
+            position: absolute;
+            top: -10px; right: -10px;
+            background: red; color: white;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            display: none;
+            align-items: center; justify-content: center;
+            font-size: 12px; cursor: pointer;
+            z-index: 100;
+        }
+        .stamp-draggable:hover { border: 1px dashed blue; }
+        .stamp-draggable:hover .stamp-delete { display: flex; }
 
         @media print {
             body { background: none; }
-            .A4-page { margin: 0; box-shadow: none; border: none; }
-            .no-print { display: none; }
+            .A4-page { margin: 0; box-shadow: none; border: none; width: 100%; height: auto; }
+            .no-print, .controls-toolbar, .stamp-delete { display: none !important; }
+            .stamp-draggable { border: none !important; cursor: default; }
         }
     </style>
 </head>
 <body>
 
-<div class="no-print" style="text-align:center; padding: 20px;">
-    <button onclick="window.print()" style="padding: 15px 30px; background: #000; color: #fff; cursor: pointer; font-weight: bold; border-radius: 5px;">
-        GÉNÉRER LE DOCUMENT OFFICIEL
+<!-- Barre d'outils Directeur -->
+<div class="controls-toolbar no-print">
+    <div style="font-weight: bold; color: #fff; margin-right: 10px;">
+        <i class="fas fa-stamp text-warning"></i> OUTILS DE VALIDATION
+    </div>
+    <button class="btn-tool" onclick="addStamp('ecole')">
+        <i class="fas fa-plus-circle"></i> Cachet École
+    </button>
+    <button class="btn-tool" onclick="addStamp('directeur')">
+        <i class="fas fa-signature"></i> Signature Directeur
+    </button>
+    <button class="btn-tool" onclick="addStamp('departement')">
+        <i class="fas fa-university"></i> Cachet Département
+    </button>
+    <div style="width: 1px; height: 25px; background: rgba(255,255,255,0.2); margin: 0 10px;"></div>
+    <button class="btn-tool btn-primary-tool" onclick="window.print()">
+        <i class="fas fa-print"></i> IMPRIMER LE DOCUMENT
     </button>
 </div>
 
-<div class="A4-page">
+<div class="A4-page" id="document-area">
 
-    <div class="header-institution">
-        <div class="school-identity">
-            <h1>ÉCOLE POLYTECHNIQUE DE LA STATE</h1>
-            <div class="republique">RÉPUBLIQUE DU TOGO</div>
-            <div style="font-size: 10px; font-weight: 700; margin-top: 10px;">TRAVAIL - DISCIPLINE - SUCCÈS</div>
+    <!-- En-tête -->
+    <div class="header-official">
+        <div class="republic-col">
+            <h4>RÉPUBLIQUE DU TOGO</h4>
+            <div class="motto">Travail - Liberté - Patrie</div>
+            <div style="margin-top:10px; font-size:9px;">MINISTÈRE DE L'ENSEIGNEMENT SUPÉRIEUR</div>
         </div>
-        <div class="reference-box">
+        <div class="school-col">
+            {% if config and config.logo_path %}
+            <img src="{{ url_for('static', filename=config.logo_path) }}" class="school-logo" alt="Logo">
+            {% else %}
+            <div style="font-size:30px; margin-bottom:5px;">🎓</div>
+            {% endif %}
+            <div class="school-name">{{ config.nom_ecole if config else 'ÉCOLE POLYTECHNIQUE' }}</div>
+            <div style="font-size:10px; letter-spacing:3px; margin-top:5px; color:#666;">EXCELLENCE & INTEGRIDÉ</div>
+        </div>
+        <div class="admin-col">
             <b>DIRECTION DES ÉTUDES</b><br>
-            N° Ref : {{ enseignant.id }}/EPS/DA/2026<br>
+            Réf: {{ enseignant.id }}/{{ date_edition.split('/')[2] }}/RH<br>
             Lomé, le {{ date_edition }}
         </div>
     </div>
 
-    <div class="doc-title">Notification de Recrutement & Lettre de Mission</div>
+    <!-- Titre -->
+    <div class="doc-title-box">
+        <h2>Lettre de Recrutement</h2>
+        <div class="doc-subtitle">Confirmant l'intégration au corps professoral</div>
+        <!-- Filigrane de fond -->
+    </div>
 
-    <p class="salutations">À l'attention de M/Mme <b>{{ enseignant.nom }} {{ enseignant.prenom }}</b>,</p>
+    <!-- Destinataire -->
+    <div class="recipient">
+        À l'attention de :<br>
+        <span style="font-size: 18px; font-weight: 700; text-transform: uppercase;">
+            {{ "Prof." if "Prof" in enseignant.grade else "M./Mme" }} {{ enseignant.nom }} {{ enseignant.prenom }}
+        </span><br>
+        <span style="font-size: 12px; color: #555;">{{ enseignant.grade or 'Enseignant' }} - Spécialité : {{ enseignant.specialite or 'Générale' }}</span>
+    </div>
 
-    <p style="text-align: justify; font-size: 14px;">
-        Par la présente, la Direction de l'<b>École Polytechnique de la State</b> a l'honneur de vous confirmer votre recrutement en qualité de membre du corps professoral. En vertu de cette nomination, les unités d'enseignement suivantes vous sont officiellement attribuées :
-    </p>
+    <!-- Contenu -->
+    <div class="content-body">
+        <p>
+            Monsieur/Madame,<br><br>
+            Nous avons le plaisir de vous confirmer votre recrutement en qualité d'enseignant au sein de notre établissement pour l'année académique <b>2025-2026</b>.
+            Votre expertise contribuera sans nul doute à l'excellence de notre formation.
+        </p>
+        <p>
+            Conformément aux décisions du Conseil Académique, les charges d'enseignement suivantes vous sont officiellement attribuées :
+        </p>
+    </div>
 
+    <!-- Tableau UEs -->
     <table class="ue-table">
         <thead>
             <tr>
-                <th>Code UE</th>
-                <th>Intitulé du Module</th>
-                <th>Classe d'Intervention</th>
-                <th>Crédits</th>
+                <th width="15%">Code</th>
+                <th width="40%">Intitulé de l'Unité d'Enseignement</th>
+                <th width="30%">Classes / Filières</th>
+                <th width="15%" style="text-align:center;">Crédits</th>
             </tr>
         </thead>
         <tbody>
             {% for ue in enseignant.ues %}
             <tr>
-                <td style="font-weight:bold;">{{ ue.code_ue }}</td>
-                <td>{{ ue.intitule }}</td>
-                <td>{{ ue.classe.nom_classe if ue.classe else 'N/A' }}</td>
-                <td style="text-align:center;">{{ ue.credits }}</td>
+                <td style="font-weight:800; color:#1e3a8a;">{{ ue.code_ue }}</td>
+                <td>
+                    <b>{{ ue.intitule }}</b>
+                    {% if ue.parent_id %}<br><small style="color:#666;">(Composante de {{ ue.ue_parent.code_ue }})</small>{% endif %}
+                </td>
+                <td>
+                    {% if ue.est_element_constitutif() and ue.ue_parent %}
+                        <!-- Afficher classes du parent pour EC -->
+                        {% for cl in ue.ue_parent.get_toutes_classes() %}
+                            <span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:10px;">{{ cl.nom_classe }}</span>
+                        {% endfor %}
+                    {% else %}
+                        {% for cl in ue.get_toutes_classes() %}
+                            <span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:10px;">{{ cl.nom_classe }}</span>
+                        {% else %}
+                            <span style="color:#999;">-</span>
+                        {% endfor %}
+                    {% endif %}
+                </td>
+                <td style="text-align:center; font-weight:bold;">{{ ue.credits }}</td>
             </tr>
             {% else %}
-            <tr><td colspan="4" style="text-align:center;">Aucune affectation enregistrée</td></tr>
+            <tr><td colspan="4" style="text-align:center; padding:20px;">Aucune affectation pour le moment.</td></tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <div class="security-frame">
-        <h5>PARAMÈTRES D'ACCÈS AU PORTAIL ACADÉMIQUE</h5>
-        <div class="id-grid">
-            <div>
-                <div class="id-label">NOM D'UTILISATEUR</div>
-                <div class="id-value">{{ user.username }}</div>
-            </div>
-            <div>
-                <div class="id-label">MOT DE PASSE PROVISOIRE</div>
-                <div class="id-value">{{ password }}</div>
-            </div>
+    <div class="security-box">
+        <div style="flex:1;">
+            <div class="sec-label">IDENTIFIANT SYSTÈME</div>
+            <div class="sec-val">{{ user.username }}</div>
+        </div>
+        <div style="flex:1; border-left:1px dashed #ccc; padding-left:20px;">
+            <div class="sec-label">CODE D'ACCÈS PROVISOIRE</div>
+            <div class="sec-val text-primary">{{ password }}</div>
+        </div>
+        <div style="text-align:right;">
+            <i class="fas fa-lock fa-2x" style="color:#cbd5e1;"></i>
         </div>
     </div>
 
-    <p style="font-size: 12px; font-style: italic; color: #444;">
-        * Ce document est strictement personnel. L'utilisateur est tenu de modifier son mot de passe dès sa première connexion sécurisée.
+    <p style="font-size: 11px; text-align: center; color: #666; margin-top: 30px;">
+        IMPORTANT : Veuillez conserver ce document confidentiel et modifier votre mot de passe dès la première connexion.
     </p>
 
-    <div class="signature-area">
+    <!-- Signatures -->
+    <div class="signatures-area" id="signatures-area">
+        <!-- Zone de cachets -->
 
-        <div class="sign-box">
-            <div class="sign-title">L'Enseignant</div>
-            <div class="sign-line"></div>
+        <div class="sign-block">
+            <div class="sign-role">L'Enseignant(e)</div>
+            <div style="height: 80px; display:flex; align-items:flex-end; justify-content:center; color:#ccc; font-size:10px;">
+                (Lu et approuvé)
+            </div>
             <div class="sign-name">{{ enseignant.prenom }} {{ enseignant.nom }}</div>
         </div>
 
-        <div class="seal-circle">
-            EMPLACEMENT<br>DU CACHET<br>OFFICIEL
+        <div class="sign-block">
+            <div class="sign-role">Le Directeur Général</div>
+            <div style="height: 80px;"></div> <!-- Espace pour cachet -->
+            <div class="sign-name">Prof. Kstar de la KARTZ</div>
         </div>
-
-        <div class="sign-box">
-            <div class="sign-title">Le Directeur Général</div>
-            <div class="sign-line"></div>
-            <div class="sign-name">M. le Directeur de la State</div>
-            <div style="font-size: 10px; margin-top: 5px; font-weight: bold;">(Signataire Autorisé)</div>
-        </div>
-
     </div>
 
 </div>
 
+<!-- Scripts pour gestion des cachets -->
+<script>
+    // Configuration des images de cachets (chemins relatifs depuis static)
+    const STAMPS_CONFIG = {
+        'ecole': "{{ url_for('static', filename=config.cachet_path) if config and config.cachet_path else '' }}",
+        'directeur': "{{ url_for('static', filename='signatures/signature_directeur.png') }}", // Image par défaut ou à configurer
+        'departement': "/static/img/cachet_dept_defaut.png" // Fallback
+    };
+
+    // Fallback images si pas de config
+    const FALLBACK_STAMP = "https://cdn-icons-png.flaticon.com/512/2274/2274578.png";
+
+    function addStamp(type) {
+        const area = document.getElementById('document-area');
+        const stamp = document.createElement('div');
+        stamp.className = 'stamp-draggable';
+
+        // Position initiale aléatoire au milieu
+        stamp.style.top = (area.offsetHeight - 250) + 'px';
+        stamp.style.left = (area.offsetWidth / 2) + 'px';
+
+        const imgPath = STAMPS_CONFIG[type] || FALLBACK_STAMP;
+
+        stamp.innerHTML = `
+            <div class="stamp-delete" onclick="this.parentElement.remove()">×</div>
+            <img src="${imgPath}" onerror="this.src='${FALLBACK_STAMP}'" alt="Cachet">
+        `;
+
+        setupDrag(stamp);
+        area.appendChild(stamp);
+    }
+
+    function setupDrag(el) {
+        let isDragging = false;
+        let startX, startY, initialLeft, initialTop;
+
+        el.addEventListener('mousedown', (e) => {
+            if(e.target.className === 'stamp-delete') return;
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            initialLeft = el.offsetLeft;
+            initialTop = el.offsetTop;
+            el.style.cursor = 'grabbing';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            el.style.left = (initialLeft + dx) + 'px';
+            el.style.top = (initialTop + dy) + 'px';
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            if(el) el.style.cursor = 'pointer';
+        });
+    }
+
+    // Ajouter un cachet école par défaut au chargement
+    window.onload = function() {
+        // Ajouter automatiquement le cachet école près de la signature directeur
+        setTimeout(() => {
+            const area = document.getElementById('document-area');
+            const stamp = document.createElement('div');
+            stamp.className = 'stamp-draggable';
+            stamp.style.top = (area.offsetHeight - 180) + 'px'; // Position approximative
+            stamp.style.left = (area.offsetWidth - 180) + 'px';
+
+            const imgPath = STAMPS_CONFIG['ecole'] || FALLBACK_STAMP;
+            stamp.innerHTML = `
+                <div class="stamp-delete" onclick="this.parentElement.remove()">×</div>
+                <img src="${imgPath}" onerror="this.src='${FALLBACK_STAMP}'" alt="Cachet">
+            `;
+            setupDrag(stamp);
+            area.appendChild(stamp);
+        }, 500);
+    };
+</script>
+
 </body>
 </html>
+

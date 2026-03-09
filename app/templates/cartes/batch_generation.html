@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Génération de Cartes en Lot{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-id-card me-2" style="color: #DAA520;"></i> Cartes Générées</h2>
+        <a href="{{ url_for('directeur.dashboard') }}" class="btn btn-outline-dark rounded-pill">
+            <i class="fas fa-arrow-left me-1"></i> Retour
+        </a>
+    </div>
+    {% if cartes %}
+    <div class="alert alert-success rounded-3">
+        <i class="fas fa-check-circle me-2"></i> <strong>{{ cartes|length }}</strong> cartes générées avec succès !
+    </div>
+    <div class="row g-4">
+        {% for item in cartes %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+                <img src="/static/cartes/{{ item.path.split('/')[-1] }}" class="card-img-top" style="border-bottom: 3px solid #DAA520;">
+                <div class="card-body text-center py-3">
+                    <h6 class="fw-bold mb-1">{{ item.etudiant.prenom }} {{ item.etudiant.nom }}</h6>
+                    <small class="text-muted">{{ item.etudiant.get_matricule() }}</small>
+                    <div class="mt-2">
+                        <a href="{{ url_for('cartes.telecharger_carte', etudiant_id=item.etudiant.id) }}" class="btn btn-sm text-white" style="background: #DAA520;">
+                            <i class="fas fa-download me-1"></i> Télécharger
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info rounded-3">
+        <i class="fas fa-info-circle me-2"></i> Aucun étudiant trouvé pour générer des cartes.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

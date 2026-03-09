@@ -12,7 +12,44 @@
             </ol>
         </nav>
         <h2 class="fw-bold mb-0">{{ ue.intitule }}</h2>
-        <p class="text-muted"><i class="fas fa-graduation-cap me-2"></i>{{ ue.classe.nom_classe if ue.classe else 'N/A' }} | {{ ue.credits }} Crédits ECTS</p>
+        <p class="text-muted">
+            <i class="fas fa-graduation-cap me-2"></i>
+            {% if ue.type_affectation == 'tronc_commun' %}
+                <span class="badge bg-info me-1">Tronc Commun</span>
+                {% set toutes_cls = ue.get_toutes_classes() %}
+                {% if toutes_cls %}
+                    {% for cl in toutes_cls %}
+                        {% if cl.est_assemblee %}
+                            {% set filieres_comp = cl.get_filieres_composantes() %}
+                            {% if filieres_comp %}
+                                {% for fil in filieres_comp %}{{ fil.nom_filiere }}{% if not loop.last %} · {% endif %}{% endfor %}
+                            {% else %}
+                                {{ cl.get_sigles_composantes() or cl.nom_classe }}
+                            {% endif %}
+                        {% else %}{{ cl.code_classe or cl.nom_classe }}{% endif %}{% if not loop.last %} · {% endif %}
+                    {% endfor %}
+                {% elif ue.classe and ue.classe.est_assemblee %}
+                    {% set filieres_comp = ue.classe.get_filieres_composantes() %}
+                    {% if filieres_comp %}
+                        {% for fil in filieres_comp %}{{ fil.nom_filiere }}{% if not loop.last %} · {% endif %}{% endfor %}
+                    {% else %}
+                        {{ ue.classe.get_sigles_composantes() or ue.classe.nom_classe }}
+                    {% endif %}
+                {% else %}
+                    Classes assemblées
+                {% endif %}
+            {% else %}
+                {% set toutes_cls = ue.get_toutes_classes() %}
+                {% if toutes_cls %}
+                    {% for cl in toutes_cls %}{{ cl.nom_classe }}{% if not loop.last %}, {% endif %}{% endfor %}
+                {% elif ue.classe %}
+                    {{ ue.classe.nom_classe }}
+                {% else %}
+                    N/A
+                {% endif %}
+            {% endif %}
+            | {{ ue.credits }} Crédits ECTS
+        </p>
     </div>
     <div class="col-md-6 text-md-end">
         <a href="{{ url_for('enseignant.configurer_composantes', ue_id=ue.id) }}" class="btn btn-outline-primary me-2">

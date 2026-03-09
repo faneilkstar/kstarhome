@@ -57,7 +57,11 @@ def create_app(config_name='default'):
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
-    login_manager.init_app(app)
+
+    # Charger TOUS les modèles pour que SQLAlchemy configure correctement les mappers
+    # (Corrige l'erreur: Mapper[Etudiant] has no property 'certificats')
+    with app.app_context():
+        from app import models  # noqa: F401
 
     # 3. Configuration de la sécurité Flask-Login
     login_manager.login_view = 'auth.login'
@@ -106,6 +110,14 @@ def create_app(config_name='default'):
     # API IA : Intelligence Artificielle Gemini
     from app.routes.api_ia import bp as api_ia_bp
     app.register_blueprint(api_ia_bp)
+
+    # BRANDING : Configuration école (logo, cachet, infos)
+    from app.routes.admin_branding import branding_bp
+    app.register_blueprint(branding_bp)
+
+    # GALERIE : Images du site (partenariats, campus, identité)
+    from app.routes.galerie import galerie_bp
+    app.register_blueprint(galerie_bp)
 
     # 5. Filtres Jinja2 personnalisés
     # ---------------------------------------------------------

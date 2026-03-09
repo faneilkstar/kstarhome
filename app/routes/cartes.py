@@ -2,7 +2,8 @@
 Routes pour les cartes d'étudiant
 """
 
-from flask import Blueprint, render_template, send_file, flash, redirect, url_for
+import os
+from flask import Blueprint, render_template, send_file, flash, redirect, url_for, current_app
 from flask_login import login_required, current_user
 from datetime import datetime
 
@@ -79,7 +80,8 @@ def telecharger_carte(etudiant_id):
     service = CarteEtudiantService()
     carte_path = service.generer_carte_complete(etudiant)
 
-    return send_file(carte_path, as_attachment=True, download_name=f"carte_{etudiant.matricule}.png")
+    matricule = etudiant.get_matricule() if hasattr(etudiant, 'get_matricule') else f"ETU{etudiant.id:05d}"
+    return send_file(carte_path, as_attachment=True, download_name=f"carte_{matricule}.png")
 
 
 @cartes_bp.route('/telecharger-enseignant/<int:enseignant_id>')
@@ -95,8 +97,8 @@ def telecharger_carte_enseignant(enseignant_id):
         return redirect(url_for('main.index'))
 
     service = CarteEtudiantService()
-    matricule = f"ENS{enseignant.id:05d}"
     carte_path = service.generer_carte_enseignant(enseignant)
+    matricule = f"ENS{enseignant.id:05d}"
 
     return send_file(carte_path, as_attachment=True, download_name=f"carte_{matricule}.png")
 
@@ -122,7 +124,7 @@ def generer_toutes():
                 'path': carte_path
             })
         except Exception as e:
-            print(f"Erreur génération carte {etudiant.matricule}: {e}")
+            print(f"Erreur génération carte {etudiant.get_matricule()}: {e}")
 
     flash(f'{len(generated)} cartes générées avec succès !', 'success')
 

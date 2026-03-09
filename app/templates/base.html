@@ -634,6 +634,9 @@
         </a>
 
         <div class="nav-label">Académique</div>
+        <a href="{{ url_for('directeur.liste_departements') }}" class="nav-link-pro">
+            <i class="fas fa-building"></i> Départements
+        </a>
         <a href="{{ url_for('directeur.liste_filieres') }}" class="nav-link-pro">
             <i class="fas fa-project-diagram"></i> Filières
         </a>
@@ -663,6 +666,10 @@
         </a>
         <a href="{{ url_for('enseignant.mes_ues') }}" class="nav-link-pro">
             <i class="fas fa-book-open"></i> Mes Cours
+        </a>
+        <a href="{{ url_for('laboratoire.hub_enseignant') }}" class="nav-link-pro">
+            <i class="fas fa-flask"></i> Salle de TP Virtuel
+            <span style="background:#10b981;color:#fff;font-size:0.55rem;padding:1px 5px;border-radius:8px;margin-left:6px;">IA</span>
         </a>
         {% endif %}
 

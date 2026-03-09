@@ -1,4 +1,4 @@
-{% if ues %}
+o{% if ues %}
 <div class="table-responsive">
     <table class="table table-hover">
         <thead class="table-light">
@@ -45,19 +45,31 @@
                         <i class="fas fa-users"></i> Tronc Commun
                     </span>
                     <br>
-                    <small class="text-muted">
-                        {{ ue.classes.count() }} classes
+                    <small class="text-muted fw-bold">
+                        {% set all_cls = ue.get_toutes_classes() %}
+                        {% if all_cls %}
+                            {% for cl in all_cls %}{{ cl.code_classe or cl.nom_classe[:6] }}{% if not loop.last %} · {% endif %}{% endfor %}
+                        {% else %}
+                            {{ ue.classes.count() }} classes
+                        {% endif %}
                     </small>
                     {% elif ue.type_affectation == 'libre' %}
                     <span class="badge bg-warning">
                         <i class="fas fa-gift"></i> Libre
                     </span>
                     {% else %}
-                    <span class="badge bg-secondary">
-                        Classe spécifique
-                    </span>
-                    {% if ue.classe %}
-                    <br><small>{{ ue.classe.nom_classe }}</small>
+                    {% set all_cls = ue.get_toutes_classes() %}
+                    {% if all_cls %}
+                        {% for cl in all_cls %}
+                        <span class="badge {% if cl.est_assemblee %}bg-warning text-dark{% else %}bg-secondary{% endif %} mb-1">
+                            {% if cl.est_assemblee %}<i class="fas fa-object-group me-1"></i>{% endif %}
+                            {{ cl.code_classe or cl.nom_classe }}
+                        </span>
+                        {% endfor %}
+                    {% elif ue.classe %}
+                    <span class="badge bg-secondary">{{ ue.classe.code_classe or ue.classe.nom_classe }}</span>
+                    {% else %}
+                    <span class="text-muted">Non assignée</span>
                     {% endif %}
                     {% endif %}
                 </td>
@@ -74,12 +86,12 @@
                 </td>
                 <td>
                     <div class="btn-group btn-group-sm">
-                        <a href="{{ url_for('directeur.detail_ue', id=ue.id) }}"
+                        <a href="{{ url_for('directeur.detail_ue', ue_id=ue.id) }}"
                            class="btn btn-outline-primary"
                            title="Détails">
                             <i class="fas fa-eye"></i>
                         </a>
-                        <a href="{{ url_for('directeur.modifier_ue', id=ue.id) }}"
+                        <a href="{{ url_for('directeur.modifier_ue', ue_id=ue.id) }}"
                            class="btn btn-outline-secondary"
                            title="Modifier">
                             <i class="fas fa-edit"></i>

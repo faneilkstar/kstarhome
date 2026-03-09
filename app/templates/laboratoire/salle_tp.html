@@ -83,116 +83,123 @@
         background: white;
         border-top: 2px solid #dee2e6;
     }
+
+    {% if tp.type_simulation == 'optique_ondu' %}
+    /* Style Welt pour optique ondulatoire */
+    .simulation-area .controls {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+    }
+    #scopeCanvas {
+        border: 1px solid rgba(0,229,255,0.3) !important;
+        border-radius: 10px !important;
+        background: #010208 !important;
+    }
+    #diagramCanvas {
+        image-rendering: auto;
+    }
+    {% endif %}
+
+    {% if tp.type_simulation == 'archimede' %}
+    /* Style Welt Hydrostatique */
+    .simulation-area .controls {
+        background: #0f172a;
+        border: 1px solid rgba(0,225,255,0.15);
+        border-radius: 14px;
+        padding: 18px;
+    }
+    #scopeCanvas {
+        border: 1px solid rgba(0,225,255,0.2) !important;
+        border-radius: 10px !important;
+        background: #020408 !important;
+    }
+    .panel-header {
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%) !important;
+    }
+    {% endif %}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="lab-container">
-    
-    <!-- 1️⃣ PANNEAU GAUCHE : DOCUMENTS -->
-    <div class="panel">
-        <div class="panel-header">
-            <i class="fas fa-book"></i> Documents
-        </div>
-        <div class="panel-body">
-            <h6 class="text-primary">📘 {{ tp.ue.code_ue }}</h6>
-            <p class="small text-muted">{{ tp.titre }}</p>
-            
-            <hr>
-            
-            <h6><i class="fas fa-file-pdf text-danger"></i> Sujets</h6>
-            {% if tp.fichier_sujet %}
-                <a href="{{ url_for('static', filename=tp.fichier_sujet) }}" target="_blank" class="btn btn-sm btn-outline-danger w-100 mb-2">
-                    <i class="fas fa-download"></i> Télécharger sujet
-                </a>
-            {% else %}
-                <p class="text-muted small">Aucun sujet PDF</p>
-            {% endif %}
-            
-            <hr>
-            
-            <h6><i class="fas fa-info-circle text-info"></i> Consignes</h6>
-            <div class="alert alert-info small">
-                <ul class="mb-0 ps-3">
-                    <li>Effectuez plusieurs mesures</li>
-                    <li>Variez les paramètres</li>
-                    <li>Utilisez l'IA pour comprendre</li>
-                    <li>Terminez pour obtenir votre note</li>
-                </ul>
+<!-- ...existing code... -->
+{% if tp or session_id %}
+    <!-- Mode simulation TP ou labo virtuel -->
+    <div class="lab-container">
+        <div class="panel">
+            <div class="panel-header">
+                <i class="fas fa-flask"></i> Simulation : {{ tp.type_simulation|upper if tp else session_id|upper }}
+                {% if session %}
+                <span class="badge bg-light text-dark float-end">Session #{{ session.id }}</span>
+                {% endif %}
             </div>
-            
-            <hr>
-            
-            <div class="d-grid gap-2">
-                <button class="btn btn-success" onclick="terminerTP()">
-                    <i class="fas fa-check"></i> Terminer le TP
-                </button>
-                <a href="{{ url_for('laboratoire.index') }}" class="btn btn-secondary btn-sm">
-                    <i class="fas fa-arrow-left"></i> Quitter
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2️⃣ PANNEAU CENTRAL : SIMULATION -->
-    <div class="panel">
-        <div class="panel-header">
-            <i class="fas fa-flask"></i> Simulation : {{ tp.type_simulation|upper }}
-            <span class="badge bg-light text-dark float-end">Session #{{ session.id }}</span>
-        </div>
-        <div class="panel-body simulation-area">
-            
-            <!-- Contrôles dynamiques selon le type -->
-            <div class="controls">
-                <div id="controls-container" class="row">
-                    <!-- Les contrôles seront générés par JavaScript selon le type_simulation -->
+            <div class="panel-body simulation-area">
+                <div class="controls">
+                    <div id="controls-container" class="row">
+                        <!-- Les contrôles seront générés par JavaScript selon le type_simulation -->
+                    </div>
+                    <div class="mt-3 text-center">
+                        {% if session %}
+                        <button class="btn btn-primary" onclick="enregistrerMesure()">
+                            <i class="fas fa-save"></i> Enregistrer cette mesure
+                        </button>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="mt-3 text-center">
-                    <button class="btn btn-primary" onclick="enregistrerMesure()">
-                        <i class="fas fa-save"></i> Enregistrer cette mesure
+                <div style="flex-grow: 1; position: relative; min-height: 300px;">
+                    <canvas id="scopeCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Chat IA si session -->
+        {% if session %}
+        <div class="panel">
+            <div class="panel-header" style="background: {% if tp.ia_nom == 'ETA' %}#e74c3c{% elif tp.ia_nom == 'ALPHA' %}#2ecc71{% else %}#f1c40f{% endif %}">
+                <i class="fas fa-robot"></i> Assistant {{ tp.ia_nom }}
+            </div>
+            <div class="chat-window panel-body" id="chatBox">
+                <div class="msg msg-ai">
+                    <strong>{{ tp.ia_nom }} :</strong> Bonjour {{ session.etudiant.prenom if session else 'Étudiant' }} ! Je suis ton assistant pour ce TP.
+                    {% if tp.ia_nom == 'ETA' %}
+                        Je t'aide en Génie Civil (RDM, structures).
+                    {% elif tp.ia_nom == 'ALPHA' %}
+                        Je t'aide en Maths, Informatique et Logistique.
+                    {% else %}
+                        Je t'aide en Génie Électrique.
+                    {% endif %}
+                    Pose-moi des questions sur la simulation !
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <div class="input-group">
+                    <input type="text" id="userMsg" class="form-control" placeholder="Pose une question..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button class="btn btn-primary" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
             </div>
-
-            <!-- Graphique -->
-            <div style="flex-grow: 1; position: relative; min-height: 300px;">
-                <canvas id="scopeCanvas"></canvas>
-            </div>
+        </div>
+        {% endif %}
+    </div>
+    <!-- Injection dynamique du JS selon session_id -->
+    <script src="{{ url_for('static', filename='js/simulation_' + session_id + '.js') }}"></script>
+{% else %}
+    <!-- Erreur : laboratoire non trouvé -->
+    <div class="container mt-4">
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i> Laboratoire virtuel non trouvé.<br>
+            Aucun TP ni simulation JS disponible pour : <strong>{{ session_id }}</strong>
         </div>
     </div>
-
-    <!-- 3️⃣ PANNEAU DROITE : IA -->
-    <div class="panel">
-        <div class="panel-header" style="background: {% if tp.ia_nom == 'ETA' %}#e74c3c{% elif tp.ia_nom == 'ALPHA' %}#2ecc71{% else %}#f1c40f{% endif %}">
-            <i class="fas fa-robot"></i> Assistant {{ tp.ia_nom }}
-        </div>
-        <div class="chat-window panel-body" id="chatBox">
-            <div class="msg msg-ai">
-                <strong>{{ tp.ia_nom }} :</strong> 
-                Bonjour {{ etudiant.prenom }} ! Je suis ton assistant pour ce TP. 
-                {% if tp.ia_nom == 'ETA' %}
-                    Je t'aide en Génie Civil (RDM, structures).
-                {% elif tp.ia_nom == 'ALPHA' %}
-                    Je t'aide en Maths, Informatique et Logistique.
-                {% else %}
-                    Je t'aide en Génie Électrique.
-                {% endif %}
-                Pose-moi des questions sur la simulation !
-            </div>
-        </div>
-        <div class="chat-input-area">
-            <div class="input-group">
-                <input type="text" id="userMsg" class="form-control" placeholder="Pose une question..." onkeypress="if(event.key==='Enter') sendMessage()">
-                <button class="btn btn-primary" onclick="sendMessage()">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+{% endif %}
+{% endblock %}
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% if tp.type_simulation == 'optique_ondu' %}
+<!-- Three.js pour la vue 3D optique Welt -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+{% endif %}
 
 <script>
 const SESSION_ID = {{ session.id }};
@@ -270,7 +277,7 @@ function terminerTP() {
     if (confirm('Voulez-vous terminer ce TP ? Vous ne pourrez plus modifier vos mesures.')) {
         fetch("{{ url_for('laboratoire.terminer_tp', tp_id=tp.id) }}", {method: 'POST'})
             .then(r => r.json())
-            .then(data => {
+            .then data => {
                 window.location.href = "{{ url_for('laboratoire.resultat_tp', session_id=session.id) }}";
             });
     }
@@ -304,6 +311,54 @@ const sessionStartTime = Date.now();
     <script src="{{ url_for('static', filename='js/simulation_electronique_logique.js') }}"></script>
 {% elif tp.type_simulation == 'algebre' %}
     <script src="{{ url_for('static', filename='js/simulation_algebre.js') }}"></script>
+{% elif tp.type_simulation == 'archimede' %}
+    {% include 'laboratoire/simulations/archimede.html' %}
+{% elif tp.type_simulation == 'optique_quantique' %}
+    {% include 'laboratoire/simulations/optique_quantique.html' %}
+{% else %}
+    <!-- Default Simulation Area -->
+    <div class="simulation-area">
+        <div class="controls">
+            <!-- ...existing code... -->
+            <!-- ... (keep existing controls) ... -->
+            <label class="form-label">Fréquence (Hz)</label>
+            <input type="range" class="form-range" id="freqRange" min="1" max="100" value="50">
+
+            <label class="form-label">Amplitude</label>
+            <input type="range" class="form-range" id="ampRange" min="1" max="10" value="5">
+
+            <div class="d-flex gap-2 mt-3">
+                <button class="btn btn-primary" id="startSim">Démarrer</button>
+                <button class="btn btn-danger" id="stopSim">Arrêter</button>
+                <button class="btn btn-outline-secondary" id="resetSim">Reset</button>
+            </div>
+        </div>
+
+        <canvas id="scopeCanvas" height="300"></canvas>
+    </div>
 {% endif %}
 
-{% endblock %}
+{% if tp is none %}
+    <!-- Mode labo JS direct sans TP -->
+    <div class="lab-container">
+        <div class="panel">
+            <div class="panel-header">
+                <i class="fas fa-flask"></i> Laboratoire Virtuel
+            </div>
+            <div class="panel-body simulation-area">
+                <div class="controls">
+                    <div class="alert alert-info">Simulation directe du laboratoire virtuel.<br>Les données ne seront pas enregistrées dans une session TP.</div>
+                </div>
+                <div style="flex-grow: 1; position: relative; min-height: 300px;">
+                    <canvas id="scopeCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Injection dynamique du JS selon session_id -->
+    <script src="{{ url_for('static', filename='js/simulation_' + session_id + '.js') }}"></script>
+{% endif %}
+
+{% if tp is none and session_id %}
+    <script src="{{ url_for('static', filename='js/simulation_' ~ session_id ~ '.js') }}"></script>
+{% endif %}

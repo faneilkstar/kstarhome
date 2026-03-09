@@ -18,6 +18,9 @@
             <a href="{{ url_for('directeur.imprimer_fiche_enseignant', enseignant_id=enseignant.id) }}" class="btn btn-outline-dark me-2">
                 <i class="fas fa-print me-2"></i>Imprimer Fiche
             </a>
+            <button class="btn btn-dark me-2" onclick="openStampPicker('{{ url_for('directeur.imprimer_fiche_enseignant', enseignant_id=enseignant.id) }}', 'print')">
+                <i class="fas fa-stamp me-2"></i>Fiche + Cachet
+            </button>
             <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editProfileModal">
                 <i class="fas fa-edit me-2"></i>Modifier
             </button>
@@ -121,5 +124,7 @@
     </div>
   </div>
 </div>
+
+{% include 'components/stamp_picker_modal.html' %}
 
 {% endblock %}

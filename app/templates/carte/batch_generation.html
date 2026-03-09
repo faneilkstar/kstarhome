@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Génération des cartes{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4"><i class="fas fa-id-card me-2 text-primary"></i>Cartes Générées</h2>
+    <div class="alert alert-success">
+        <i class="fas fa-check-circle me-2"></i>{{ cartes|length }} cartes générées avec succès !
+    </div>
+    <div class="row g-3">
+        {% for item in cartes %}
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="fas fa-id-card fa-3x text-primary mb-2"></i>
+                    <h6 class="fw-bold">{{ item.etudiant.nom }} {{ item.etudiant.prenom }}</h6>
+                    <a href="{{ url_for('cartes.telecharger_carte', etudiant_id=item.etudiant.id) }}"
+                       class="btn btn-sm btn-primary"><i class="fas fa-download me-1"></i>Télécharger</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

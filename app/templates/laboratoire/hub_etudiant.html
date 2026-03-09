@@ -3,180 +3,251 @@
 {% block title %}Laboratoire Virtuel - Mes TPs{% endblock %}
 
 {% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-    .lab-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 50px 0;
-        margin: -20px -15px 30px -15px;
-        border-radius: 0 0 20px 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    }
-    .ue-card {
-        transition: transform 0.3s, box-shadow 0.3s;
-        border: none;
-        border-radius: 15px;
-        overflow: hidden;
-        margin-bottom: 20px;
-    }
-    .ue-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-    }
-    .tp-item {
-        padding: 15px;
-        border-left: 4px solid #007bff;
-        background: #f8f9fa;
-        margin-bottom: 10px;
-        border-radius: 8px;
-        transition: all 0.3s;
-    }
-    .tp-item:hover {
-        background: #e9ecef;
-        border-left-width: 6px;
-    }
-    .ia-badge {
-        font-size: 0.75em;
-        padding: 4px 10px;
-        border-radius: 12px;
-    }
+    body { background-color: #010308; }
+    .welt-dashboard { font-family: 'Rajdhani', sans-serif; color: #e2e8f0; min-height: 85vh; padding: 2.5rem; border-radius: 20px; position: relative; overflow: hidden; background-image: radial-gradient(circle at 50% 0%, rgba(0, 225, 255, 0.08) 0%, transparent 70%), linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px); background-size: 100% 100%, 30px 30px, 30px 30px; background-position: 0 0, 15px 15px, 15px 15px; box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 225, 255, 0.05); border: 1px solid rgba(0, 225, 255, 0.1); }
+    .welt-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid rgba(0, 225, 255, 0.2); padding-bottom: 1.5rem; margin-bottom: 3rem; position: relative; }
+    .welt-header::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 150px; height: 2px; background: #00e1ff; box-shadow: 0 0 10px #00e1ff; }
+    .welt-title { font-family: 'Orbitron', sans-serif; text-transform: uppercase; font-weight: 900; font-size: 2.5rem; letter-spacing: 3px; margin: 0; background: linear-gradient(to right, #00e1ff, #b026ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 40px rgba(0, 225, 255, 0.3); }
+    .welt-subtitle { color: #94a3b8; text-transform: uppercase; letter-spacing: 5px; font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem; }
+    .system-status { display: flex; align-items: center; gap: 10px; font-family: 'Orbitron', monospace; font-size: 0.8rem; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 0.5rem 1rem; border-radius: 5px; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
+    .dept-title { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-top: 3rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 12px; color: #cbd5e1; }
+    .dept-title::before { content: ''; display: block; width: 12px; height: 12px; border-radius: 2px; }
+    .dept-quantique { --theme-color: #b026ff; }
+    .dept-meca { --theme-color: #ff0055; }
+    .dept-ener { --theme-color: #10b981; }
+    .dept-math { --theme-color: #f59e0b; }
+    .dept-title::before { background-color: var(--theme-color); box-shadow: 0 0 10px var(--theme-color); }
+    .dept-title i { color: var(--theme-color); }
+    .lab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem; }
+    .lab-card { background: rgba(10, 15, 25, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); border-top: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; padding: 1.8rem; text-decoration: none; color: #e2e8f0; transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+    .lab-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at top right, var(--theme-color), transparent 60%); opacity: 0.05; transition: opacity 0.4s; z-index: 0; }
+    .lab-card::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 30%; height: 2px; background: var(--theme-color); box-shadow: 0 0 10px var(--theme-color); opacity: 0; transition: all 0.4s ease; }
+    .lab-card:hover { transform: translateY(-8px); background: rgba(15, 20, 35, 0.8); border-color: rgba(255, 255, 255, 0.1); box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(var(--theme-rgb), 0.1); color: #fff; }
+    .lab-card:hover::before { opacity: 0.15; }
+    .lab-card:hover::after { width: 100%; opacity: 1; }
+    .icon-node { width: 50px; height: 50px; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--theme-color); margin-bottom: 1.2rem; z-index: 1; transition: all 0.4s ease; box-shadow: inset 0 0 15px rgba(0,0,0,0.5); }
+    .lab-card:hover .icon-node { background: var(--theme-color); color: #010308; border-color: var(--theme-color); box-shadow: 0 0 20px var(--theme-color); transform: scale(1.05) rotate(-5deg); }
+    .lab-name { font-family: 'Orbitron', sans-serif; font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem; z-index: 1; letter-spacing: 1px; }
+    .lab-desc { font-size: 0.85rem; color: #94a3b8; font-weight: 500; line-height: 1.5; z-index: 1; transition: color 0.3s; }
+    .lab-card:hover .lab-desc { color: #cbd5e1; }
+    .dept-quantique { --theme-rgb: 176, 38, 255; }
+    .dept-meca { --theme-rgb: 255, 0, 85; }
+    .dept-ener { --theme-rgb: 16, 185, 129; }
+    .dept-math { --theme-rgb: 245, 158, 11; }
 </style>
 
-<div class="container-fluid">
-    <div class="lab-header text-center">
-        <h1><i class="fas fa-flask"></i> Laboratoire Virtuel Harmony</h1>
-        <p class="lead">Bienvenue {{ current_user.prenom }} - Expérimentez avec l'IA !</p>
-    </div>
-
-    <div class="container">
-        {% if ues_avec_tps %}
-            <div class="row">
-                {% for item in ues_avec_tps %}
-                <div class="col-lg-6 col-xl-4">
-                    <div class="card ue-card">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0">
-                                <i class="fas fa-book"></i> {{ item.ue.code_ue }} - {{ item.ue.intitule }}
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            {% if item.ue.enseignants %}
-                            <p class="text-muted small">
-                                <i class="fas fa-graduation-cap"></i>
-                                {% for ens in item.ue.enseignants %}
-                                    {{ ens.nom }} {{ ens.prenom }}{% if not loop.last %}, {% endif %}
-                                {% endfor %}
-                            </p>
-                            {% endif %}
-
-                            <hr>
-                            
-                            <h6 class="text-primary"><i class="fas fa-vial"></i> TPs Disponibles ({{ item.nb_tps }})</h6>
-                            
-                            {% for tp in item.tps %}
-                            <div class="tp-item">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="flex-grow-1">
-                                        <strong>{{ tp.titre }}</strong>
-                                        <p class="mb-1 small text-muted">{{ tp.description[:80] }}...</p>
-                                        
-                                        <div class="mt-2">
-                                            <span class="badge bg-secondary">{{ tp.type_simulation|upper }}</span>
-                                            <span class="badge ia-badge" 
-                                                  style="background: {% if tp.ia_nom == 'ETA' %}#e74c3c{% elif tp.ia_nom == 'ALPHA' %}#2ecc71{% else %}#f1c40f{% endif %}; color: white;">
-                                                <i class="fas fa-robot"></i> {{ tp.ia_nom }}
-                                            </span>
+<div class="container-fluid px-4 mt-4 mb-5 max-w-[1600px] mx-auto">
+    <div class="welt-dashboard">
+        <div class="welt-header">
+            <div>
+                <h1 class="welt-title">MATRICE LE WELT</h1>
+                <p class="welt-subtitle">Centre de Simulation Numérique & Ingénierie Quantique (L2 S4)</p>
+            </div>
+            <div class="system-status">
+                <div class="status-dot"></div>
+                SYSTEM ONLINE
+            </div>
+        </div>
+        <h3 class="dept-title dept-quantique"><i class="fas fa-atom"></i> Pôle Traitement du Signal & Quantique</h3>
+        <div class="lab-grid">
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='optique_quantique') }}" class="lab-card dept-quantique">
+                <div class="icon-node"><i class="fas fa-microscope"></i></div>
+                <div class="lab-name">Optique Quantique</div>
+                <div class="lab-desc">Analyse probabiliste, Dualité Onde-Particule, Photons & États de superposition.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='optique_ondu') }}" class="lab-card dept-quantique">
+                <div class="icon-node"><i class="fas fa-wave-square"></i></div>
+                <div class="lab-name">Optique Ondulatoire</div>
+                <div class="lab-desc">Modélisation d'interférométrie, Fentes de Young, Billet & Analyse Spatiale 3D.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='signal_fourier') }}" class="lab-card dept-quantique">
+                <div class="icon-node"><i class="fas fa-chart-bar"></i></div>
+                <div class="lab-name">Analyse Spectrale</div>
+                <div class="lab-desc">Algorithmique FFT, Télémétrie fréquentielle & Décomposition de signaux complexes.</div>
+            </a>
+        </div>
+        <h3 class="dept-title dept-meca"><i class="fas fa-cogs"></i> Pôle Dynamique Rationnelle & Mécanique</h3>
+        <div class="lab-grid">
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='mecanique') }}" class="lab-card dept-meca">
+                <div class="icon-node"><i class="fas fa-cube"></i></div>
+                <div class="lab-name">Mécanique Avancée</div>
+                <div class="lab-desc">Intégration par Quaternions, Tenseurs d'inertie & Simulation de l'Effet Dzhanibekov.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='chute_libre') }}" class="lab-card dept-meca">
+                <div class="icon-node"><i class="fas fa-space-shuttle"></i></div>
+                <div class="lab-name">Cinématique Rationnelle</div>
+                <div class="lab-desc">Calcul balistique, Frottements de Coulomb sur plan incliné & Impacts inélastiques.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='archimede') }}" class="lab-card dept-meca">
+                <div class="icon-node"><i class="fas fa-water"></i></div>
+                <div class="lab-name">Hydrostatique</div>
+                <div class="lab-desc">Résolution d'équilibre des fluides, Poussée d'Archimède & Télémétrie d'immersion.</div>
+            </a>
+        </div>
+        <h3 class="dept-title dept-ener"><i class="fas fa-bolt"></i> Pôle Ingénierie & Conversion d'Énergie</h3>
+        <div class="lab-grid">
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='rdm') }}" class="lab-card dept-ener">
+                <div class="icon-node"><i class="fas fa-cubes"></i></div>
+                <div class="lab-name">RDM Globale</div>
+                <div class="lab-desc">Modélisation de la résistance des matériaux, Tenseurs de Contraintes & Déformations.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='rdm_poutre') }}" class="lab-card dept-ener">
+                <div class="icon-node"><i class="fas fa-ruler-horizontal"></i></div>
+                <div class="lab-name">RDM : Modélisation Poutre</div>
+                <div class="lab-desc">Calcul des Moments fléchissants, Efforts tranchants & Déflexion structurelle.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='thermodynamique') }}" class="lab-card dept-ener">
+                <div class="icon-node"><i class="fas fa-fire"></i></div>
+                <div class="lab-name">Thermodynamique</div>
+                <div class="lab-desc">Diagrammes de phase, Cycles énergétiques de puissance & Transferts thermiques.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='pile_electrochimique') }}" class="lab-card dept-ener">
+                <div class="icon-node"><i class="fas fa-battery-full"></i></div>
+                <div class="lab-name">Pile Électrochimique</div>
+                <div class="lab-desc">Cinétique d'oxydoréduction, Équations de Nernst & Stockage d'énergie électrique.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='saponification') }}" class="lab-card dept-ener">
+                <div class="icon-node"><i class="fas fa-flask"></i></div>
+                <div class="lab-name">Cinétique Chimique</div>
+                <div class="lab-desc">Vitesse de réaction, Modélisation de saponification & Calcul de rendement.</div>
+            </a>
+        </div>
+        <h3 class="dept-title dept-math"><i class="fas fa-square-root-alt"></i> Pôle Modélisation Mathématique & IA</h3>
+        <div class="lab-grid">
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='algebre') }}" class="lab-card dept-math">
+                <div class="icon-node"><i class="fas fa-project-diagram"></i></div>
+                <div class="lab-name">Algèbre Linéaire</div>
+                <div class="lab-desc">Opérations matricielles, Résolution de valeurs propres & Espaces vectoriels.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='stock_flux') }}" class="lab-card dept-math">
+                <div class="icon-node"><i class="fas fa-network-wired"></i></div>
+                <div class="lab-name">Logistique & Flux</div>
+                <div class="lab-desc">Théorie algorithmique des files d'attente, Graphes & Optimisation de stock.</div>
+            </a>
+        </div>
+        <div class="container mt-5">
+            {% if ues_avec_tps %}
+                <div class="row">
+                    {% for item in ues_avec_tps %}
+                    <div class="col-lg-6 col-xl-4">
+                        <div class="card ue-card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-book"></i> {{ item.ue.code_ue }} - {{ item.ue.intitule }}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                {% if item.ue.enseignants %}
+                                <p class="text-muted small">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    {% for ens in item.ue.enseignants %}
+                                        {{ ens.nom }} {{ ens.prenom }}{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                </p>
+                                {% endif %}
+                                <hr>
+                                <h6 class="text-primary"><i class="fas fa-vial"></i> TPs Disponibles ({{ item.nb_tps }})</h6>
+                                {% for tp in item.tps %}
+                                <div class="tp-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <strong>{{ tp.titre }}</strong>
+                                            <p class="mb-1 small text-muted">{{ tp.description[:80] }}...</p>
+                                            <div class="mt-2">
+                                                <span class="badge bg-secondary">{{ tp.type_simulation|upper }}</span>
+                                                <span class="badge ia-badge" style="background: {% if tp.ia_nom == 'ETA' %}#e74c3c{% elif tp.ia_nom == 'ALPHA' %}#2ecc71{% else %}#f1c40f{% endif %}; color: white;">
+                                                    <i class="fas fa-robot"></i> {{ tp.ia_nom }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="ms-2">
+                                            <a href="{{ url_for('laboratoire.lancer_tp', tp_id=tp.id) }}" class="btn btn-sm btn-success">
+                                                <i class="fas fa-play"></i> Lancer
+                                            </a>
                                         </div>
                                     </div>
-                                    <div class="ms-2">
-                                        <a href="{{ url_for('laboratoire.lancer_tp', tp_id=tp.id) }}" 
-                                           class="btn btn-sm btn-success">
-                                            <i class="fas fa-play"></i> Lancer
-                                        </a>
+                                    {% if tp.date_limite %}
+                                    <div class="mt-2">
+                                        <small class="text-danger">
+                                            <i class="fas fa-clock"></i> Deadline : {{ tp.date_limite.strftime('%d/%m/%Y') }}
+                                        </small>
                                     </div>
+                                    {% endif %}
                                 </div>
-                                
-                                {% if tp.date_limite %}
-                                <div class="mt-2">
-                                    <small class="text-danger">
-                                        <i class="fas fa-clock"></i> Deadline : {{ tp.date_limite.strftime('%d/%m/%Y') }}
-                                    </small>
-                                </div>
-                                {% endif %}
+                                {% endfor %}
                             </div>
-                            {% endfor %}
                         </div>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="alert alert-info text-center">
-                <i class="fas fa-info-circle fa-3x mb-3"></i>
-                <h4>Aucun TP disponible pour le moment</h4>
-                <p>Vos enseignants n'ont pas encore déposé de travaux pratiques dans vos UE.</p>
-            </div>
-        {% endif %}
-
-        <!-- Historique des sessions -->
-        <div class="card mt-4">
-            <div class="card-header bg-dark text-white">
-                <i class="fas fa-history"></i> Mes dernières sessions
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>TP</th>
-                                <th>Date</th>
-                                <th>Durée</th>
-                                <th>Statut</th>
-                                <th>Note IA</th>
-                                <th>Note Finale</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for session in mes_sessions[:10] %}
-                            <tr>
-                                <td>{{ session.tp.titre }}</td>
-                                <td>{{ session.date_debut.strftime('%d/%m/%Y %H:%M') }}</td>
-                                <td>{{ session.duree_minutes or 0 }} min</td>
-                                <td>
-                                    <span class="badge {% if session.statut == 'terminé' %}bg-success{% elif session.statut == 'en_cours' %}bg-warning{% else %}bg-primary{% endif %}">
-                                        {{ session.statut }}
-                                    </span>
-                                </td>
-                                <td>{{ session.note_ia|round(1) if session.note_ia else '-' }}/20</td>
-                                <td>
-                                    {% if session.note_finale %}
-                                        <strong class="text-primary">{{ session.note_finale }}/20</strong>
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if session.statut == 'en_cours' %}
-                                        <a href="{{ url_for('laboratoire.lancer_tp', tp_id=session.tp_id) }}" 
-                                           class="btn btn-sm btn-primary">
-                                            <i class="fas fa-play"></i> Continuer
-                                        </a>
-                                    {% else %}
-                                        <a href="{{ url_for('laboratoire.resultat_tp', session_id=session.id) }}" 
-                                           class="btn btn-sm btn-info">
-                                            <i class="fas fa-eye"></i> Voir
-                                        </a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="7" class="text-center text-muted">Aucune session encore</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            {% else %}
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle fa-3x mb-3"></i>
+                    <h4>Aucun TP disponible pour le moment</h4>
+                    <p>Vos enseignants n'ont pas encore déposé de travaux pratiques dans vos UE.</p>
+                </div>
+            {% endif %}
+            <div class="card mt-4">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-history"></i> Mes dernières sessions
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>TP</th>
+                                    <th>Date</th>
+                                    <th>Durée</th>
+                                    <th>Statut</th>
+                                    <th>Note IA</th>
+                                    <th>Note Finale</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in mes_sessions[:10] %}
+                                <tr>
+                                    <td>{{ session.tp.titre }}</td>
+                                    <td>{{ session.date_debut.strftime('%d/%m/%Y %H:%M') }}</td>
+                                    <td>{{ session.duree_minutes or 0 }} min</td>
+                                    <td>
+                                        <span class="badge {% if session.statut == 'terminé' %}bg-success{% elif session.statut == 'en_cours' %}bg-warning{% else %}bg-primary{% endif %}">
+                                            {{ session.statut }}
+                                        </span>
+                                    </td>
+                                    <td>{{ session.note_ia|round(1) if session.note_ia else '-' }}/20</td>
+                                    <td>
+                                        {% if session.note_finale %}
+                                            <strong class="text-primary">{{ session.note_finale }}/20</strong>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if session.statut == 'en_cours' %}
+                                            <a href="{{ url_for('laboratoire.lancer_tp', tp_id=session.tp_id) }}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-play"></i> Continuer
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ url_for('laboratoire.resultat_tp', session_id=session.id) }}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i> Voir
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">Aucune session encore</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Guide d'Orientation | Polytech{% endblock %}
+
+{% block content %}
+<div style="min-height: 100vh; background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);">
+
+    <!-- HERO -->
+    <div class="text-center py-5" style="background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%); color: white;">
+        <div class="container">
+            <i class="fas fa-university fa-3x mb-3 opacity-75"></i>
+            <h1 class="display-5 fw-800">POLYTECH</h1>
+            <p class="lead opacity-75 mb-4">Guide d'Orientation & Actualités de l'École</p>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-light btn-lg rounded-pill px-5 fw-bold">
+                <i class="fas fa-sign-in-alt me-2"></i> Se connecter
+            </a>
+        </div>
+    </div>
+
+    <div class="container py-5">
+
+        <!-- GUIDES D'ORIENTATION -->
+        {% if guides %}
+        <div class="mb-5">
+            <h3 class="fw-bold mb-4">
+                <i class="fas fa-compass text-success me-2"></i> Guides d'Orientation
+            </h3>
+            <div class="row g-3">
+                {% for guide in guides %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 20px; overflow: hidden;">
+                        <div class="card-header border-0 py-3" style="background: linear-gradient(135deg, #059669, #10b981);">
+                            <h5 class="text-white mb-0 fw-bold">
+                                <i class="fas fa-compass me-2"></i>{{ guide.titre }}
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <p class="text-muted">{{ guide.contenu[:200] }}{% if guide.contenu|length > 200 %}...{% endif %}</p>
+                            <small class="text-muted">
+                                <i class="far fa-calendar me-1"></i>
+                                {{ guide.date_publication.strftime('%d/%m/%Y') if guide.date_publication else '' }}
+                            </small>
+                        </div>
+                        {% if guide.fichier_joint %}
+                        <div class="card-footer bg-transparent border-0 p-3">
+                            <a href="{{ url_for('auth.telecharger_guide', annonce_id=guide.id) }}"
+                               class="btn btn-success w-100 rounded-pill fw-bold">
+                                <i class="fas fa-download me-2"></i> Télécharger le guide
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ACTUALITÉS -->
+        {% if actualites %}
+        <div class="mb-5">
+            <h3 class="fw-bold mb-4">
+                <i class="fas fa-bolt text-warning me-2"></i> Actualités
+            </h3>
+            <div class="row g-3">
+                {% for actu in actualites %}
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 16px;">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                     style="width: 50px; height: 50px; background: linear-gradient(135deg, #d97706, #f59e0b);">
+                                    <i class="fas fa-bolt text-white"></i>
+                                </div>
+                                <div>
+                                    <h5 class="fw-bold mb-2">{{ actu.titre }}</h5>
+                                    <p class="text-muted mb-2">{{ actu.contenu[:150] }}{% if actu.contenu|length > 150 %}...{% endif %}</p>
+                                    <small class="text-muted">
+                                        <i class="far fa-clock me-1"></i>
+                                        {{ actu.date_publication.strftime('%d/%m/%Y') if actu.date_publication else '' }}
+                                    </small>
+                                    {% if actu.fichier_joint %}
+                                    <br>
+                                    <a href="{{ url_for('auth.telecharger_guide', annonce_id=actu.id) }}" class="btn btn-sm btn-outline-warning mt-2 rounded-pill">
+                                        <i class="fas fa-paperclip me-1"></i> Pièce jointe
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ARTICLES -->
+        {% if articles %}
+        <div class="mb-5">
+            <h3 class="fw-bold mb-4">
+                <i class="fas fa-newspaper text-primary me-2"></i> Articles
+            </h3>
+            <div class="row g-3">
+                {% for art in articles %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100" style="border-radius: 16px;">
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold mb-2">{{ art.titre }}</h5>
+                            <p class="text-muted small">{{ art.contenu[:200] }}{% if art.contenu|length > 200 %}...{% endif %}</p>
+                            <small class="text-muted">
+                                <i class="far fa-calendar me-1"></i>
+                                {{ art.date_publication.strftime('%d/%m/%Y') if art.date_publication else '' }}
+                            </small>
+                            {% if art.fichier_joint %}
+                            <br>
+                            <a href="{{ url_for('auth.telecharger_guide', annonce_id=art.id) }}" class="btn btn-sm btn-outline-primary mt-2 rounded-pill">
+                                <i class="fas fa-download me-1"></i> Document joint
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- AUCUNE PUBLICATION -->
+        {% if not guides and not actualites and not articles %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">Aucune publication pour le moment</h4>
+            <p class="text-muted">Revenez bientôt pour consulter les guides et actualités de l'école.</p>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary rounded-pill px-4 mt-2">
+                <i class="fas fa-sign-in-alt me-2"></i> Se connecter
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center py-4 border-top bg-white">
+        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary rounded-pill px-4 me-2">
+            <i class="fas fa-sign-in-alt me-1"></i> Connexion
+        </a>
+        <a href="{{ url_for('auth.inscription') }}" class="btn btn-outline-secondary rounded-pill px-4">
+            <i class="fas fa-user-plus me-1"></i> Inscription
+        </a>
+        <p class="text-muted small mt-3 mb-0">&copy; {{ "now"|string|truncate(4, True, '') }} Polytech — Plateforme de gestion académique</p>
+    </div>
+</div>
+{% endblock %}
+

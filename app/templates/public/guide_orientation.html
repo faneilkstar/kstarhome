@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guide d'Orientation – {% if config %}{{ config.nom_ecole }}{% else %}École Polytechnique de la State{% endif %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --state-blue: #003366;
+      --state-gold: #CC9933;
+      --state-light: #EEF2FF;
+    }
+    body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; }
+    .hero-band {
+      background: linear-gradient(135deg, #003366 0%, #1a4a8a 60%, #CC9933 100%);
+      color: #fff; padding: 4rem 0 3rem;
+    }
+    .hero-band h1 { font-size: 2.5rem; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,.3); }
+    .hero-band .sub { font-size: 1.1rem; opacity: .9; }
+    .section-title {
+      border-left: 5px solid var(--state-gold);
+      padding-left: 14px;
+      color: var(--state-blue);
+      font-weight: 700;
+      font-size: 1.4rem;
+      margin-bottom: 1.2rem;
+    }
+    .dept-card {
+      border-left: 4px solid var(--state-blue);
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,51,102,.08);
+    }
+    .dept-card .dept-head {
+      background: linear-gradient(135deg, var(--state-blue), #1a4a8a);
+      color: #fff; border-radius: 8px 8px 0 0; padding: 1rem 1.2rem;
+    }
+    .filiere-badge-fond { background: #1a237e; color:#fff; }
+    .filiere-badge-pro  { background: #bf360c; color:#fff; }
+    .classe-chip {
+      display:inline-block; background: var(--state-light);
+      color: var(--state-blue); border-radius: 20px;
+      padding: 2px 10px; font-size: .78rem; margin: 2px; font-weight: 600;
+    }
+    .cat-fond  { border-left: 3px solid #e53935; }
+    .cat-spec  { border-left: 3px solid #1565c0; }
+    .cat-trans { border-left: 3px solid #2e7d32; }
+    .cat-libre { border-left: 3px solid #f9a825; }
+    .ue-row:nth-child(even) { background: var(--state-light); }
+    .sticky-nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--state-blue); color:#fff;
+    }
+    .btn-gold { background: var(--state-gold); color:#fff; border:none; }
+    .btn-gold:hover { background: #b8862a; color:#fff; }
+    .stat-card { background:#fff; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.07); text-align:center; padding:1.2rem; }
+    .stat-card .num { font-size:2rem; font-weight:800; color:var(--state-blue); }
+    @media print {
+      .no-print { display:none !important; }
+      body { background:#fff; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR sticky -->
+<nav class="sticky-nav py-2 no-print">
+  <div class="container d-flex justify-content-between align-items-center">
+    <span class="fw-bold fs-5">
+      <i class="fas fa-university me-2"></i>
+      {% if config %}{{ config.nom_ecole }}{% else %}École Polytechnique de la State{% endif %}
+    </span>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-sm">
+        <i class="fas fa-sign-in-alt me-1"></i>Se connecter
+      </a>
+      <a href="{{ url_for('auth.guide_orientation_pdf') }}" class="btn btn-gold btn-sm">
+        <i class="fas fa-file-pdf me-1"></i>Télécharger le guide PDF
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero-band text-center">
+  <div class="container">
+    <i class="fas fa-university fa-3x mb-3 opacity-75"></i>
+    <h1>{% if config %}{{ config.nom_ecole }}{% else %}École Polytechnique de la State{% endif %}</h1>
+    <p class="sub mb-3">Guide d'Orientation Officiel – Année Universitaire {{ annee }}-{{ annee+1 }}</p>
+    <div class="d-flex justify-content-center gap-4 flex-wrap">
+      <span class="badge bg-white text-dark fs-6 px-3 py-2">
+        <i class="fas fa-users me-1 text-primary"></i> {{ nb_etudiants }} Étudiants
+      </span>
+      <span class="badge bg-white text-dark fs-6 px-3 py-2">
+        <i class="fas fa-sitemap me-1 text-success"></i> {{ departements|length }} Départements
+      </span>
+      <span class="badge bg-white text-dark fs-6 px-3 py-2">
+        <i class="fas fa-graduation-cap me-1 text-warning"></i>
+        {{ (filieres_fond|length) + (filieres_pro|length) }} Filières
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENU PRINCIPAL -->
+<div class="container py-5">
+
+  <!-- Message direction -->
+  <div class="row mb-5">
+    <div class="col-md-8 offset-md-2">
+      <div class="card border-0 shadow-sm p-4">
+        <h5 class="section-title">Mot de la Direction</h5>
+        <p class="text-muted">
+          Bienvenue à
+          <strong>{% if config %}{{ config.nom_ecole }}{% else %}l'École Polytechnique de la State{% endif %}</strong>.
+          Notre mission est de former les ingénieurs et innovateurs de demain. Ce guide présente
+          l'ensemble de notre offre de formation, qui évolue constamment pour s'adapter aux défis
+          technologiques et aux besoins du marché de l'emploi.
+        </p>
+        {% if config and config.nom_directeur %}
+        <p class="mb-0 fw-semibold text-end" style="color:var(--state-blue);">
+          — {{ config.nom_directeur }}, Directeur(trice)
+        </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- DÉPARTEMENTS & FILIÈRES -->
+  <h3 class="section-title"><i class="fas fa-sitemap me-2"></i>Nos Départements et Filières</h3>
+
+  {% if not departements %}
+  <div class="alert alert-info">Aucun département enregistré pour le moment.</div>
+  {% endif %}
+
+  {% for dept in departements %}
+  <div class="dept-card mb-4">
+    <div class="dept-head">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <i class="fas fa-building me-2"></i>
+          <strong class="fs-5">{{ dept.nom }}</strong>
+          {% if dept.code %}<span class="badge bg-warning text-dark ms-2">{{ dept.code }}</span>{% endif %}
+        </div>
+        {% if dept.chef %}
+        <span class="badge bg-light text-dark">
+          <i class="fas fa-user-tie me-1"></i>Chef : {{ dept.chef.nom }} {{ dept.chef.prenom }}
+        </span>
+        {% endif %}
+      </div>
+      {% if dept.description %}
+      <p class="mb-0 mt-1 opacity-75 small">{{ dept.description }}</p>
+      {% endif %}
+    </div>
+    <div class="p-3">
+
+      <!-- Filières FONDAMENTALES du département -->
+      {% set fond_dept = filieres_fond | selectattr('departement_id','eq', dept.id) | list %}
+      {% if fond_dept %}
+      <h6 class="fw-bold mb-2" style="color:#1a237e;">
+        <i class="fas fa-graduation-cap me-1"></i> Filières Fondamentales
+      </h6>
+      <div class="row g-3 mb-3">
+        {% for f in fond_dept %}
+        <div class="col-md-6 col-lg-4">
+          <div class="card border-0 bg-light h-100 p-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <strong style="color:#1a237e;">{{ f.nom_filiere }}</strong>
+              <span class="badge filiere-badge-fond ms-1">{{ f.code_filiere }}</span>
+            </div>
+            <div class="mb-1">
+              <span class="badge bg-secondary">{{ f.cycle or '—' }}</span>
+              <span class="badge bg-primary">Fondamentale</span>
+            </div>
+            <div class="mt-2">
+              {% for classe in f.classes.filter_by(active=True).order_by('annee') %}
+              <span class="classe-chip">{{ classe.nom_classe }}</span>
+              {% endfor %}
+            </div>
+            {% if f.description %}
+            <p class="text-muted small mt-2 mb-0">{{ f.description }}</p>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Filières PROFESSIONNELLES du département -->
+      {% set pro_dept = filieres_pro | selectattr('departement_id','eq', dept.id) | list %}
+      {% if pro_dept %}
+      <h6 class="fw-bold mb-2" style="color:#bf360c;">
+        <i class="fas fa-briefcase me-1"></i> Filières Professionnelles
+      </h6>
+      <div class="row g-3">
+        {% for f in pro_dept %}
+        <div class="col-md-6 col-lg-4">
+          <div class="card border-0 h-100 p-3" style="background:#fff5f2;">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <strong style="color:#bf360c;">{{ f.nom_filiere }}</strong>
+              <span class="badge filiere-badge-pro ms-1">{{ f.code_filiere }}</span>
+            </div>
+            <div class="mb-1">
+              <span class="badge bg-secondary">{{ f.cycle or '—' }}</span>
+              <span class="badge" style="background:#bf360c;">Professionnelle</span>
+            </div>
+            <div class="mt-2">
+              {% for classe in f.classes.filter_by(active=True).order_by('annee') %}
+              <span class="classe-chip">{{ classe.nom_classe }}</span>
+              {% endfor %}
+            </div>
+            {% if f.description %}
+            <p class="text-muted small mt-2 mb-0">{{ f.description }}</p>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if not fond_dept and not pro_dept %}
+      <p class="text-muted fst-italic">Aucune filière dans ce département pour le moment.</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- UE MAJEURES -->
+  {% if ues_majeures %}
+  <h3 class="section-title mt-5"><i class="fas fa-book me-2"></i>Unités d'Enseignement</h3>
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead style="background:var(--state-blue); color:#fff;">
+            <tr>
+              <th>Code UE</th>
+              <th>Intitulé</th>
+              <th>Semestre</th>
+              <th>Crédits</th>
+              <th>Catégorie</th>
+              <th>Nature</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ue in ues_majeures %}
+            {% set cat_icons = {
+              'fondamentale': ('🔴','cat-fond','Fondamentale'),
+              'specialite':   ('🔵','cat-spec','Spécialité'),
+              'transversale': ('🟢','cat-trans','Transversale'),
+              'libre':        ('🟡','cat-libre','Libre')
+            } %}
+            {% set ico, css, lbl = cat_icons.get(ue.categorie or '', ('⚪','','—')) %}
+            <tr class="ue-row {{ css }}">
+              <td><code class="fw-bold">{{ ue.code_ue }}</code></td>
+              <td>
+                {{ ue.nom_ue or ue.intitule }}
+                {% if ue.nature == 'composite' %}
+                <span class="badge bg-warning text-dark ms-1">Composite</span>
+                {% endif %}
+              </td>
+              <td><span class="badge bg-secondary">{{ ue.semestre or '—' }}</span></td>
+              <td><strong>{{ ue.credits or 0 }}</strong> ECTS</td>
+              <td>{{ ico }} {{ lbl }}</td>
+              <td>{{ ue.nature or 'simple' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- BOUTON TÉLÉCHARGEMENT -->
+  <div class="text-center mt-5 py-4 no-print">
+    <a href="{{ url_for('auth.guide_orientation_pdf') }}"
+       class="btn btn-gold btn-lg px-5 shadow">
+      <i class="fas fa-file-pdf me-2"></i>Télécharger ce guide en PDF
+    </a>
+    <p class="text-muted mt-2 small">
+      Ce guide est mis à jour automatiquement dès qu'un département, une filière ou une UE est créé(e).
+    </p>
+  </div>
+
+</div><!-- /container -->
+
+<!-- FOOTER -->
+<footer class="py-4 text-center text-white no-print" style="background:var(--state-blue);">
+  <p class="mb-1 fw-semibold">
+    {% if config %}{{ config.nom_ecole }}{% else %}École Polytechnique de la State{% endif %}
+  </p>
+  <p class="mb-0 opacity-75 small">
+    Guide d'orientation généré automatiquement • {{ annee }}
+  </p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

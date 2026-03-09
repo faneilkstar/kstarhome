@@ -9,11 +9,28 @@
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
                     <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Créer un nouveau TP</h4>
+                    {% if ue %}
                     <small>UE : {{ ue.code_ue }} - {{ ue.intitule }}</small>
+                    {% else %}
+                    <small>Sélectionnez l'UE ci-dessous</small>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data">
                         
+                        <!-- UE associée -->
+                        <div class="mb-3">
+                            <label class="form-label"><strong>UE associée</strong> <span class="text-danger">*</span></label>
+                            <select name="ue_id" class="form-select" required>
+                                <option value="">-- Choisir l'UE --</option>
+                                {% for u in mes_ues %}
+                                <option value="{{ u.id }}" {% if ue and ue.id == u.id %}selected{% endif %}>
+                                    {{ u.code_ue }} - {{ u.intitule or u.nom_ue }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
                         <!-- Titre -->
                         <div class="mb-3">
                             <label class="form-label"><strong>Titre du TP</strong> <span class="text-danger">*</span></label>
@@ -53,10 +70,11 @@
                                     <option value="electronique_logique">Circuits logiques</option>
                                     <option value="algebre">Algèbre & Transformations</option>
                                 </optgroup>
-                                    <optgroup label="🔧 Mécanique">
+                                    <optgroup label="🔧 Mécanique & Fluides">
                                         <option value="chute_libre">Chute libre</option>
                                         <option value="plan_incline">Plan incliné</option>
                                         <option value="trajectoire">Trajectoire parabolique</option>
+                                        <option value="archimede">Poussée d'Archimède (Hydrostatique)</option>
                                     </optgroup>
                                     <optgroup label="📊 Maths & Signal">
                                         <option value="signal_fourier">Analyse de Fourier</option>

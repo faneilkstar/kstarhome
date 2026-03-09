@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Galerie - Notre École{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold"><i class="fas fa-images me-2" style="color: #DAA520;"></i> Notre École en Images</h2>
+        <p class="text-muted">Découvrez nos partenariats, notre campus, nos événements</p>
+    </div>
+    <!-- Filtres par catégorie -->
+    <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+        <a href="{{ url_for('galerie.index') }}" class="btn btn-sm rounded-pill px-3 {% if cat_filtre == 'all' %}btn-dark{% else %}btn-outline-dark{% endif %}">
+            <i class="fas fa-th me-1"></i> Tout
+        </a>
+        {% for code, nom, icone, couleur in categories %}
+        <a href="{{ url_for('galerie.index', categorie=code) }}"
+           class="btn btn-sm rounded-pill px-3 {% if cat_filtre == code %}text-white{% else %}btn-outline-secondary{% endif %}"
+           {% if cat_filtre == code %}style="background: {{ couleur }}; border-color: {{ couleur }};"{% endif %}>
+            <i class="{{ icone }} me-1"></i> {{ nom }}
+        </a>
+        {% endfor %}
+    </div>
+    {% if images %}
+    <!-- Grille d'images -->
+    <div class="row g-4">
+        {% for img in images %}
+        <div class="col-sm-6 col-md-4 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modal-{{ img.id }}">
+                <div style="height: 200px; overflow: hidden;">
+                    <img src="/static/{{ img.fichier }}" class="w-100 h-100" style="object-fit: cover; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                </div>
+                <div class="card-body p-3">
+                    <h6 class="fw-bold mb-1 text-truncate">{{ img.titre }}</h6>
+                    {% for code, nom, icone, couleur in categories %}
+                        {% if code == img.categorie %}
+                        <span class="badge rounded-pill" style="background: {{ couleur }}; font-size: 0.65rem;">
+                            <i class="{{ icone }} me-1"></i>{{ nom }}
+                        </span>
+                        {% endif %}
+                    {% endfor %}
+                    {% if img.description %}
+                    <p class="text-muted small mt-1 mb-0" style="font-size: 0.75rem;">{{ img.description[:60] }}{% if img.description|length > 60 %}...{% endif %}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <!-- Modal zoom -->
+        <div class="modal fade" id="modal-{{ img.id }}" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 rounded-4 overflow-hidden">
+                    <div class="modal-header border-0 py-2" style="background: linear-gradient(135deg, #0f172a, #1e40af);">
+                        <h6 class="modal-title text-white fw-bold">{{ img.titre }}</h6>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <img src="/static/{{ img.fichier }}" class="w-100">
+                    </div>
+                    {% if img.description %}
+                    <div class="modal-footer border-0 bg-light">
+                        <p class="text-muted small mb-0 w-100">{{ img.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-camera fa-4x text-muted mb-3"></i>
+        <h5 class="text-muted">Aucune image pour le moment</h5>
+        <p class="text-muted">Les images seront bientôt disponibles.</p>
+    </div>
+    {% endif %}
+    <!-- Bouton retour -->
+    <div class="text-center mt-5">
+        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-dark rounded-pill px-4">
+            <i class="fas fa-arrow-left me-2"></i> Retour
+        </a>
+    </div>
+</div>
+{% endblock %}

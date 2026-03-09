@@ -15,7 +15,7 @@ from werkzeug.utils import secure_filename
 from config import Config
 
 from app import db
-from app.models import Enseignant, UE, Note, Etudiant, Classe, InscriptionUE, Document, ComposanteNote
+from app.models import Enseignant, UE, Note, Etudiant, Classe, InscriptionUE, Document, ComposanteNote, Departement, Sceau
 
 # =========================================================
 # CONFIGURATION
@@ -41,7 +41,7 @@ def get_current_enseignant():
     return current_user.enseignant_profile
 
 # =========================================================
-# ROUTE 1 : DASHBOARD
+# ROUTE 1 : DASHBOARD (avec détection Chef de Département)
 # =========================================================
 @bp.route('/dashboard')
 @enseignant_required
@@ -64,6 +64,59 @@ def dashboard():
 
     moyenne = round(somme_notes / count_notes, 2) if count_notes > 0 else 0
 
+    # ============================================
+    # DÉTECTION CHEF DE DÉPARTEMENT
+    # ============================================
+    departement = Departement.query.filter_by(chef_id=enseignant.id, active=True).first()
+
+    if departement:
+        # C'est un chef de département : dashboard enrichi
+        nb_filieres = departement.get_nombre_filieres()
+        nb_ues = departement.get_nombre_ues()
+
+        # Enseignants du département (ceux qui ont des UEs dans ce département)
+        dept_ues = UE.query.filter_by(departement_id=departement.id).all()
+        enseignants_set = set()
+        for ue in dept_ues:
+            for ens in ue.enseignants:
+                enseignants_set.add(ens.id)
+        # Ajouter le chef lui-même
+        enseignants_set.add(enseignant.id)
+        enseignants_dept = Enseignant.query.filter(Enseignant.id.in_(enseignants_set)).all()
+
+        # Nombre d'étudiants dans le département
+        nb_etudiants = 0
+        for filiere in departement.filieres.filter_by(active=True):
+            for classe in filiere.classes.filter_by(active=True):
+                nb_etudiants += classe.get_nombre_etudiants()
+
+        stats = {
+            'nb_filieres': nb_filieres,
+            'nb_ues': nb_ues,
+            'nb_enseignants': len(enseignants_dept),
+            'nb_etudiants': nb_etudiants
+        }
+
+        # Sceaux du département
+        try:
+            sceaux_dept = list(departement.sceaux_autorises) + list(Sceau.query.filter_by(type_entite='ecole', actif=True).all())
+        except:
+            sceaux_dept = []
+
+        dept_cachet = departement.cachet_path
+
+        return render_template('enseignant/dashboard_chef.html',
+                               enseignant=enseignant,
+                               departement=departement,
+                               ues=ues,
+                               stats=stats,
+                               enseignants_dept=enseignants_dept,
+                               sceaux_dept=sceaux_dept,
+                               dept_cachet=dept_cachet,
+                               total_etudiants=total_etudiants,
+                               moyenne_globale=moyenne)
+
+    # Dashboard enseignant normal
     return render_template('enseignant/dashboard.html',
                            enseignant=enseignant,
                            ues=ues,
@@ -92,15 +145,33 @@ def detail_ue(ue_id):
         flash('Accès refusé.', 'danger')
         return redirect(url_for('enseignant.dashboard'))
 
+    # Récupérer les étudiants inscrits
     inscriptions = ue.inscriptions.filter_by(statut='validé').all()
     etudiants_notes = []
+    ids_vus = set()
+
     for ins in inscriptions:
+        ids_vus.add(ins.etudiant_id)
         note_obj = Note.query.filter_by(etudiant_id=ins.etudiant_id, ue_id=ue.id).first()
         etudiants_notes.append({
             'etudiant': ins.etudiant,
             'note': note_obj.note if note_obj else None,
             'session': note_obj.session if note_obj else 'normale'
         })
+
+    # Pour les troncs communs : ajouter aussi les étudiants des classes assemblées
+    # qui n'auraient pas d'inscription formelle
+    if ue.type_affectation == 'tronc_commun' and not inscriptions:
+        etudiants_tc = ue.get_etudiants_tronc_commun()
+        for etu in etudiants_tc:
+            if etu.id not in ids_vus:
+                ids_vus.add(etu.id)
+                note_obj = Note.query.filter_by(etudiant_id=etu.id, ue_id=ue.id).first()
+                etudiants_notes.append({
+                    'etudiant': etu,
+                    'note': note_obj.note if note_obj else None,
+                    'session': note_obj.session if note_obj else 'normale'
+                })
 
     return render_template('enseignant/detail_ue.html', ue=ue, etudiants_notes=etudiants_notes)
 
@@ -275,11 +346,34 @@ def exporter_notes(ue_id):
 def profil():
     enseignant = get_current_enseignant()
     if request.method == 'POST':
-        if request.form.get('email'): enseignant.user.email = request.form.get('email')
-        if request.form.get('specialite'): enseignant.specialite = request.form.get('specialite')
-        if request.form.get('password'): enseignant.user.password = request.form.get('password')
+        # Infos personnelles
+        if request.form.get('email'):
+            enseignant.user.email = request.form.get('email')
+        if request.form.get('specialite'):
+            enseignant.specialite = request.form.get('specialite')
+        if request.form.get('telephone'):
+            enseignant.telephone = request.form.get('telephone')
+        if request.form.get('adresse'):
+            enseignant.adresse = request.form.get('adresse')
+        if request.form.get('password'):
+            enseignant.user.set_password(request.form.get('password'))
+
+        # Upload photo de profil
+        photo = request.files.get('photo')
+        if photo and photo.filename:
+            ext = photo.filename.rsplit('.', 1)[-1].lower()
+            if ext in ('png', 'jpg', 'jpeg', 'gif', 'webp'):
+                upload_dir = os.path.join(current_app.root_path, 'static', 'avatars')
+                os.makedirs(upload_dir, exist_ok=True)
+                filename = f"ens_{enseignant.id}_{int(datetime.now().timestamp())}.{ext}"
+                photo.save(os.path.join(upload_dir, filename))
+                enseignant.user.avatar = filename
+            else:
+                flash('Format photo non supporté (PNG, JPG, GIF, WEBP).', 'warning')
+
         db.session.commit()
-        flash('Profil mis à jour.', 'success')
+        flash('Profil mis à jour avec succès !', 'success')
+        return redirect(url_for('enseignant.profil'))
     return render_template('enseignant/profil.html', enseignant=enseignant)
 
 
@@ -524,14 +618,94 @@ def faire_appel(ue_id):
 # =========================================================
 # ROUTE 13 : BIBLIOTHÈQUE (NOUVEAU)
 # =========================================================
-from app.models import Livre
+from app.models import Livre, Etagere
 
 @bp.route('/bibliotheque')
 @enseignant_required
 def bibliotheque():
-    """Page de gestion de la bibliothèque pour l'enseignant"""
-    livres = Livre.query.order_by(Livre.date_ajout.desc()).all()
-    return render_template('enseignant/bibliotheque.html', livres=livres)
+    """Page de la bibliothèque pour l'enseignant"""
+    etageres = Etagere.query.filter_by(active=True).order_by(Etagere.ordre).all()
+    total_livres = Livre.query.count()
+    return render_template('enseignant/bibliotheque.html',
+                           etageres=etageres, total_livres=total_livres)
+
+
+# =========================================================
+# ROUTE : STATISTIQUES DÉPARTEMENT (Chef)
+# =========================================================
+@bp.route('/statistiques')
+@enseignant_required
+def statistiques():
+    """Statistiques du département pour le chef de département"""
+    enseignant = get_current_enseignant()
+    if not enseignant:
+        flash('Profil introuvable', 'danger')
+        return redirect(url_for('enseignant.dashboard'))
+
+    departement = Departement.query.filter_by(chef_id=enseignant.id, active=True).first()
+    if not departement:
+        flash('Vous n\'êtes pas chef de département.', 'warning')
+        return redirect(url_for('enseignant.dashboard'))
+
+    # Stats par filière
+    filieres_stats = []
+    for fil in departement.filieres.filter_by(active=True):
+        nb_etu = 0
+        nb_cls = 0
+        for cls in fil.classes.filter_by(active=True):
+            nb_cls += 1
+            nb_etu += cls.get_nombre_etudiants()
+        filieres_stats.append({
+            'filiere': fil,
+            'nb_etudiants': nb_etu,
+            'nb_classes': nb_cls,
+            'nb_ues': fil.classes.join(UE, UE.classe_id == Classe.id).count() if nb_cls else 0
+        })
+
+    # Stats UE département
+    dept_ues = UE.query.filter_by(departement_id=departement.id, active=True).all()
+    ues_avec_notes = 0
+    ues_sans_prof = 0
+    for ue in dept_ues:
+        if ue.notes.count() > 0:
+            ues_avec_notes += 1
+        if not ue.enseignants:
+            ues_sans_prof += 1
+
+    # Enseignants département
+    ens_ids = set()
+    for ue in dept_ues:
+        for ens in ue.enseignants:
+            ens_ids.add(ens.id)
+    ens_ids.add(enseignant.id)
+
+    # Nombre d'étudiants total
+    nb_etudiants = 0
+    for fil in departement.filieres.filter_by(active=True):
+        for cls in fil.classes.filter_by(active=True):
+            nb_etudiants += cls.get_nombre_etudiants()
+
+    # Classes assemblées
+    classes_assemb = Classe.query.filter_by(
+        departement_source_id=departement.id, est_assemblee=True, active=True
+    ).all()
+
+    stats = {
+        'nb_filieres': departement.filieres.filter_by(active=True).count(),
+        'nb_enseignants': len(ens_ids),
+        'nb_etudiants': nb_etudiants,
+        'nb_ues': len(dept_ues),
+        'nb_ues_notes': ues_avec_notes,
+        'nb_ues_sans_prof': ues_sans_prof,
+        'nb_classes_assemb': len(classes_assemb),
+        'filieres_stats': filieres_stats,
+    }
+
+    return render_template('enseignant/statistiques_dept.html',
+                           enseignant=enseignant,
+                           departement=departement,
+                           stats=stats,
+                           classes_assemb=classes_assemb)
 
 
 @bp.route('/bibliotheque/ajouter', methods=['POST'])
@@ -545,13 +719,12 @@ def ajouter_livre():
         auteur = request.form.get('auteur')
         categorie = request.form.get('categorie')
         description = request.form.get('description')
+        etagere_id = request.form.get('etagere_id')
 
         # 🤖 TRI AUTOMATIQUE PAR IA si pas de catégorie sélectionnée
         if not categorie or categorie == "":
             biblio_ia = BibliothequeIA()
             categorie = biblio_ia.determiner_categorie(titre, auteur, description)
-
-            # Générer description si absente
             if not description:
                 description = biblio_ia.generer_description(titre, auteur, categorie)
 
@@ -560,16 +733,14 @@ def ajouter_livre():
         cover = request.files.get('image_couverture')
 
         if pdf and titre:
-            # 1. Sauvegarde PDF
             pdf_name = secure_filename(pdf.filename)
             unique_pdf = f"book_{datetime.now().strftime('%Y%m%d%H%M')}_{pdf_name}"
             path_pdf = os.path.join(current_app.root_path, 'static', 'library', 'pdf')
             os.makedirs(path_pdf, exist_ok=True)
             pdf.save(os.path.join(path_pdf, unique_pdf))
 
-            # 2. Sauvegarde Couverture (Optionnel)
             cover_name = 'default_book.jpg'
-            if cover:
+            if cover and cover.filename:
                 c_name = secure_filename(cover.filename)
                 unique_cover = f"cover_{datetime.now().strftime('%Y%m%d%H%M')}_{c_name}"
                 path_cover = os.path.join(current_app.root_path, 'static', 'library', 'covers')
@@ -580,7 +751,10 @@ def ajouter_livre():
             nouveau_livre = Livre(
                 titre=titre, auteur=auteur, categorie=categorie,
                 description=description,
-                fichier_pdf=unique_pdf, image_couverture=cover_name
+                fichier_pdf=unique_pdf, image_couverture=cover_name,
+                etagere_id=int(etagere_id) if etagere_id else None,
+                ajoute_par_id=current_user.id,
+                ajoute_par_role='ENSEIGNANT'
             )
             db.session.add(nouveau_livre)
             db.session.commit()

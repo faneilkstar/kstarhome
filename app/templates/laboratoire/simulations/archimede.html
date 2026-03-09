@@ -1,0 +1,527 @@
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --tech-dark: #050b14;
+        --tech-panel: rgba(13, 20, 36, 0.85);
+        --neon-cyan: #00e1ff;
+        --neon-purple: #9d00ff;
+        --neon-green: #00ff88;
+        --neon-red: #ff0055;
+    }
+
+    .archimede-container {
+        background-color: var(--tech-dark);
+        color: #e2e8f0;
+        font-family: 'Rajdhani', sans-serif;
+        background-image:
+            linear-gradient(to right, rgba(0, 225, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(0, 225, 255, 0.05) 1px, transparent 1px);
+        background-size: 40px 40px;
+        min-height: calc(100vh - 70px);
+        padding: 1rem;
+    }
+
+    .orbitron { font-family: 'Orbitron', sans-serif; }
+
+    .panel {
+        background: var(--tech-panel);
+        border: 1px solid rgba(0, 225, 255, 0.2);
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 225, 255, 0.05);
+        backdrop-filter: blur(10px);
+    }
+
+    .archimede-container input[type="range"] {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+        outline: none;
+    }
+
+    .archimede-container input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--neon-cyan);
+        cursor: pointer;
+        box-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    .archimede-container select {
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid var(--neon-purple);
+        color: white;
+        outline: none;
+    }
+    .archimede-container select:focus {
+        border-color: var(--neon-cyan);
+        box-shadow: 0 0 10px rgba(0, 225, 255, 0.3);
+    }
+
+    /* Digital Display Screen */
+    .digital-screen {
+        background: #02040a;
+        border: 2px solid #1e293b;
+        border-radius: 8px;
+        font-family: 'Orbitron', monospace;
+        box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+    }
+
+    .value-cyan { color: var(--neon-cyan); text-shadow: 0 0 8px var(--neon-cyan); }
+    .value-green { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green); }
+    .value-red { color: var(--neon-red); text-shadow: 0 0 8px var(--neon-red); }
+    .value-purple { color: var(--neon-purple); text-shadow: 0 0 8px var(--neon-purple); }
+
+</style>
+
+<div class="archimede-container flex flex-col items-center">
+
+    <!-- Header -->
+    <div class="w-full max-w-7xl mb-6 text-center">
+        <h1 class="text-4xl font-black orbitron text-transparent bg-clip-text bg-gradient-to-r from-[#00e1ff] to-[#9d00ff] tracking-widest uppercase">
+            LABORATOIRE LE WELT : HYDROSTATIQUE
+        </h1>
+        <p class="text-slate-400 font-bold tracking-widest mt-2 uppercase text-sm">
+            Simulation Interactive de la Poussée d'Archimède & Outil de Courbes
+        </p>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- PANNEAU DE CONTRÔLE (Variables) -->
+        <div class="lg:col-span-3 panel rounded-2xl p-5 flex flex-col gap-6">
+            <h2 class="orbitron text-xl font-bold text-[#00e1ff] border-b border-[#00e1ff]/30 pb-2 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                VARIABLES
+            </h2>
+
+            <!-- Objet (Masse et Volume) -->
+            <div>
+                <label class="flex justify-between text-xs font-bold text-slate-300 uppercase mb-2">
+                    <span>Masse du bloc ($m$)</span>
+                    <span id="val-masse" class="text-[#00e1ff]">10 kg</span>
+                </label>
+                <input type="range" id="in-masse" min="1" max="50" step="1" value="10">
+            </div>
+
+            <div>
+                <label class="flex justify-between text-xs font-bold text-slate-300 uppercase mb-2">
+                    <span>Volume du bloc ($V$)</span>
+                    <span id="val-volume" class="text-[#00e1ff]">5 L</span>
+                </label>
+                <input type="range" id="in-volume" min="1" max="50" step="1" value="5">
+                <p class="text-[10px] text-slate-500 mt-1 italic">Densité du bloc : <span id="val-densite-bloc">2.0</span> kg/L</p>
+            </div>
+
+            <!-- Environnement (Liquide et Univers) -->
+            <div class="space-y-4 pt-4 border-t border-slate-700/50">
+                <div>
+                    <label class="block text-xs font-bold text-[#9d00ff] uppercase mb-2">Fluide (Liquide)</label>
+                    <select id="in-liquide" class="w-full p-2 rounded-lg text-sm font-bold tracking-wider">
+                        <option value="1000" data-color="#3b82f6">EAU DOUCE (1000 kg/m³)</option>
+                        <option value="1030" data-color="#0284c7">EAU DE MER (1030 kg/m��)</option>
+                        <option value="800" data-color="#eab308">HUILE MOTEUR (800 kg/m³)</option>
+                        <option value="1420" data-color="#d97706">MIEL (1420 kg/m³)</option>
+                        <option value="13600" data-color="#94a3b8">MERCURE LOURD (13600 kg/m³)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-[#00ff88] uppercase mb-2">Univers (Gravité $g$)</label>
+                    <select id="in-gravite" class="w-full p-2 rounded-lg text-sm font-bold tracking-wider">
+                        <option value="9.81">TERRE (9.81 m/s²)</option>
+                        <option value="1.62">LUNE (1.62 m/s²)</option>
+                        <option value="3.71">MARS (3.71 m/s²)</option>
+                        <option value="24.79">JUPITER (24.79 m/s²)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Contrôle du Treuil (Immersion) -->
+            <div class="pt-4 border-t border-slate-700/50 mt-auto">
+                <label class="flex justify-between text-xs font-bold text-[#ff0055] uppercase mb-2">
+                    <span>Treuil (Descendre le bloc)</span>
+                    <span id="val-treuil">0%</span>
+                </label>
+                <input type="range" id="in-treuil" min="0" max="100" step="1" value="0" style="accent-color: var(--neon-red);">
+                <p class="text-[10px] text-slate-500 mt-2 leading-tight">Glisse ce curseur pour plonger le bloc dans la bassine et observer les forces.</p>
+            </div>
+        </div>
+
+        <!-- ZONE DE SIMULATION VISUELLE (Canvas) -->
+        <div class="lg:col-span-5 panel rounded-2xl p-4 flex flex-col items-center justify-center relative min-h-[500px]">
+            <div class="absolute top-4 left-4 bg-black/50 px-3 py-1 rounded-md border border-slate-700">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Caméra de Bassine</span>
+            </div>
+
+            <canvas id="simCanvas" width="400" height="500" class="w-full max-w-[400px] h-auto rounded-lg"></canvas>
+        </div>
+
+        <!-- TABLEAU DE BORD & APPAREIL DE COURBE -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+
+            <!-- Affichage Numérique (Data) -->
+            <div class="panel rounded-2xl p-5">
+                <h2 class="orbitron text-lg font-bold text-white mb-4 uppercase tracking-widest">Télémétrie en temps réel</h2>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="digital-screen p-3 flex flex-col items-center">
+                        <span class="text-[10px] text-slate-500 uppercase tracking-widest">Poids Réel ($P$)</span>
+                        <span class="text-2xl font-black value-red" id="out-poids">0.0 N</span>
+                    </div>
+                    <div class="digital-screen p-3 flex flex-col items-center">
+                        <span class="text-[10px] text-slate-500 uppercase tracking-widest">Poussée ($F_A$)</span>
+                        <span class="text-2xl font-black value-cyan" id="out-poussee">0.0 N</span>
+                    </div>
+                    <div class="digital-screen p-3 flex flex-col items-center">
+                        <span class="text-[10px] text-slate-500 uppercase tracking-widest">Poids Apparent</span>
+                        <span class="text-2xl font-black value-purple" id="out-apparent">0.0 N</span>
+                    </div>
+                    <div class="digital-screen p-3 flex flex-col items-center">
+                        <span class="text-[10px] text-slate-500 uppercase tracking-widest">Vol. Déplacé</span>
+                        <span class="text-2xl font-black text-white" id="out-vol-deplace">0.0 L</span>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 rounded-lg border bg-black/40 text-center transition-colors duration-300" id="etat-container">
+                    <span class="text-sm font-bold tracking-widest uppercase" id="out-etat">...</span>
+                </div>
+            </div>
+
+            <!-- Graphe Chart.js -->
+            <div class="panel rounded-2xl p-5 flex-1 flex flex-col">
+                <h2 class="orbitron text-lg font-bold text-white mb-2 uppercase tracking-widest">Appareil de Courbe</h2>
+                <p class="text-[10px] text-slate-400 mb-4">Évolution des forces selon le volume immergé ($V_{imm}$)</p>
+                <div class="flex-1 w-full bg-[#02040a] rounded-lg border border-slate-700 p-2 relative">
+                    <canvas id="chartCanvas"></canvas>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- VARIABLES GLOBALES ET ÉLÉMENTS DOM ---
+    // On wrap dans une IIFE pour éviter les conflits globaux si chargé dynamiquement
+    (function() {
+        let canvas = document.getElementById('simCanvas');
+        let ctx = canvas.getContext('2d');
+
+        // Inputs
+        let inMasse = document.getElementById('in-masse');
+        let inVolume = document.getElementById('in-volume');
+        let inLiquide = document.getElementById('in-liquide');
+        let inGravite = document.getElementById('in-gravite');
+        let inTreuil = document.getElementById('in-treuil');
+
+        // Outputs
+        let outPoids = document.getElementById('out-poids');
+        let outPoussee = document.getElementById('out-poussee');
+        let outApparent = document.getElementById('out-apparent');
+        let outVolDeplace = document.getElementById('out-vol-deplace');
+        let outEtat = document.getElementById('out-etat');
+        let etatContainer = document.getElementById('etat-container');
+
+        // Objet Graphique Chart.js
+        let forceChart;
+
+        // --- MOTEUR PHYSIQUE ---
+        function calculatePhysics() {
+            if(!inMasse) return; // Sécurité si DOM pas chargé
+
+            // Lecture des paramètres
+            const m = parseFloat(inMasse.value); // kg
+            const V = parseFloat(inVolume.value); // Litres (dm³)
+            const V_m3 = V / 1000; // Conversion en m³
+            const rho_fluide = parseFloat(inLiquide.value); // kg/m³
+            const g = parseFloat(inGravite.value); // m/s²
+            const treuilPercent = parseFloat(inTreuil.value) / 100; // 0 to 1
+
+            // Affichage UI de base
+            document.getElementById('val-masse').innerText = `${m} kg`;
+            document.getElementById('val-volume').innerText = `${V} L`;
+            document.getElementById('val-treuil').innerText = `${Math.round(treuilPercent * 100)}%`;
+            document.getElementById('val-densite-bloc').innerText = (m / V).toFixed(2);
+
+            const rho_bloc = m / V_m3; // kg/m³
+            const P = m * g; // Poids Réel (N)
+
+            // Calcul du volume immergé maximal possible
+            let V_imm_max;
+            let etat_theorique = "";
+
+            if (rho_bloc < rho_fluide) {
+                // L'objet flotte
+                // À l'équilibre : P = F_A => m * g = rho_fluide * V_imm * g => V_imm = m / rho_fluide
+                V_imm_max = m / rho_fluide;
+                etat_theorique = "FLOTTE (Équilibre)";
+            } else {
+                // L'objet coule
+                V_imm_max = V_m3;
+                etat_theorique = rho_bloc === rho_fluide ? "ENTRE DEUX EAUX" : "COULE (Au fond)";
+            }
+
+            // Calcul de l'immersion ACTUELLE basée sur le treuil
+            // On mappe 0-100% de treuil à une descente physique.
+            // Si le bloc est descendu, il s'immerge jusqu'à max(V), mais si l'équilibre est atteint, la corde se détend.
+
+            let V_imm_actuel = treuilPercent * V_m3; // On force l'immersion avec le treuil
+            let corde_detendue = false;
+
+            if (V_imm_actuel > V_imm_max) {
+                V_imm_actuel = V_imm_max; // L'objet ne s'enfonce pas plus que son équilibre si on le lâche
+                corde_detendue = true;
+            }
+
+            // Poussée d'Archimède Actuelle
+            const F_A = rho_fluide * V_imm_actuel * g;
+
+            // Poids apparent mesuré par le dynamomètre (Tension de la corde)
+            let P_app = P - F_A;
+            if (P_app < 0) P_app = 0; // Si le bloc flotte, le dynamomètre affiche 0
+
+            // Mise à jour de l'affichage digital
+            outPoids.innerText = P.toFixed(1) + " N";
+            outPoussee.innerText = F_A.toFixed(1) + " N";
+            outApparent.innerText = P_app.toFixed(1) + " N";
+            outVolDeplace.innerText = (V_imm_actuel * 1000).toFixed(2) + " L"; // Affichage en L
+
+            // Mise à jour de l'état
+            if (treuilPercent === 0) {
+                outEtat.innerText = "EN SUSPENSION (AIR)";
+                etatContainer.style.borderColor = "#475569";
+                etatContainer.style.color = "#94a3b8";
+            } else if (corde_detendue) {
+                outEtat.innerText = etat_theorique + " - CORDE DÉTENDUE";
+                etatContainer.style.borderColor = "#00e1ff";
+                etatContainer.style.color = "#00e1ff";
+            } else {
+                outEtat.innerText = "EN COURS D'IMMERSION...";
+                etatContainer.style.borderColor = "#ff0055";
+                etatContainer.style.color = "#ff0055";
+            }
+
+            // --- MISE À JOUR VISUELLE CANVAS ---
+            drawSimulation(V, V_imm_actuel * 1000, corde_detendue, treuilPercent, inLiquide.options[inLiquide.selectedIndex].dataset.color);
+
+            // --- MISE À JOUR GRAPHIQUE ---
+            updateChart(P, rho_fluide, g, V_m3, V_imm_actuel);
+        }
+
+        // --- RENDU CANVAS ---
+        function drawSimulation(volume_bloc, vol_imm_L, corde_detendue, treuil, liquideColor) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Constantes visuelles
+            const bassinX = 100, bassinY = 200, bassinW = 200, bassinH = 250;
+            const eauY_base = bassinY + 100; // Niveau d'eau initial
+
+            // Élévation de l'eau basée sur le volume déplacé (facteur d'échelle arbitraire pour le visuel)
+            const elevation_eau = vol_imm_L * 2;
+            const eauY_actuel = eauY_base - elevation_eau;
+
+            // Taille du bloc basée sur le volume (racine cubique ou carré simple pour la 2D)
+            const taille_bloc = 40 + (volume_bloc);
+            const blocX = bassinX + bassinW / 2 - taille_bloc / 2;
+
+            // Calculer la position Y du bloc en fonction du treuil et de la poussée
+            let base_hook_y = 50; // Haut de l'écran
+            let max_descente = bassinY + bassinH - taille_bloc - 20; // Fond de la bassine
+
+            // Position "voulue" par le treuil
+            let target_blocY = base_hook_y + 50 + (treuil * (max_descente - base_hook_y - 50));
+
+            // Si la corde est détendue (ça flotte), le bloc remonte à sa position d'équilibre
+            if (corde_detendue) {
+                // À l'équilibre, vol_imm_L est sous l'eau
+                const immersion_pixels = (vol_imm_L / volume_bloc) * taille_bloc;
+                target_blocY = eauY_actuel - taille_bloc + immersion_pixels;
+            }
+
+            // 1. Dessiner le fluide
+            ctx.fillStyle = liquideColor + "88"; // Couleur avec opacité
+            ctx.fillRect(bassinX, eauY_actuel, bassinW, bassinY + bassinH - eauY_actuel);
+            // Ligne de surface brillante
+            ctx.beginPath();
+            ctx.moveTo(bassinX, eauY_actuel);
+            ctx.lineTo(bassinX + bassinW, eauY_actuel);
+            ctx.strokeStyle = liquideColor;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // 2. Dessiner la Bassine (En verre/Technologique)
+            ctx.beginPath();
+            ctx.moveTo(bassinX, bassinY);
+            ctx.lineTo(bassinX, bassinY + bassinH);
+            ctx.lineTo(bassinX + bassinW, bassinY + bassinH);
+            ctx.lineTo(bassinX + bassinW, bassinY);
+            ctx.strokeStyle = "#cbd5e1";
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Graduations sur la bassine
+            for(let i=0; i<=5; i++) {
+                let yy = bassinY + (i * bassinH/5);
+                ctx.beginPath(); ctx.moveTo(bassinX, yy); ctx.lineTo(bassinX+10, yy);
+                ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth=2; ctx.stroke();
+            }
+
+            // 3. Dessiner la Corde et le Support (Dynamomètre)
+            // Ligne du haut
+            ctx.beginPath(); ctx.moveTo(150, 30); ctx.lineTo(250, 30); ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 6; ctx.stroke();
+            // Corde descendante
+            let rope_end_y = target_blocY;
+            if (corde_detendue) {
+                // Si détendue, on dessine une corde courbée (bezier)
+                ctx.beginPath();
+                ctx.moveTo(200, 30);
+                let controlX = 200 + (treuil * 30); // Déformation
+                ctx.quadraticCurveTo(controlX, (30 + target_blocY)/2, 200, target_blocY);
+                ctx.strokeStyle = "#64748b"; ctx.lineWidth = 2; ctx.stroke();
+            } else {
+                ctx.beginPath(); ctx.moveTo(200, 30); ctx.lineTo(200, target_blocY);
+                ctx.strokeStyle = "#e2e8f0"; ctx.lineWidth = 2; ctx.stroke();
+            }
+
+            // 4. Dessiner le Bloc
+            ctx.fillStyle = "#334155";
+            ctx.fillRect(blocX, target_blocY, taille_bloc, taille_bloc);
+            ctx.strokeStyle = "#94a3b8";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(blocX, target_blocY, taille_bloc, taille_bloc);
+            // Poids écrit dessus
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 14px Rajdhani";
+            ctx.textAlign = "center";
+            ctx.fillText(inMasse.value + "kg", blocX + taille_bloc/2, target_blocY + taille_bloc/2 + 5);
+
+            // 5. Vecteurs de Force (Flèches)
+            drawArrow(ctx, 200, target_blocY + taille_bloc/2, 200, target_blocY + taille_bloc/2 + 60, "#ff0055", "P"); // Poids (vers le bas)
+
+            if (vol_imm_L > 0) {
+                // Flèche poussée Archimède (vers le haut), longueur dépend du volume immergé
+                const force_len = Math.max(20, (vol_imm_L / volume_bloc) * 60);
+                drawArrow(ctx, 200, target_blocY + taille_bloc/2, 200, target_blocY + taille_bloc/2 - force_len, "#00e1ff", "FA");
+            }
+        }
+
+        function drawArrow(ctx, fromX, fromY, toX, toY, color, label) {
+            const headlen = 10;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Label
+            ctx.fillStyle = color;
+            ctx.font = "bold 14px Orbitron";
+            ctx.fillText(label, toX + 15, toY);
+        }
+
+        // --- GRAPHIQUE CHART.JS ---
+        function initChart() {
+            const ctxChart = document.getElementById('chartCanvas').getContext('2d');
+
+            // Configuration Dark Theme Chart.js
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.font.family = 'Rajdhani';
+
+            forceChart = new Chart(ctxChart, {
+                type: 'line',
+                data: {
+                    labels: [], // Volume immergé (X)
+                    datasets: [
+                        {
+                            label: 'Poids Réel (P)',
+                            data: [],
+                            borderColor: '#ff0055',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0
+                        },
+                        {
+                            label: "Poussée d'Archimède (FA)",
+                            data: [],
+                            borderColor: '#00e1ff',
+                            borderWidth: 3,
+                            fill: true,
+                            backgroundColor: 'rgba(0, 225, 255, 0.1)',
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Volume Immergé (L)' } },
+                        y: { title: { display: true, text: 'Forces (N)' }, min: 0 }
+                    },
+                    plugins: {
+                        legend: { position: 'top' },
+                        annotation: {
+                            // On pourrait ajouter une ligne verticale pour le marqueur actuel
+                        }
+                    },
+                    animation: false // On désactive l'anim pour le temps réel du slider
+                }
+            });
+        }
+
+        function updateChart(Poids, rho, g, V_m3, V_imm_actuel_m3) {
+            const labels = [];
+            const dataP = [];
+            const dataFA = [];
+
+            const max_vol_L = V_m3 * 1000;
+            const points = 20;
+
+            for(let i=0; i<=points; i++) {
+                let vL = (i / points) * max_vol_L;
+                labels.push(vL.toFixed(1));
+                dataP.push(Poids); // Poids constant
+
+                // Calcul Poussée théorique pour l'axe X
+                let fa_theorique = rho * (vL / 1000) * g;
+                dataFA.push(fa_theorique);
+            }
+
+            forceChart.data.labels = labels;
+            forceChart.data.datasets[0].data = dataP;
+            forceChart.data.datasets[1].data = dataFA;
+
+            // On peut ajuster l'axe Y pour toujours voir P et FA
+            let maxForce = Math.max(Poids, rho * V_m3 * g) * 1.2;
+            forceChart.options.scales.y.max = maxForce;
+
+            forceChart.update();
+        }
+
+        // --- ECOUTEURS D'ÉVÉNEMENTS ---
+        const inputs = [inMasse, inVolume, inLiquide, inGravite, inTreuil];
+        inputs.forEach(input => input.addEventListener('input', calculatePhysics));
+
+        // Initialisation
+        setTimeout(() => {
+            initChart();
+            calculatePhysics(); // Calcule et dessine la première fois
+        }, 500);
+    })();
+</script>
+

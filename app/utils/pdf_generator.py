@@ -28,6 +28,61 @@ def get_output_path(filename):
     return os.path.join(folder, filename)
 
 
+def apply_stamps_to_pdf(c, page_width, page_height, stamps_config=None):
+    """
+    Applique des cachets/sceaux officiels sur un canvas PDF ReportLab.
+
+    Args:
+        c: ReportLab Canvas
+        page_width, page_height: dimensions de la page
+        stamps_config: liste de dict {sceau_id, count, position, size} ou None pour auto
+    """
+    try:
+        from app.models import Sceau, ConfigurationEcole
+
+        # Récupérer la taille configurée par le directeur
+        config = ConfigurationEcole.query.first()
+        default_stamp_cm = 5.0  # Taille par défaut agrandie (anciennement 2.5)
+        if config and config.taille_cachet_pdf:
+            default_stamp_cm = config.taille_cachet_pdf
+
+        if stamps_config:
+            # Mode sélection manuelle
+            for stamp_info in stamps_config:
+                sceau = Sceau.query.get(stamp_info.get('sceau_id'))
+                if not sceau or not sceau.image_path:
+                    continue
+                img_path = os.path.join(current_app.root_path, 'static', sceau.image_path)
+                if not os.path.exists(img_path):
+                    continue
+                count = min(int(stamp_info.get('count', 1)), 3)
+                # Taille personnalisée ou taille config directeur
+                custom_size_cm = float(stamp_info.get('size', default_stamp_cm))
+                stamp_size = custom_size_cm * cm
+                # Positions multiples
+                positions = [
+                    (page_width - stamp_size - 2 * cm, 2 * cm),     # bas-droite
+                    (2 * cm, 2 * cm),                                 # bas-gauche
+                    (page_width / 2 - stamp_size / 2, 2 * cm),      # bas-centre
+                ]
+                for i in range(count):
+                    if i < len(positions):
+                        px, py = positions[i]
+                        c.drawImage(img_path, px, py, width=stamp_size, height=stamp_size,
+                                   preserveAspectRatio=True, mask='auto')
+        else:
+            # Mode automatique : placer le cachet de l'école s'il existe
+            if config and config.cachet_path:
+                img_path = os.path.join(current_app.root_path, 'static', config.cachet_path)
+                if os.path.exists(img_path):
+                    stamp_size = default_stamp_cm * cm
+                    c.drawImage(img_path, page_width - stamp_size - 2 * cm, 2 * cm,
+                               width=stamp_size, height=stamp_size,
+                               preserveAspectRatio=True, mask='auto')
+    except Exception:
+        pass  # Ne pas crasher le PDF si le cachet ne fonctionne pas
+
+
 # =========================================================================
 # 1. ATTESTATION DE SCOLARITÉ
 # =========================================================================
@@ -78,6 +133,9 @@ def generer_attestation_scolarite(etudiant):
     c.drawString(12 * cm, text_y - 2 * cm, f"Fait à Lomé, le {datetime.now().strftime('%d/%m/%Y')}")
     c.setFont("Helvetica-Oblique", 10)
     c.drawString(12 * cm, text_y - 3 * cm, "Le Directeur Académique")
+
+    # Cachet officiel
+    apply_stamps_to_pdf(c, width, height)
 
     c.save()
     return filename

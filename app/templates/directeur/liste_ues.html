@@ -155,13 +155,82 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 <span class="code-badge me-3">{{ ue.code_ue }}</span>
-                                <span class="fw-bold">{{ ue.intitule }}</span>
+                                <div>
+                                    <span class="fw-bold">{{ ue.intitule }}</span>
+                                    {% if ue.nature == 'composite' %}
+                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">COMPOSITE</span>
+                                    {% endif %}
+                                </div>
                             </div>
+                            {% if ue.nature == 'composite' and ue.sous_ues.count() > 0 %}
+                            <div class="ms-4 mt-1 ps-3 border-start border-2 border-warning">
+                                {% for ec in ue.sous_ues.order_by(None) %}
+                                <div class="small text-muted py-1">
+                                    <code class="text-primary">{{ ec.code_ue }}</code>
+                                    {{ ec.intitule }}
+                                    <span class="badge bg-light text-dark border ms-1">{{ ec.credits }}C</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </td>
                         <td>
-                            {% if ue.classe %}
+                            {% set toutes_classes = ue.get_toutes_classes() %}
+                            {% if ue.type_affectation == 'tronc_commun' %}
+                                <span class="badge bg-info bg-opacity-10 text-info mb-1">
+                                    <i class="fas fa-users me-1"></i> Tronc Commun
+                                </span>
+                                {# Afficher les filières composantes #}
+                                {% set filieres_affichees = [] %}
+                                {% if toutes_classes %}
+                                    {% for cl in toutes_classes %}
+                                        {% if cl.est_assemblee %}
+                                            {% set filieres_comp = cl.get_filieres_composantes() %}
+                                            {% if filieres_comp %}
+                                            <div class="fw-bold small text-dark mt-1">
+                                                {% for fil in filieres_comp %}
+                                                    {{ fil.nom_filiere }}{% if not loop.last %} · {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            <div class="text-muted" style="font-size: 0.7rem;">
+                                                <i class="fas fa-cubes me-1"></i>{{ cl.get_sigles_composantes() }}
+                                            </div>
+                                            {% else %}
+                                            <div class="fw-bold small text-dark">{{ cl.nom_classe }}</div>
+                                            {% endif %}
+                                        {% else %}
+                                            <div class="fw-bold small text-dark">
+                                                {{ cl.code_classe or cl.nom_classe }}
+                                                {% if cl.filiere %}
+                                                <span class="text-muted">({{ cl.filiere.nom_filiere }})</span>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% elif ue.classe and ue.classe.est_assemblee %}
+                                    {% set filieres_comp = ue.classe.get_filieres_composantes() %}
+                                    {% if filieres_comp %}
+                                    <div class="fw-bold small text-dark">
+                                        {% for fil in filieres_comp %}
+                                            {{ fil.nom_filiere }}{% if not loop.last %} · {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <div class="fw-bold small text-dark">{{ ue.classe.nom_classe }}</div>
+                                    {% endif %}
+                                {% else %}
+                                <div class="text-muted small">Classes assemblées</div>
+                                {% endif %}
+                            {% elif toutes_classes %}
+                                {% for cl in toutes_classes %}
+                                <div class="fw-bold small text-dark">{{ cl.nom_classe }}</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">{{ cl.filiere.nom_filiere if cl.filiere else '' }}</div>
+                                {% endfor %}
+                            {% elif ue.classe %}
                                 <div class="fw-bold small text-dark">{{ ue.classe.nom_classe }}</div>
                                 <div class="text-muted" style="font-size: 0.75rem;">{{ ue.classe.filiere.nom_filiere if ue.classe.filiere else 'N/A' }}</div>
+                            {% elif ue.type_affectation == 'libre' %}
+                                <span class="badge bg-warning text-dark"><i class="fas fa-gift me-1"></i> UE Libre</span>
                             {% else %}
                                 <span class="text-muted small">Aucune classe</span>
                             {% endif %}
@@ -170,6 +239,11 @@
                             <span class="badge rounded-pill bg-light text-dark border">
                                 <i class="far fa-clock me-1 text-primary"></i> {{ ue.heures or 0 }}h
                             </span>
+                            {% if ue.type_affectation == 'tronc_commun' %}
+                            <div class="text-muted" style="font-size: 0.65rem;">
+                                <i class="fas fa-info-circle me-1"></i>Volume unique (TC)
+                            </div>
+                            {% endif %}
                         </td>
                         <td>
                             <span class="small fw-bold">{{ ue.credits }} C.</span>

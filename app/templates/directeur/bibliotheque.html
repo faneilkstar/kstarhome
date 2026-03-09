@@ -9,93 +9,210 @@
                 <i class="fas fa-infinity me-2 text-primary"></i>
                 Bibliothèque Numérique Infinie
             </h2>
-            <p class="text-muted mb-0">Gérer la collection de livres de l'école</p>
+            <p class="text-muted mb-0">{{ total_livres }} livres • {{ etageres|length }} étagères</p>
         </div>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAjouterLivre">
-            <i class="fas fa-plus me-2"></i>Ajouter un livre
-        </button>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalCreerEtagere">
+                <i class="fas fa-plus-circle me-1"></i>Nouvelle étagère
+            </button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAjouterLivre">
+                <i class="fas fa-book-medical me-1"></i>Ajouter un livre
+            </button>
+        </div>
     </div>
 
     <!-- Statistiques -->
     <div class="row mb-4 g-3">
         <div class="col-md-3">
             <div class="card border-0 shadow-sm p-3 text-center">
-                <h3 class="fw-bold text-primary mb-0">{{ livres|length }}</h3>
-                <p class="text-muted small mb-0"><i class="fas fa-book me-1"></i>Livres</p>
+                <h3 class="fw-bold text-primary mb-0">{{ total_livres }}</h3>
+                <small class="text-muted"><i class="fas fa-book me-1"></i>Livres total</small>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card border-0 shadow-sm p-3 text-center">
-                <h3 class="fw-bold text-success mb-0">PDF</h3>
-                <p class="text-muted small mb-0"><i class="fas fa-file-pdf me-1"></i>Format</p>
+                <h3 class="fw-bold text-success mb-0">{{ etageres|length }}</h3>
+                <small class="text-muted"><i class="fas fa-layer-group me-1"></i>Étagères</small>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card border-0 shadow-sm p-3 text-center">
-                <h3 class="fw-bold text-info mb-0">∞</h3>
-                <p class="text-muted small mb-0"><i class="fas fa-infinity me-1"></i>Collection</p>
+                <h3 class="fw-bold text-warning mb-0">{{ livres_sans_etagere|length }}</h3>
+                <small class="text-muted"><i class="fas fa-inbox me-1"></i>Non classés</small>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card border-0 shadow-sm p-3 text-center">
-                <h3 class="fw-bold text-warning mb-0">24/7</h3>
-                <p class="text-muted small mb-0"><i class="fas fa-clock me-1"></i>Accès</p>
+                <h3 class="fw-bold text-info mb-0">24/7</h3>
+                <small class="text-muted"><i class="fas fa-clock me-1"></i>Accès</small>
             </div>
         </div>
     </div>
 
-    <!-- Liste des livres -->
-    <div class="row g-4">
-        {% for livre in livres %}
-        <div class="col-md-3">
-            <div class="card h-100 border-0 shadow-sm">
-                <div style="height: 200px; overflow: hidden;" class="position-relative">
-                    <div class="d-flex align-items-center justify-content-center h-100 bg-gradient"
-                         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                        <i class="fas fa-book fa-4x text-white opacity-50"></i>
-                    </div>
-                    {% if livre.categorie %}
-                    <span class="position-absolute top-0 end-0 m-2 badge bg-dark">
-                        {{ livre.categorie }}
-                    </span>
-                    {% endif %}
-                </div>
-
-                <div class="card-body">
-                    <h5 class="card-title fw-bold mb-2">{{ livre.titre }}</h5>
-                    <p class="card-text text-muted small">
-                        <i class="fas fa-user me-1"></i>{{ livre.auteur }}
-                    </p>
-                    <p class="small text-muted">
-                        Ajouté le {{ livre.date_ajout.strftime('%d/%m/%Y') }}
-                    </p>
-                </div>
-
-                <div class="card-footer bg-white border-0 pb-3">
-                    <div class="d-flex gap-2">
-                        <a href="{{ url_for('static', filename='library/pdf/' + livre.fichier_pdf) }}"
-                           class="btn btn-sm btn-primary flex-grow-1" target="_blank">
-                            <i class="fas fa-book-open me-1"></i> Lire
-                        </a>
-                        <form method="POST" action="{{ url_for('directeur.supprimer_livre', livre_id=livre.id) }}"
-                              onsubmit="return confirm('Supprimer ce livre ?');" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-danger">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </form>
-                    </div>
-                </div>
+    <!-- Étagères -->
+    {% for etagere in etageres %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3"
+             style="background: {{ etagere.couleur }}; color: white;">
+            <div>
+                <i class="{{ etagere.icone }} me-2"></i>
+                <strong>{{ etagere.nom }}</strong>
+                <span class="badge bg-light text-dark ms-2">{{ etagere.get_nombre_livres() }} livres</span>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-light" onclick="toggleEtagere('etag_{{ etagere.id }}')">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <form method="POST" action="{{ url_for('directeur.supprimer_etagere', etagere_id=etagere.id) }}"
+                      onsubmit="return confirm('Supprimer cette étagère ?');" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-light"><i class="fas fa-trash"></i></button>
+                </form>
             </div>
         </div>
-        {% endfor %}
-
-        {% if livres|length == 0 %}
-        <div class="col-12 text-center py-5">
-            <i class="fas fa-book-open fa-4x text-muted mb-3"></i>
-            <h4>Aucun livre pour le moment</h4>
-            <p class="text-muted">Cliquez sur "Ajouter un livre" pour commencer</p>
+        <div class="card-body" id="etag_{{ etagere.id }}">
+            {% if etagere.description %}
+            <p class="text-muted small mb-3">{{ etagere.description }}</p>
+            {% endif %}
+            <div class="row g-3">
+                {% for livre in etagere.livres.all() %}
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="card h-100 border-0 shadow-sm hover-card">
+                        <div style="height:140px;overflow:hidden;" class="position-relative">
+                            <div class="d-flex align-items-center justify-content-center h-100"
+                                 style="background: linear-gradient(135deg, {{ etagere.couleur }} 0%, #333 100%);">
+                                <i class="fas fa-book fa-3x text-white opacity-50"></i>
+                            </div>
+                            {% if livre.categorie %}
+                            <span class="position-absolute top-0 end-0 m-2 badge bg-dark">{{ livre.categorie }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="card-body p-2">
+                            <h6 class="card-title fw-bold mb-1" style="font-size:0.85rem">{{ livre.titre|truncate(40) }}</h6>
+                            <p class="text-muted mb-1" style="font-size:0.75rem"><i class="fas fa-user me-1"></i>{{ livre.auteur }}</p>
+                        </div>
+                        <div class="card-footer bg-white border-0 p-2">
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('static', filename='library/pdf/' + livre.fichier_pdf) }}"
+                                   class="btn btn-sm btn-primary flex-grow-1" target="_blank">
+                                    <i class="fas fa-book-open"></i> Lire
+                                </a>
+                                <a href="{{ url_for('static', filename='library/pdf/' + livre.fichier_pdf) }}"
+                                   class="btn btn-sm btn-outline-success" download>
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('directeur.supprimer_livre', livre_id=livre.id) }}"
+                                      onsubmit="return confirm('Supprimer ?');" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12 text-center py-3 text-muted">
+                    <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                    <small>Étagère vide</small>
+                </div>
+                {% endfor %}
+            </div>
         </div>
-        {% endif %}
+    </div>
+    {% endfor %}
+
+    <!-- Livres non classés -->
+    {% if livres_sans_etagere %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-secondary text-white py-3">
+            <i class="fas fa-inbox me-2"></i><strong>Non classés</strong>
+            <span class="badge bg-light text-dark ms-2">{{ livres_sans_etagere|length }}</span>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for livre in livres_sans_etagere %}
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="card h-100 border-0 shadow-sm hover-card">
+                        <div style="height:140px;overflow:hidden;">
+                            <div class="d-flex align-items-center justify-content-center h-100"
+                                 style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);">
+                                <i class="fas fa-book fa-3x text-white opacity-50"></i>
+                            </div>
+                        </div>
+                        <div class="card-body p-2">
+                            <h6 class="card-title fw-bold mb-1" style="font-size:0.85rem">{{ livre.titre|truncate(40) }}</h6>
+                            <p class="text-muted mb-1" style="font-size:0.75rem"><i class="fas fa-user me-1"></i>{{ livre.auteur }}</p>
+                        </div>
+                        <div class="card-footer bg-white border-0 p-2">
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('static', filename='library/pdf/' + livre.fichier_pdf) }}"
+                                   class="btn btn-sm btn-primary flex-grow-1" target="_blank"><i class="fas fa-book-open"></i> Lire</a>
+                                <form method="POST" action="{{ url_for('directeur.supprimer_livre', livre_id=livre.id) }}"
+                                      onsubmit="return confirm('Supprimer ?');" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if total_livres == 0 and etageres|length > 0 %}
+    <div class="text-center py-5">
+        <i class="fas fa-book-open fa-4x text-muted mb-3"></i>
+        <h4>Étagères prêtes, ajoutez des livres !</h4>
+        <p class="text-muted">Cliquez sur "Ajouter un livre" pour commencer</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Créer Étagère -->
+<div class="modal fade" id="modalCreerEtagere" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="fas fa-layer-group me-2 text-primary"></i>Nouvelle étagère</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form method="POST" action="{{ url_for('directeur.creer_etagere') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nom <span class="text-danger">*</span></label>
+                        <input type="text" name="nom" class="form-control" required placeholder="Ex: Intelligence Artificielle">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="De quoi parle cette étagère ?"></textarea>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Icône (FontAwesome)</label>
+                            <select name="icone" class="form-select">
+                                <option value="fas fa-bookmark">📑 Bookmark</option>
+                                <option value="fas fa-atom">⚛️ Atom</option>
+                                <option value="fas fa-laptop-code">💻 Code</option>
+                                <option value="fas fa-flask">🧪 Chimie</option>
+                                <option value="fas fa-cogs">⚙️ Mécanique</option>
+                                <option value="fas fa-microchip">🔌 Électronique</option>
+                                <option value="fas fa-brain">🧠 IA/Cerveau</option>
+                                <option value="fas fa-square-root-alt">📐 Maths</option>
+                                <option value="fas fa-language">🗣️ Langues</option>
+                                <option value="fas fa-hard-hat">🏗️ Génie Civil</option>
+                                <option value="fas fa-briefcase">💼 Gestion</option>
+                                <option value="fas fa-book-reader">📖 Littérature</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Couleur</label>
+                            <input type="color" name="couleur" class="form-control form-control-color w-100" value="#667eea">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-plus me-1"></i>Créer</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -106,7 +223,7 @@
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold">
                     <i class="fas fa-book-medical me-2 text-primary"></i>
-                    Ajouter un livre à la bibliothèque
+                    Ajouter un livre
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -114,57 +231,55 @@
                 <div class="modal-body p-4">
                     <div class="row g-3">
                         <div class="col-md-12">
-                            <label class="form-label fw-bold">Titre du livre <span class="text-danger">*</span></label>
-                            <input type="text" name="titre" class="form-control" required
-                                   placeholder="Ex: Introduction à la Physique Quantique">
+                            <label class="form-label fw-bold">Titre <span class="text-danger">*</span></label>
+                            <input type="text" name="titre" class="form-control" required placeholder="Ex: Introduction à Python">
                         </div>
-
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Auteur <span class="text-danger">*</span></label>
-                            <input type="text" name="auteur" class="form-control" required
-                                   placeholder="Ex: Richard Feynman">
+                            <input type="text" name="auteur" class="form-control" required placeholder="Ex: Eric Matthes">
                         </div>
-
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Étagère</label>
+                            <select name="etagere_id" class="form-select">
+                                <option value="">-- Non classé --</option>
+                                {% for et in etageres %}
+                                <option value="{{ et.id }}">{{ et.nom }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Catégorie</label>
                             <select name="categorie" class="form-select">
-                                <option value="">-- Choisir --</option>
+                                <option value="">🤖 Auto (IA)</option>
                                 <option value="Mathématiques">Mathématiques</option>
                                 <option value="Physique">Physique</option>
+                                <option value="Informatique">Informatique</option>
                                 <option value="Chimie">Chimie</option>
                                 <option value="Électronique">Électronique</option>
-                                <option value="Informatique">Informatique</option>
                                 <option value="Génie Civil">Génie Civil</option>
                                 <option value="Mécanique">Mécanique</option>
                                 <option value="Roman">Roman</option>
-                                <option value="Science">Science</option>
-                                <option value="Histoire">Histoire</option>
+                                <option value="Langues">Langues</option>
                             </select>
                         </div>
-
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold">Description</label>
-                            <textarea name="description" class="form-control" rows="3"
-                                      placeholder="Brève description du contenu du livre..."></textarea>
+                            <textarea name="description" class="form-control" rows="1" placeholder="Optionnel..."></textarea>
                         </div>
-
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <label class="form-label fw-bold">Fichier PDF <span class="text-danger">*</span></label>
                             <input type="file" name="fichier_pdf" class="form-control" accept=".pdf" required>
-                            <small class="text-muted">Format: PDF uniquement</small>
                         </div>
-
-                        <div class="col-md-12">
-                            <label class="form-label fw-bold">Image de couverture (optionnel)</label>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Couverture (optionnel)</label>
                             <input type="file" name="image_couverture" class="form-control" accept="image/*">
-                            <small class="text-muted">Format: JPG, PNG (optionnel)</small>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Ajouter
+                        <i class="fas fa-plus me-1"></i>Ajouter
                     </button>
                 </div>
             </form>
@@ -173,13 +288,14 @@
 </div>
 
 <style>
-.hover-card {
-    transition: all 0.3s ease;
-}
-.hover-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
-}
+.hover-card{transition:all .3s ease}
+.hover-card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.12)!important}
 </style>
-{% endblock %}
 
+<script>
+function toggleEtagere(id) {
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

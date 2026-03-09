@@ -56,8 +56,8 @@
     <nav class="flex-grow-1">
         <a href="{{url_for('etudiant.dashboard')}}" class="nav-link-custom active"><i class="fas fa-th-large"></i> Vue d'ensemble</a>
 
-        <a href="{{url_for('etudiant.ressources_pedagogiques')}}" class="nav-link-custom">
-            <i class="fas fa-book-reader"></i> Bibliothèque
+        <a href="{{url_for('etudiant.bibliotheque_ecole')}}" class="nav-link-custom">
+            <i class="fas fa-infinity"></i> Bibliothèque ∞
             <span class="badge bg-danger rounded-pill ms-auto" style="font-size: 0.6rem;">New</span>
         </a>
 
@@ -68,8 +68,19 @@
 
         <a href="{{url_for('etudiant.mes_ues')}}" class="nav-link-custom"><i class="fas fa-book"></i> Modules</a>
         <a href="{{url_for('etudiant.mes_notes')}}" class="nav-link-custom"><i class="fas fa-chart-bar"></i> Résultats</a>
-
         <a href="{{url_for('etudiant.mes_documents')}}" class="nav-link-custom"><i class="fas fa-folder-open"></i> Mes Documents</a>
+
+        <a href="{{url_for('cartes.ma_carte')}}" class="nav-link-custom">
+            <i class="fas fa-id-card"></i> Ma Carte
+        </a>
+
+        <a href="{{url_for('etudiant.telecharger_fiche_ue')}}" class="nav-link-custom">
+            <i class="fas fa-file-alt"></i> Fiche UE (PDF)
+        </a>
+
+        <a href="{{url_for('etudiant.mes_absences')}}" class="nav-link-custom">
+            <i class="fas fa-user-clock"></i> Absences
+        </a>
     </nav>
     <div class="pt-4 border-top">
         <a href="{{ url_for('auth.logout') }}" class="nav-link-custom text-danger"><i class="fas fa-power-off"></i> Déconnexion</a>
@@ -240,11 +251,20 @@
                 <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
                     <h6 class="fw-800 mb-3">Accès Rapide</h6>
                     <div class="d-grid gap-2">
-                        <a href="{{ url_for('etudiant.ressources_pedagogiques') }}" class="btn btn-primary bg-opacity-10 text-primary border-0 rounded-3 small fw-bold text-start py-2">
-                            <i class="fas fa-book-reader me-2"></i> Mes Cours & Livres
+                        <a href="{{ url_for('etudiant.bibliotheque_ecole') }}" class="btn btn-primary bg-opacity-10 text-primary border-0 rounded-3 small fw-bold text-start py-2">
+                            <i class="fas fa-infinity me-2"></i> Bibliothèque de l'Infini
                         </a>
-                        <a href="{{ url_for('etudiant.mes_absences') }}" class="nav-link-custom">
-                            <i class="fas fa-user-clock"></i> Absences
+
+                        <a href="{{ url_for('cartes.ma_carte') }}" class="btn btn-light text-start py-2 border-0 rounded-3 small fw-bold text-dark">
+                            <i class="fas fa-id-card text-primary me-2"></i> Ma Carte Étudiant
+                        </a>
+
+                        <a href="{{ url_for('etudiant.telecharger_fiche_ue') }}" class="btn btn-light text-start py-2 border-0 rounded-3 small fw-bold text-dark">
+                            <i class="fas fa-file-alt text-info me-2"></i> Fiche d'inscription UE
+                        </a>
+
+                        <a href="{{ url_for('etudiant.mes_absences') }}" class="btn btn-light text-start py-2 border-0 rounded-3 small fw-bold text-dark">
+                            <i class="fas fa-user-clock text-warning me-2"></i> Absences
                         </a>
 
                         <a href="{{ url_for('etudiant.telecharger_bulletin') }}" class="btn btn-light text-start py-2 border-0 rounded-3 small fw-bold text-dark">

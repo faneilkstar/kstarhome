@@ -1,0 +1,485 @@
+{% extends "base.html" %}
+{% block title %}Créer une UE{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4 px-4">
+
+  <div class="d-flex align-items-center mb-4 gap-3">
+    <a href="{{ url_for('directeur.liste_ues') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left"></i> Retour
+    </a>
+    <h3 class="mb-0 fw-bold">📚 Créer une Unité d'Enseignement</h3>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="POST" id="formUE">
+    <div class="row g-4">
+
+      <!-- COLONNE GAUCHE : Paramètres UE -->
+      <div class="col-lg-5">
+
+        <!-- Identité -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-dark text-white fw-semibold py-2">🆔 Identité</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Code UE <span class="text-danger">*</span></label>
+              <input type="text" name="code_ue" class="form-control" placeholder="Ex: INF101, GL302" required>
+              <small class="text-muted">Préfixe + Semestre + Numéro (ex: INF101)</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Intitulé <span class="text-danger">*</span></label>
+              <input type="text" name="nom_ue" class="form-control" placeholder="Ex: Algorithmique" required>
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label fw-semibold">Semestre</label>
+                <select name="semestre" class="form-select">
+                  {% for s in ['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10'] %}
+                  <option value="{{ s }}">{{ s }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold">Crédits</label>
+                <input type="number" name="credits" class="form-control" value="3" min="1" max="20" id="inputCredits">
+                <small class="text-muted">1 crédit = 12h | Coef = Crédits</small>
+              </div>
+            </div>
+            <div class="mt-2">
+              <small class="text-info fw-semibold" id="heuresCalc">⏱ Heures : 36h | Coefficient : 3</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Catégorie -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-dark text-white fw-semibold py-2">🏷️ Catégorie</div>
+          <div class="card-body">
+            <div class="row g-2">
+              {% set cats = [
+                ('fondamentale','🔴','Fondamentale','Base obligatoire du domaine'),
+                ('specialite','🔵','Spécialité','Cours métier de la filière'),
+                ('transversale','🟢','Transversale','Commun à tous (Anglais…)'),
+                ('libre','🟡','Libre','Choix libre (simple uniquement)')
+              ] %}
+              {% for val, ico, lbl, tip in cats %}
+              <div class="col-6">
+                <div class="form-check border rounded p-2 cat-card h-100">
+                  <input class="form-check-input" type="radio" name="categorie" value="{{ val }}"
+                         id="cat_{{ val }}" required {% if val=='fondamentale' %}checked{% endif %}
+                         onchange="onCategorieChange('{{ val }}')">
+                  <label class="form-check-label d-block" for="cat_{{ val }}">
+                    <span class="fs-5">{{ ico }}</span>
+                    <strong class="d-block">{{ lbl }}</strong>
+                    <small class="text-muted">{{ tip }}</small>
+                  </label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Nature -->
+        <div class="card border-0 shadow-sm mb-3" id="sectionNature">
+          <div class="card-header bg-dark text-white fw-semibold py-2">⚗️ Nature</div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-6">
+                <div class="form-check border rounded p-3 text-center nat-card">
+                  <input class="form-check-input" type="radio" name="nature" value="simple"
+                         id="nat_simple" required checked onchange="onNatureChange('simple')">
+                  <label class="form-check-label d-block" for="nat_simple">
+                    <i class="fas fa-file-alt fa-2x text-primary mb-1 d-block"></i>
+                    <strong>Simple</strong>
+                    <br><small class="text-muted">1 note directe</small>
+                  </label>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="form-check border rounded p-3 text-center nat-card">
+                  <input class="form-check-input" type="radio" name="nature" value="composite"
+                         id="nat_composite" onchange="onNatureChange('composite')">
+                  <label class="form-check-label d-block" for="nat_composite">
+                    <i class="fas fa-layer-group fa-2x text-warning mb-1 d-block"></i>
+                    <strong>Composite</strong>
+                    <br><small class="text-muted">Plusieurs EC</small>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mode d'affectation -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-dark text-white fw-semibold py-2">🎯 Mode d'affectation</div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-4">
+                <div class="form-check border rounded p-2 text-center">
+                  <input class="form-check-input" type="radio" name="type_affectation" value="specifique"
+                         id="aff_spec" required checked>
+                  <label class="form-check-label d-block" for="aff_spec">
+                    <i class="fas fa-user fa-lg text-primary d-block mb-1"></i>
+                    <small><strong>Spécifique</strong><br>1 classe</small>
+                  </label>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="form-check border rounded p-2 text-center">
+                  <input class="form-check-input" type="radio" name="type_affectation" value="tronc_commun"
+                         id="aff_tronc">
+                  <label class="form-check-label d-block" for="aff_tronc">
+                    <i class="fas fa-users fa-lg text-success d-block mb-1"></i>
+                    <small><strong>Tronc Commun</strong><br>2+ classes</small>
+                  </label>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="form-check border rounded p-2 text-center">
+                  <input class="form-check-input" type="radio" name="type_affectation" value="libre"
+                         id="aff_libre" onchange="onAffChange('libre')">
+                  <label class="form-check-label d-block" for="aff_libre">
+                    <i class="fas fa-globe fa-lg text-warning d-block mb-1"></i>
+                    <small><strong>Libre</strong><br>Tous</small>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section Composite -->
+        <div id="sectionComposite" class="card border-warning shadow-sm mb-3" style="display:none;">
+          <div class="card-header bg-warning text-dark fw-semibold py-2">
+            🧩 Éléments Constitutifs
+            <small class="fw-normal ms-1">Code EC = N° + Code UE mère (ex: 1INF101)</small>
+          </div>
+          <div class="card-body">
+            <div class="mb-2">
+              <label class="form-label fw-semibold">Nom final de l'UE composite</label>
+              <input type="text" name="nom_composite_final" class="form-control form-control-sm"
+                     placeholder="Ex: Analyse et Algèbre">
+            </div>
+            <input type="hidden" name="sous_ues_count" id="sous_ues_count" value="2">
+            <div id="ecList">
+              <div class="ec-row card bg-light border-0 p-2 mb-2">
+                <div class="row g-2 align-items-center">
+                  <div class="col-1 text-center fw-bold text-muted">1</div>
+                  <div class="col-7"><input type="text" name="sous_ue_1_nom" class="form-control form-control-sm" placeholder="Nom EC"></div>
+                  <div class="col-4"><input type="number" name="sous_ue_1_credits" class="form-control form-control-sm ec-credits" placeholder="Crédits" min="1"></div>
+                </div>
+              </div>
+              <div class="ec-row card bg-light border-0 p-2 mb-2">
+                <div class="row g-2 align-items-center">
+                  <div class="col-1 text-center fw-bold text-muted">2</div>
+                  <div class="col-7"><input type="text" name="sous_ue_2_nom" class="form-control form-control-sm" placeholder="Nom EC"></div>
+                  <div class="col-4"><input type="number" name="sous_ue_2_credits" class="form-control form-control-sm ec-credits" placeholder="Crédits" min="1"></div>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-3 mt-2">
+              <button type="button" class="btn btn-outline-warning btn-sm" onclick="addEC()">
+                <i class="fas fa-plus"></i> Ajouter un EC
+              </button>
+              <span class="text-muted">Total : <strong id="totalCreditsEC">0</strong> crédits</span>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg w-100">
+          <i class="fas fa-save"></i> Créer l'UE
+        </button>
+      </div>
+
+      <!-- COLONNE DROITE : 2 Tableaux de cochage classes -->
+      <div class="col-lg-7" id="sectionClasses">
+
+        <div class="alert alert-info py-2 mb-3">
+          <i class="fas fa-info-circle"></i>
+          Cochez les <strong>classes</strong> qui suivront cette UE, groupées par type de filière.
+        </div>
+
+        {% set fonds = filieres_fond if filieres_fond else [] %}
+        {% set pros  = filieres_pro  if filieres_pro  else [] %}
+
+        {% if not fonds and not pros %}
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          Aucune filière. <a href="{{ url_for('directeur.ajouter_filiere') }}">Créer une filière</a>
+        </div>
+        {% endif %}
+
+        <!-- ===== TABLEAU 1 : FONDAMENTALES ===== -->
+        {% if fonds %}
+        <div class="card border-0 shadow mb-4">
+          <div class="card-header py-2 d-flex justify-content-between align-items-center"
+               style="background:linear-gradient(135deg,#1a237e,#283593);color:#fff;">
+            <span class="fw-bold">
+              <i class="fas fa-graduation-cap me-1"></i> Filières Fondamentales
+              <span class="badge bg-white text-dark ms-2">{{ fonds|length }} filière(s)</span>
+            </span>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-light btn-sm" onclick="toggleAll('fond',true)">
+                ✅ Tout cocher
+              </button>
+              <button type="button" class="btn btn-outline-light btn-sm" onclick="toggleAll('fond',false)">
+                ☐ Décocher
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-3">
+            {% for filiere in fonds %}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-primary">
+                  <i class="fas fa-sitemap me-1"></i>{{ filiere.nom_filiere }}
+                  {% if filiere.cycle %}<small class="text-muted fw-normal"> — {{ filiere.cycle }}</small>{% endif %}
+                </span>
+                <button type="button" class="btn btn-outline-primary btn-sm"
+                        onclick="toggleFiliere('ff_{{ filiere.id }}')">
+                  <i class="fas fa-check-double"></i> Filière
+                </button>
+              </div>
+              <div class="row g-2 ms-1" id="ff_{{ filiere.id }}">
+                {% for classe in filiere.classes.filter_by(active=True).order_by('annee') %}
+                <div class="col-md-4 col-6">
+                  <div class="form-check border rounded p-2 classe-item">
+                    <input class="form-check-input fond-cb"
+                           type="checkbox" name="classes_ids[]"
+                           value="{{ classe.id }}" id="c_{{ classe.id }}"
+                           onchange="updateCount()">
+                    <label class="form-check-label w-100" for="c_{{ classe.id }}">
+                      <strong>{{ classe.nom_classe }}</strong>
+                      <br><small class="text-muted">{{ classe.code_classe }}</small>
+                    </label>
+                  </div>
+                </div>
+                {% else %}
+                <small class="text-muted fst-italic ms-2">Aucune classe.</small>
+                {% endfor %}
+              </div>
+            </div>
+            {% if not loop.last %}<hr class="my-2">{% endif %}
+            {% endfor %}
+
+            {# Classes assemblées LF (Tronc Commun Départemental) #}
+            {% if classes_assemblees_fond %}
+            <hr class="my-3">
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-warning">
+                  <i class="fas fa-object-group me-1"></i> Tronc Commun Départemental (LF)
+                </span>
+              </div>
+              <div class="row g-2 ms-1">
+                {% for ca in classes_assemblees_fond %}
+                <div class="col-md-4 col-6">
+                  <div class="form-check border border-warning rounded p-2 classe-item">
+                    <input class="form-check-input fond-cb"
+                           type="checkbox" name="classes_ids[]"
+                           value="{{ ca.id }}" id="ca_{{ ca.id }}"
+                           onchange="updateCount()">
+                    <label class="form-check-label w-100" for="ca_{{ ca.id }}">
+                      <strong>🏗️ {{ ca.nom_classe }}</strong>
+                      <br><small class="text-muted">{{ ca.code_classe }}</small>
+                    </label>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- ===== TABLEAU 2 : PROFESSIONNELLES ===== -->
+        {% if pros %}
+        <div class="card border-0 shadow mb-4">
+          <div class="card-header py-2 d-flex justify-content-between align-items-center"
+               style="background:linear-gradient(135deg,#bf360c,#d84315);color:#fff;">
+            <span class="fw-bold">
+              <i class="fas fa-briefcase me-1"></i> Filières Professionnelles
+              <span class="badge bg-white text-dark ms-2">{{ pros|length }} filière(s)</span>
+            </span>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-light btn-sm" onclick="toggleAll('pro',true)">
+                ✅ Tout cocher
+              </button>
+              <button type="button" class="btn btn-outline-light btn-sm" onclick="toggleAll('pro',false)">
+                ☐ Décocher
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-3">
+            {% for filiere in pros %}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold" style="color:#bf360c;">
+                  <i class="fas fa-sitemap me-1"></i>{{ filiere.nom_filiere }}
+                  {% if filiere.cycle %}<small class="text-muted fw-normal"> — {{ filiere.cycle }}</small>{% endif %}
+                </span>
+                <button type="button" class="btn btn-sm"
+                        style="border-color:#bf360c;color:#bf360c;"
+                        onclick="toggleFiliere('fp_{{ filiere.id }}')">
+                  <i class="fas fa-check-double"></i> Filière
+                </button>
+              </div>
+              <div class="row g-2 ms-1" id="fp_{{ filiere.id }}">
+                {% for classe in filiere.classes.filter_by(active=True).order_by('annee') %}
+                <div class="col-md-4 col-6">
+                  <div class="form-check border rounded p-2 classe-item">
+                    <input class="form-check-input pro-cb"
+                           type="checkbox" name="classes_ids[]"
+                           value="{{ classe.id }}" id="c_{{ classe.id }}"
+                           onchange="updateCount()">
+                    <label class="form-check-label w-100" for="c_{{ classe.id }}">
+                      <strong>{{ classe.nom_classe }}</strong>
+                      <br><small class="text-muted">{{ classe.code_classe }}</small>
+                    </label>
+                  </div>
+                </div>
+                {% else %}
+                <small class="text-muted fst-italic ms-2">Aucune classe.</small>
+                {% endfor %}
+              </div>
+            </div>
+            {% if not loop.last %}<hr class="my-2">{% endif %}
+            {% endfor %}
+
+            {# Classes assemblées LP (Tronc Commun Départemental) #}
+            {% if classes_assemblees_pro %}
+            <hr class="my-3">
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-warning">
+                  <i class="fas fa-object-group me-1"></i> Tronc Commun Départemental (LP)
+                </span>
+              </div>
+              <div class="row g-2 ms-1">
+                {% for ca in classes_assemblees_pro %}
+                <div class="col-md-4 col-6">
+                  <div class="form-check border border-warning rounded p-2 classe-item">
+                    <input class="form-check-input pro-cb"
+                           type="checkbox" name="classes_ids[]"
+                           value="{{ ca.id }}" id="ca_{{ ca.id }}"
+                           onchange="updateCount()">
+                    <label class="form-check-label w-100" for="ca_{{ ca.id }}">
+                      <strong>🏗️ {{ ca.nom_classe }}</strong>
+                      <br><small class="text-muted">{{ ca.code_classe }}</small>
+                    </label>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Compteur sélection -->
+        <div class="card border-success bg-success bg-opacity-10">
+          <div class="card-body py-2 px-3">
+            <i class="fas fa-check-circle text-success"></i>
+            <strong id="selectionCount" class="text-success">0</strong> classe(s) sélectionnée(s)
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </form>
+</div>
+
+<style>
+.cat-card, .nat-card { cursor:pointer; transition:all .2s; }
+.cat-card:hover, .nat-card:hover { border-color:#0d6efd !important; background:#f0f4ff; }
+.cat-card:has(input:checked), .nat-card:has(input:checked) {
+  border-color:#0d6efd !important; background:#e8f0fe;
+}
+.classe-item { cursor:pointer; transition:background .15s; }
+.classe-item:hover { background:#f8f9fa; }
+.classe-item:has(input:checked) { background:#d1ecf1 !important; border-color:#17a2b8 !important; }
+</style>
+
+<script>
+document.getElementById('inputCredits').addEventListener('input', function() {
+  const c = parseInt(this.value)||0;
+  document.getElementById('heuresCalc').textContent = `⏱ Heures : ${c*12}h | Coefficient : ${c}`;
+});
+
+function onCategorieChange(val) {
+  const secNat = document.getElementById('sectionNature');
+  const secCls = document.getElementById('sectionClasses');
+  if (val === 'libre') {
+    document.getElementById('nat_simple').checked = true;
+    onNatureChange('simple');
+    secNat.style.pointerEvents = 'none'; secNat.style.opacity = '0.5';
+    document.getElementById('aff_libre').checked = true;
+    secCls.style.display = 'none';
+  } else {
+    secNat.style.pointerEvents = ''; secNat.style.opacity = '';
+    secCls.style.display = '';
+  }
+}
+
+function onAffChange(val) {
+  if (val === 'libre') document.getElementById('sectionClasses').style.display = 'none';
+  else document.getElementById('sectionClasses').style.display = '';
+}
+
+function onNatureChange(val) {
+  document.getElementById('sectionComposite').style.display = val === 'composite' ? '' : 'none';
+}
+
+let ecCount = 2;
+function addEC() {
+  ecCount++;
+  document.getElementById('sous_ues_count').value = ecCount;
+  const div = document.createElement('div');
+  div.className = 'ec-row card bg-light border-0 p-2 mb-2';
+  div.innerHTML = `
+    <div class="row g-2 align-items-center">
+      <div class="col-1 text-center fw-bold text-muted">${ecCount}</div>
+      <div class="col-6"><input type="text" name="sous_ue_${ecCount}_nom" class="form-control form-control-sm" placeholder="Nom EC"></div>
+      <div class="col-3"><input type="number" name="sous_ue_${ecCount}_credits" class="form-control form-control-sm ec-credits" placeholder="Crédits" min="1" onchange="recalcEC()"></div>
+      <div class="col-2"><button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.ec-row').remove();recalcEC()"><i class="fas fa-times"></i></button></div>
+    </div>`;
+  document.getElementById('ecList').appendChild(div);
+}
+
+function recalcEC() {
+  let t = 0;
+  document.querySelectorAll('.ec-credits').forEach(e => { t += parseInt(e.value)||0; });
+  document.getElementById('totalCreditsEC').textContent = t;
+}
+document.querySelectorAll('.ec-credits').forEach(e => e.addEventListener('input', recalcEC));
+
+function toggleAll(type, state) {
+  document.querySelectorAll(type === 'fond' ? '.fond-cb' : '.pro-cb').forEach(c => { c.checked = state; });
+  updateCount();
+}
+
+function toggleFiliere(id) {
+  const boxes = document.querySelectorAll(`#${id} input[type=checkbox]`);
+  const anyUnchecked = [...boxes].some(c => !c.checked);
+  boxes.forEach(c => { c.checked = anyUnchecked; });
+  updateCount();
+}
+
+function updateCount() {
+  document.getElementById('selectionCount').textContent =
+    document.querySelectorAll('input[name="classes_ids[]"]:checked').length;
+}
+</script>
+{% endblock %}

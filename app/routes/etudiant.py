@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, send_file
+from flask import Blueprint, render_template, redirect, url_for, flash, request, send_file, current_app
 from flask_login import login_required, current_user, logout_user
 from functools import wraps
 from config import Config
 from datetime import datetime
 import io
+import os
 from reportlab.lib.units import cm
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -186,7 +187,42 @@ def choisir_ues():
             db.session.rollback()
             flash("Erreur lors de l'enregistrement.", "danger")
 
-    ues_disponibles = UE.query.filter_by(classe_id=etudiant.classe_id).all() if etudiant.classe_id else []
+    # Récupérer TOUTES les UEs disponibles pour cet étudiant
+    ues_disponibles = []
+    if etudiant.classe_id:
+        # 1. UEs directement liées à la classe (ancien système)
+        ues_directes = UE.query.filter_by(classe_id=etudiant.classe_id, active=True).all()
+
+        # 2. UEs liées via la table many-to-many ue_classe (tronc commun inter-classes)
+        ues_m2m = UE.query.filter(
+            UE.classes.any(id=etudiant.classe_id),
+            UE.active == True
+        ).all()
+
+        # 3. UEs tronc commun département (si l'étudiant a un département)
+        ues_dept = []
+        if etudiant.classe and etudiant.classe.filiere:
+            filiere = etudiant.classe.filiere
+            dept_id = filiere.departement_id if hasattr(filiere, 'departement_id') else None
+            if dept_id:
+                # Déterminer le type de diplôme (fondamental ou professionnel)
+                type_diplome = 'fondamental'
+                if hasattr(filiere, 'type_diplome') and filiere.type_diplome:
+                    type_diplome = 'professionnel' if 'LP' in filiere.type_diplome.upper() else 'fondamental'
+                ues_dept = UE.query.filter_by(
+                    tronc_commun_dept_id=dept_id,
+                    tronc_commun_dept_type=type_diplome,
+                    active=True
+                ).all()
+
+        # Fusionner et dédoublonner (par id)
+        ues_dict = {}
+        for ue in ues_directes + ues_m2m + ues_dept:
+            # Exclure les UE composites (parents) — seuls les EC sont sélectionnables
+            if ue.parent_id is None or not ue.elements_constitutifs.count():
+                ues_dict[ue.id] = ue
+        ues_disponibles = sorted(ues_dict.values(), key=lambda u: (u.code_ue or ''))
+
     inscrites = InscriptionUE.query.filter_by(etudiant_id=etudiant.id).all()
     ues_inscrites_ids = [i.ue_id for i in inscrites]
 
@@ -701,6 +737,20 @@ def profil():
         if new_password:
             current_user.set_password(new_password)
 
+        # Upload photo de profil
+        photo = request.files.get('photo')
+        if photo and photo.filename:
+            from werkzeug.utils import secure_filename
+            ext = photo.filename.rsplit('.', 1)[-1].lower()
+            if ext in ('png', 'jpg', 'jpeg', 'gif', 'webp'):
+                upload_dir = os.path.join(current_app.root_path, 'static', 'avatars')
+                os.makedirs(upload_dir, exist_ok=True)
+                filename = f"etu_{etudiant.id}_{int(datetime.now().timestamp())}.{ext}"
+                photo.save(os.path.join(upload_dir, filename))
+                current_user.avatar = filename
+            else:
+                flash('Format photo non supporté (PNG, JPG, GIF, WEBP).', 'warning')
+
         db.session.commit()
         flash("✅ Profil mis à jour avec succès.", "success")
         return redirect(url_for('etudiant.profil'))
@@ -903,14 +953,15 @@ def api_evenements():
 
 
 # Dans app/routes/etudiant.py
-from app.models import Livre
+from app.models import Livre, Etagere
 
 @bp.route('/bibliotheque-ecole')
 @login_required
 def bibliotheque_ecole():
-    # On récupère tous les livres
-    livres = Livre.query.order_by(Livre.titre).all()
-    return render_template('etudiant/bibliotheque.html', livres=livres)
+    etageres = Etagere.query.filter_by(active=True).order_by(Etagere.ordre).all()
+    total_livres = Livre.query.count()
+    return render_template('etudiant/bibliotheque.html',
+                           etageres=etageres, total_livres=total_livres)
 
 
 @bp.route('/telecharger-fiche-ue')

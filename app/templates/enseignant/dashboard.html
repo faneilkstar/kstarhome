@@ -237,6 +237,15 @@
             <div class="announcement-box">
                 <h5 class="fw-900 text-dark mb-4">Services</h5>
                 <div class="d-grid gap-3">
+                    <a href="{{ url_for('enseignant.bibliotheque') }}" class="quick-link">
+                        <i class="fas fa-infinity me-3 text-primary"></i> Bibliothèque ∞
+                    </a>
+                    <a href="{{ url_for('laboratoire.hub_enseignant') }}" class="quick-link">
+                        <i class="fas fa-flask me-3 text-success"></i> Laboratoire Virtuel
+                    </a>
+                    <a href="{{ url_for('cartes.ma_carte_enseignant') }}" class="quick-link">
+                        <i class="fas fa-id-card me-3 text-warning"></i> Ma Carte Enseignant
+                    </a>
                     <a href="{{ url_for('enseignant.documents') }}" class="quick-link">
                         <i class="fas fa-cloud-upload-alt me-3"></i> Support de Cours
                     </a>

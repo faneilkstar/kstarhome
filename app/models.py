@@ -3,7 +3,6 @@ from flask_login import UserMixin
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy import Enum
 
 # ============================================================
 # 1. TABLES D'ASSOCIATION
@@ -96,13 +95,14 @@ class Departement(db.Model):
 
     # 👑 Chef de département (Un enseignant)
     chef_id = db.Column(db.Integer, db.ForeignKey('enseignants.id'), nullable=True)
+    cachet_path = db.Column(db.String(500))  # Chemin vers le cachet du département
 
     # Métadonnées
     active = db.Column(db.Boolean, default=True)
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relations
-    chef = db.relationship('Enseignant', foreign_keys=[chef_id], backref='departement_dirige', uselist=False)
+    chef = db.relationship('Enseignant', foreign_keys=[chef_id], backref=db.backref('departement_dirige', uselist=False), uselist=False)
     filieres = db.relationship('Filiere', back_populates='departement', lazy='dynamic', cascade='all, delete-orphan')
     ues = db.relationship('UE', back_populates='departement', lazy='dynamic',
                           foreign_keys='UE.departement_id')
@@ -113,15 +113,29 @@ class Departement(db.Model):
     def get_nombre_ues(self):
         return self.ues.count()
 
-    def get_ues_tronc_commun_dept(self):
-        """Retourne les UEs tronc commun propres à ce département"""
-        # ues_tronc_commun est défini via backref dans UE.tronc_commun_dept
-        return [u for u in self.ues_tronc_commun if u.active] if hasattr(self, 'ues_tronc_commun') else []
+    def get_ues_tronc_commun_dept(self, type_diplome=None):
+        """
+        Retourne les UEs tronc commun du département.
+        type_diplome : 'fondamental' (LF), 'professionnel' (LP) ou None = tous
+        RÈGLE : LF et LP ne partagent JAMAIS les mêmes UEs tronc commun.
+        """
+        ues = [u for u in self.ues_tronc_commun if u.active] if hasattr(self, 'ues_tronc_commun') else []
+        if type_diplome:
+            ues = [u for u in ues if u.tronc_commun_dept_type == type_diplome]
+        return ues
 
-    def get_toutes_ues(self):
-        """UEs propres + UEs tronc commun département"""
+    def get_ues_tronc_commun_lf(self):
+        """UEs tronc commun pour les filières Fondamentales (LF) du département"""
+        return self.get_ues_tronc_commun_dept('fondamental')
+
+    def get_ues_tronc_commun_lp(self):
+        """UEs tronc commun pour les filières Professionnelles (LP) du département"""
+        return self.get_ues_tronc_commun_dept('professionnel')
+
+    def get_toutes_ues(self, type_diplome=None):
+        """UEs propres + UEs tronc commun département (filtrées par type si précisé)"""
         ues_propres = self.ues.filter_by(active=True).all()
-        ues_tc = self.get_ues_tronc_commun_dept()
+        ues_tc = self.get_ues_tronc_commun_dept(type_diplome)
         ids_vus = set()
         resultat = []
         for ue in ues_propres + ues_tc:
@@ -129,6 +143,10 @@ class Departement(db.Model):
                 ids_vus.add(ue.id)
                 resultat.append(ue)
         return resultat
+
+    def get_filieres_par_type(self, type_diplome):
+        """Retourne les filières LF ou LP de ce département"""
+        return self.filieres.filter_by(active=True, type_diplome=type_diplome).all()
 
     def __repr__(self):
         return f'<Departement {self.code} - {self.nom}>'
@@ -179,6 +197,29 @@ class Filiere(db.Model):
             total += classe.get_nombre_etudiants()
         return total
 
+    @property
+    def label_type(self):
+        """Retourne LF ou LP selon le type de diplôme"""
+        return 'LF' if self.type_diplome == 'fondamental' else 'LP'
+
+    @property
+    def nom_complet(self):
+        """Nom complet avec type: ex 'Génie Logiciel (LF)'"""
+        return f"{self.nom_filiere} ({self.label_type})"
+
+    def variante_existe(self):
+        """Vérifie si la variante opposée (LF↔LP) existe dans le même département"""
+        type_oppose = 'professionnel' if self.type_diplome == 'fondamental' else 'fondamental'
+        return Filiere.query.filter_by(
+            nom_filiere=self.nom_filiere,
+            departement_id=self.departement_id,
+            type_diplome=type_oppose,
+            active=True
+        ).first() is not None
+
+    def __repr__(self):
+        return f'<Filiere {self.nom_filiere} ({self.type_diplome})>'
+
 
 # ============================================================
 # 4. CLASSE
@@ -195,13 +236,25 @@ class Classe(db.Model):
     capacite_max = db.Column(db.Integer)
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # 🏗️ CLASSE ASSEMBLÉE (Tronc commun départemental)
+    # Si True → cette classe est un regroupement temporaire de classes d'un même département
+    # Ex: "Génie Mécanique LF1 S1-S2" regroupe toutes les LF1 du département
+    est_assemblee = db.Column(db.Boolean, default=False)
+    departement_source_id = db.Column(db.Integer, db.ForeignKey('departements.id'), nullable=True)
+    type_diplome_assemblee = db.Column(db.String(20), nullable=True)  # 'fondamental' ou 'professionnel'
+    semestres_assemblee = db.Column(db.String(20), nullable=True)  # Ex: 'S1-S2', 'S3-S4'
+
     # Relations (Corrigées)
     filiere = db.relationship('Filiere', back_populates='classes')
     etudiants = db.relationship('Etudiant', back_populates='classe', lazy='dynamic')
     ues = db.relationship('UE', back_populates='classe', lazy='dynamic', cascade='all, delete-orphan')
     documents = db.relationship('Document', back_populates='classe', lazy='dynamic')
+    departement_source = db.relationship('Departement', foreign_keys=[departement_source_id],
+                                          backref='classes_assemblees')
 
     def get_nombre_etudiants(self):
+        if self.est_assemblee:
+            return len(self.get_etudiants_assembles())
         return self.etudiants.filter_by(statut_inscription='accepté').count()
 
     def get_nombre_ues(self):
@@ -210,6 +263,100 @@ class Classe(db.Model):
     def est_pleine(self):
         if not self.capacite_max: return False
         return self.get_nombre_etudiants() >= self.capacite_max
+
+    @property
+    def grade(self):
+        """Retourne un label lisible du niveau"""
+        if self.est_assemblee:
+            label = 'LF' if self.type_diplome_assemblee == 'fondamental' else 'LP'
+            return f"TC {label}{self.annee or ''}"
+        return f"{self.cycle or 'Licence'} {self.annee or ''}"
+
+    def get_etudiants_assembles(self):
+        """
+        Pour une classe assemblée (tronc commun), retourne TOUS les étudiants
+        de toutes les classes du même département, même année, même type de diplôme.
+        Ça unifie les étudiants GL + GEL + GEC etc. en une seule liste.
+        """
+        if not self.est_assemblee or not self.departement_source_id:
+            return self.etudiants.filter_by(statut_inscription='accepté').all()
+
+        # Trouver toutes les filières du département avec le même type de diplôme
+        filieres = Filiere.query.filter_by(
+            departement_id=self.departement_source_id,
+            type_diplome=self.type_diplome_assemblee,
+            active=True
+        ).all()
+
+        # Trouver toutes les classes de ces filières au même niveau (année)
+        tous_etudiants = []
+        ids_vus = set()
+        for fil in filieres:
+            classes = Classe.query.filter_by(
+                filiere_id=fil.id,
+                annee=self.annee,
+                active=True,
+                est_assemblee=False  # Pas les autres classes assemblées
+            ).all()
+            for cls in classes:
+                for etu in cls.etudiants.filter_by(statut_inscription='accepté').all():
+                    if etu.id not in ids_vus:
+                        ids_vus.add(etu.id)
+                        tous_etudiants.append(etu)
+
+        return tous_etudiants
+
+    def get_classes_composantes(self):
+        """
+        Pour une classe assemblée, retourne la liste des classes réelles qui la composent.
+        Ex: pour TC-GEC-LF1, retourne [GL1, GEL1, GEC1, ...]
+        """
+        if not self.est_assemblee or not self.departement_source_id:
+            return []
+
+        filieres = Filiere.query.filter_by(
+            departement_id=self.departement_source_id,
+            type_diplome=self.type_diplome_assemblee,
+            active=True
+        ).all()
+
+        classes_composantes = []
+        for fil in filieres:
+            classes = Classe.query.filter_by(
+                filiere_id=fil.id,
+                annee=self.annee,
+                active=True,
+                est_assemblee=False
+            ).all()
+            classes_composantes.extend(classes)
+        return classes_composantes
+
+    def get_sigles_composantes(self):
+        """Retourne les sigles des classes composantes ex: 'GL · GEL · GEC'"""
+        composantes = self.get_classes_composantes()
+        if composantes:
+            return ' · '.join([c.code_classe or c.nom_classe[:6] for c in composantes])
+        return ''
+
+    def get_filieres_composantes(self):
+        """
+        Pour une classe assemblée, retourne les filières qui la composent.
+        Ex: pour TC-DGE-LF1, retourne [Génie Logiciel, Génie Électrique, Génie Civil]
+        """
+        if not self.est_assemblee or not self.departement_source_id:
+            return []
+        return Filiere.query.filter_by(
+            departement_id=self.departement_source_id,
+            type_diplome=self.type_diplome_assemblee,
+            active=True
+        ).all()
+
+    def get_noms_filieres_composantes(self):
+        """Retourne les noms des filières composantes ex: 'Génie Logiciel · Génie Électrique · Génie Civil'"""
+        filieres = self.get_filieres_composantes()
+        if filieres:
+            return ' · '.join([f.nom_filiere for f in filieres])
+        return ''
 
 
 # ============================================================
@@ -260,6 +407,7 @@ class Etudiant(db.Model):
                                       cascade='all, delete-orphan')
     diplome_obj = db.relationship('Diplome', back_populates='etudiant', uselist=False)
     absences = db.relationship('Absence', backref='etudiant', lazy='dynamic', cascade='all, delete-orphan')
+    certificats = db.relationship('Certificat', back_populates='etudiant', lazy='dynamic', cascade='all, delete-orphan')
 
     @property
     def nom_complet(self):
@@ -434,9 +582,12 @@ class UE(db.Model):
     classe_id = db.Column(db.Integer, db.ForeignKey('classes.id', ondelete='SET NULL'), nullable=True)
 
     # 🏢 TRONC COMMUN DÉPARTEMENT : UE partagée par toutes les filières d'un département
-    # Permet de créer des UE communes à toutes les filières d'un même département
-    # (ex: UE "Maths Fondamentales" commune à toutes les filières de Génie Mécanique)
+    # Séparé par type : 'fondamental' (LF) ou 'professionnel' (LP)
+    # Règle : JAMAIS de lien entre LF et LP dans un tronc commun département
     tronc_commun_dept_id = db.Column(db.Integer, db.ForeignKey('departements.id'), nullable=True)
+    tronc_commun_dept_type = db.Column(db.String(20), default='fondamental')
+    # Valeurs : 'fondamental' = tronc commun pour filières LF du département
+    #           'professionnel' = tronc commun pour filières LP du département
 
     # Métadonnées
     active = db.Column(db.Boolean, default=True)
@@ -560,7 +711,52 @@ class UE(db.Model):
         # Ajouter classe_id si existant (compatibilité ancien système)
         if self.classe_id and self.classe and self.classe not in classes_list:
             classes_list.append(self.classe)
+
+        # Si c'est un élément constitutif, hériter des classes de l'UE parente
+        if self.nature == 'element_constitutif' and self.parent:
+            parent_classes = self.parent.get_toutes_classes()
+            for pc in parent_classes:
+                if pc not in classes_list:
+                    classes_list.append(pc)
+
         return classes_list
+
+    def get_sigles_filières_tc(self):
+        """Pour un tronc commun, retourne les sigles des filières composantes ex: 'GL · GEL · GEC'"""
+        if self.type_affectation != 'tronc_commun':
+            return ''
+        toutes = self.get_toutes_classes()
+        sigles = []
+        for cl in toutes:
+            if cl.est_assemblee:
+                s = cl.get_sigles_composantes()
+                if s:
+                    sigles.append(s)
+            else:
+                sigles.append(cl.code_classe or cl.nom_classe[:6])
+        return ' · '.join(sigles) if sigles else ''
+
+    def get_etudiants_tronc_commun(self):
+        """
+        Pour un UE tronc commun, retourne TOUS les étudiants de toutes les classes composantes
+        unifiés en une seule liste sans doublons.
+        """
+        toutes = self.get_toutes_classes()
+        tous_etudiants = []
+        ids_vus = set()
+        for cl in toutes:
+            if cl.est_assemblee:
+                # Classe assemblée → obtenir les étudiants assemblés
+                for etu in cl.get_etudiants_assembles():
+                    if etu.id not in ids_vus:
+                        ids_vus.add(etu.id)
+                        tous_etudiants.append(etu)
+            else:
+                for etu in cl.etudiants.filter_by(statut_inscription='accepté').all():
+                    if etu.id not in ids_vus:
+                        ids_vus.add(etu.id)
+                        tous_etudiants.append(etu)
+        return tous_etudiants
 
     def est_dans_classe(self, classe_id):
         """Vérifie si l'UE est attribuée à une classe donnée"""
@@ -743,6 +939,9 @@ class Annonce(db.Model):
     contenu = db.Column(db.Text, nullable=False)
     visible_etudiants = db.Column(db.Boolean, default=True)
     visible_enseignants = db.Column(db.Boolean, default=True)
+    visible_public = db.Column(db.Boolean, default=False)  # Visible sur la page de connexion
+    categorie = db.Column(db.String(30), default='article')  # article, guide, actualite
+    fichier_joint = db.Column(db.String(500))  # Chemin vers PDF/fichier joint
     date_publication = db.Column(db.DateTime, default=datetime.utcnow)
     auteur_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
@@ -837,19 +1036,46 @@ class Seance(db.Model):
 
 # Dans app/models.py
 
+class Etagere(db.Model):
+    """Étagère de la bibliothèque numérique (catégorie/rayon)"""
+    __tablename__ = 'etageres'
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(100), nullable=False, unique=True)
+    description = db.Column(db.Text)
+    icone = db.Column(db.String(50), default='fas fa-bookmark')
+    couleur = db.Column(db.String(20), default='#667eea')
+    ordre = db.Column(db.Integer, default=0)
+    active = db.Column(db.Boolean, default=True)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+
+    livres = db.relationship('Livre', back_populates='etagere', lazy='dynamic')
+
+    def get_nombre_livres(self):
+        return self.livres.count()
+
+    def __repr__(self):
+        return f'<Etagere {self.nom}>'
+
+
 class Livre(db.Model):
     __tablename__ = 'livres'
     id = db.Column(db.Integer, primary_key=True)
     titre = db.Column(db.String(150), nullable=False)
     auteur = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    categorie = db.Column(db.String(50))  # Ex: Roman, Science, Histoire
+    categorie = db.Column(db.String(50))
 
-    # Fichiers
     image_couverture = db.Column(db.String(255), default='default_book.jpg')
     fichier_pdf = db.Column(db.String(255), nullable=False)
 
+    etagere_id = db.Column(db.Integer, db.ForeignKey('etageres.id'), nullable=True)
+    ajoute_par_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    ajoute_par_role = db.Column(db.String(20), nullable=True)
+
     date_ajout = db.Column(db.DateTime, default=datetime.utcnow)
+
+    etagere = db.relationship('Etagere', back_populates='livres')
+    ajoute_par = db.relationship('User', backref='livres_ajoutes')
 
 
 # Dans app/models.py
@@ -893,17 +1119,19 @@ class TP(db.Model):
 
     # Type de simulation
     type_simulation = db.Column(
-        Enum('buck', 'boost', 'chute_libre', 'rdm_poutre', 'signal_fourier',
-             'stock_flux', 'transport_routage', 'thermodynamique',
-             'pile_electrochimique', 'saponification', name='type_sim_enum'),
+        db.String(50),
         nullable=False
-    )
+    )  # Valeurs: 'buck', 'boost', 'chute_libre', 'rdm_poutre', 'signal_fourier',
+       #          'stock_flux', 'transport_routage', 'thermodynamique',
+       #          'pile_electrochimique', 'saponification', 'optique_quantique',
+       #          'poussee_archimede', 'optique_ondu', 'archimede', 'pendule_elastique',
+       #          'optique_geo', 'electronique_logique', 'algebre'
 
     # Nom de l'IA assistant
     ia_nom = db.Column(
-        Enum('ETA', 'ALPHA', 'KAYT', name='ia_nom_enum'),
+        db.String(20),
         nullable=False
-    )
+    )  # Valeurs: 'ETA', 'ALPHA', 'KAYT'
 
     # Fichiers
     fichier_sujet = db.Column(db.String(500))  # PDF du sujet
@@ -941,10 +1169,10 @@ class SessionTP(db.Model):
 
     # Statut
     statut = db.Column(
-        Enum('en_cours', 'terminé', 'évalué', 'rendu', name='statut_session_enum'),
+        db.String(30),
         default='en_cours',
         index=True
-    )
+    )  # Valeurs: 'en_cours', 'terminé', 'évalué', 'rendu'
 
     # Données de simulation (JSON)
     donnees_simulation = db.Column(db.Text)  # Stocke toutes les mesures
@@ -1077,9 +1305,9 @@ class SessionCollaborative(db.Model):
 
     # État
     statut = db.Column(
-        Enum('ouverte', 'en_cours', 'terminee', name='statut_collab_enum'),
+        db.String(30),
         default='ouverte'
-    )
+    )  # Valeurs: 'ouverte', 'en_cours', 'terminee'
 
     # Paramètres collaboratifs
     max_participants = db.Column(db.Integer, default=4)
@@ -1111,9 +1339,9 @@ class ParticipantCollaboratif(db.Model):
     etudiant_id = db.Column(db.Integer, db.ForeignKey('etudiants.id', ondelete='CASCADE'), nullable=False)
 
     role = db.Column(
-        Enum('createur', 'participant', name='role_collab_enum'),
+        db.String(20),
         default='participant'
-    )
+    )  # Valeurs: 'createur', 'participant'
 
     date_rejointe = db.Column(db.DateTime, default=datetime.utcnow)
     actif = db.Column(db.Boolean, default=True)
@@ -1148,9 +1376,9 @@ class VideoExplicative(db.Model):
     # Métadonnées
     langue = db.Column(db.String(10), default='fr')
     niveau = db.Column(
-        Enum('debutant', 'intermediaire', 'avance', name='niveau_video_enum'),
+        db.String(20),
         default='debutant'
-    )
+    )  # Valeurs: 'debutant', 'intermediaire', 'avance'
 
     nb_vues = db.Column(db.Integer, default=0)
     date_ajout = db.Column(db.DateTime, default=datetime.utcnow)
@@ -1185,10 +1413,10 @@ class ReactionChimique(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(200), nullable=False)
     type_reaction = db.Column(
-        Enum('oxydoreduction', 'acide_base', 'saponification',
-             'esterification', 'hydrolyse', 'equilibre', name='type_reaction_enum'),
+        db.String(30),
         nullable=False
-    )
+    )  # Valeurs: 'oxydoreduction', 'acide_base', 'saponification',
+       #          'esterification', 'hydrolyse', 'equilibre'
 
     # Équation chimique
     equation = db.Column(db.String(500))
@@ -1213,6 +1441,53 @@ class ReactionChimique(db.Model):
 # ============================================================
 # PARAMÈTRES SYSTÈME (Validation automatique)
 # ============================================================
+# TABLE D'ASSOCIATION : Sceaux distribués aux départements
+# ============================================================
+departement_sceaux = db.Table(
+    'departement_sceaux',
+    db.Column('departement_id', db.Integer, db.ForeignKey('departements.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('sceau_id', db.Integer, db.ForeignKey('sceaux.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('date_attribution', db.DateTime, default=datetime.utcnow)
+)
+
+
+# ============================================================
+# SCEAU / CACHET OFFICIEL
+# ============================================================
+class Sceau(db.Model):
+    """Sceau/Cachet officiel généré par le directeur"""
+    __tablename__ = 'sceaux'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(200), nullable=False)
+    type_forme = db.Column(db.String(30), nullable=False, default='circular')
+    # circular, rectangular, square, hexagon, star, oval
+    type_entite = db.Column(db.String(30), nullable=False, default='ecole')
+    # ecole, departement, directeur, chef_departement
+    image_path = db.Column(db.String(500))
+    svg_data = db.Column(db.Text)
+    couleurs_json = db.Column(db.Text)
+    nom_auto = db.Column(db.String(200))  # Nom auto-rempli (chef, directeur)
+
+    # Relations optionnelles
+    departement_id = db.Column(db.Integer, db.ForeignKey('departements.id'), nullable=True)
+    cree_par_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+    actif = db.Column(db.Boolean, default=True)
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    departement = db.relationship('Departement', backref=db.backref('sceaux', lazy='dynamic'))
+    createur = db.relationship('User', backref='sceaux_crees')
+    departements_distribues = db.relationship(
+        'Departement', secondary=departement_sceaux,
+        backref=db.backref('sceaux_autorises', lazy='dynamic')
+    )
+
+    def __repr__(self):
+        return f'<Sceau {self.nom} ({self.type_forme})>'
+
+
 class ParametreSysteme(db.Model):
     """Paramètres configurables par le directeur"""
     __tablename__ = 'parametres_systeme'
@@ -1264,6 +1539,7 @@ class ConfigurationEcole(db.Model):
     logo_path = db.Column(db.String(500))  # Chemin vers le logo
     logo_header_path = db.Column(db.String(500))  # Logo pour en-têtes
     filigrane_path = db.Column(db.String(500))  # Filigrane pour documents
+    cachet_path = db.Column(db.String(500))  # Cachet/tampon de l'école
 
     # Couleurs (Hex)
     couleur_primaire = db.Column(db.String(7), default='#1976d2')
@@ -1274,6 +1550,9 @@ class ConfigurationEcole(db.Model):
     numero_agrement = db.Column(db.String(100))
     numero_registre = db.Column(db.String(100))
     annee_creation = db.Column(db.Integer)
+
+    # Taille des cachets sur PDF (en cm) — configurable par le directeur
+    taille_cachet_pdf = db.Column(db.Float, default=5.0)  # 5 cm par défaut (anciennement 2.5)
 
     # Signature directeur
     signature_directeur_path = db.Column(db.String(500))
@@ -1301,9 +1580,9 @@ class Cours(db.Model):
 
     # Contenu
     type_contenu = db.Column(
-        Enum('video', 'document', 'quiz', 'exercice', name='type_contenu_enum'),
+        db.String(30),
         default='video'
-    )
+    )  # Valeurs: 'video', 'document', 'quiz', 'exercice'
 
     # Vidéo
     url_video = db.Column(db.String(500))
@@ -1367,9 +1646,9 @@ class QuestionQuiz(db.Model):
 
     enonce = db.Column(db.Text, nullable=False)
     type_question = db.Column(
-        Enum('qcm_unique', 'qcm_multiple', 'vrai_faux', 'texte_court', name='type_question_enum'),
+        db.String(20),
         default='qcm_unique'
-    )
+    )  # Valeurs: 'qcm_unique', 'qcm_multiple', 'vrai_faux', 'texte_court'
 
     # Réponses (JSON)
     options = db.Column(db.Text)  # Liste des options pour QCM
@@ -1490,9 +1769,9 @@ class Certificat(db.Model):
     etudiant_id = db.Column(db.Integer, db.ForeignKey('etudiants.id', ondelete='CASCADE'), nullable=False)
 
     type_certificat = db.Column(
-        Enum('cours', 'module', 'formation', name='type_certificat_enum'),
+        db.String(30),
         default='cours'
-    )
+    )  # Valeurs: 'cours', 'module', 'formation'
 
     titre = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
@@ -1508,7 +1787,7 @@ class Certificat(db.Model):
     date_obtention = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relations
-    etudiant = db.relationship('Etudiant', backref='certificats')
+    etudiant = db.relationship('Etudiant', back_populates='certificats')
     cours = db.relationship('Cours')
 
     def __repr__(self):
@@ -1679,7 +1958,26 @@ class SignatureDocument(db.Model):
         return f'<SignatureDocument {self.code_verification}>'
 
 
+# ============================================================
+# GALERIE D'IMAGES DU SITE
+# ============================================================
+class ImageSite(db.Model):
+    """Images du site : partenariats, campus, identité visuelle, etc."""
+    __tablename__ = 'images_site'
 
+    id = db.Column(db.Integer, primary_key=True)
+    titre = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    fichier = db.Column(db.String(500), nullable=False)  # Chemin relatif depuis static/
+    categorie = db.Column(db.String(50), nullable=False, default='general')
+    # Catégories : partenariat, campus, identite, evenement, general
+    ordre = db.Column(db.Integer, default=0)
+    visible = db.Column(db.Boolean, default=True)
+    auteur_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    date_ajout = db.Column(db.DateTime, default=datetime.utcnow)
 
+    auteur = db.relationship('User', backref='images_site')
 
+    def __repr__(self):
+        return f'<ImageSite {self.titre}>'
 

@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Injection des polices d'ingénierie -->
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    /* --- THEME LE WELT : MATRICE CENTRALE --- */
+    .welt-container {
+        font-family: 'Rajdhani', sans-serif;
+        background-color: #02040a;
+        color: #e2e8f0;
+        min-height: 80vh;
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: inset 0 0 50px rgba(0, 225, 255, 0.05);
+        background-image:
+            radial-gradient(circle at 50% 0%, rgba(176, 38, 255, 0.1) 0%, transparent 60%),
+            linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        background-size: 100% 100%, 40px 40px, 40px 40px;
+    }
+
+    .welt-title {
+        font-family: 'Orbitron', sans-serif;
+        text-transform: uppercase;
+        font-weight: 900;
+        letter-spacing: 2px;
+        background: linear-gradient(to right, #00e1ff, #b026ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 30px rgba(0, 225, 255, 0.2);
+    }
+
+    .welt-subtitle {
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 4px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        border-bottom: 1px solid rgba(0, 225, 255, 0.2);
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Catégories de Départements */
+    .dept-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.2rem;
+        color: #fff;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .dept-title i { color: #00e1ff; }
+
+    .dept-title.meca i { color: #ff0055; }
+    .dept-title.ener i { color: #10b981; }
+    .dept-title.math i { color: #f59e0b; }
+
+    /* Grille de Cartes */
+    .lab-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+
+    /* Design des Cartes Holographiques */
+    .lab-card {
+        background: rgba(10, 15, 30, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-decoration: none;
+        color: #e2e8f0;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .lab-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; width: 4px; height: 100%;
+        background: #00e1ff;
+        transition: all 0.3s;
+    }
+
+    .lab-card:hover {
+        transform: translateY(-5px);
+        background: rgba(15, 25, 45, 0.9);
+        border-color: rgba(0, 225, 255, 0.5);
+        box-shadow: 0 10px 30px rgba(0, 225, 255, 0.15);
+        color: #fff;
+    }
+
+    .lab-card:hover::before { width: 100%; opacity: 0.1; }
+
+    .lab-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #00e1ff;
+        transition: all 0.3s;
+    }
+    .lab-card:hover .lab-icon { transform: scale(1.1); text-shadow: 0 0 15px currentColor; }
+
+    .lab-name {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        z-index: 1;
+    }
+
+    .lab-desc {
+        font-size: 0.8rem;
+        color: #94a3b8;
+        font-weight: 500;
+        z-index: 1;
+    }
+
+    /* Thématiques Spécifiques (Couleurs des bordures gauches) */
+    .card-quantique::before { background: #b026ff; }
+    .card-quantique:hover { border-color: rgba(176, 38, 255, 0.5); box-shadow: 0 10px 30px rgba(176, 38, 255, 0.15); }
+    .card-quantique .lab-icon { color: #b026ff; }
+
+    .card-meca::before { background: #ff0055; }
+    .card-meca:hover { border-color: rgba(255, 0, 85, 0.5); box-shadow: 0 10px 30px rgba(255, 0, 85, 0.15); }
+    .card-meca .lab-icon { color: #ff0055; }
+
+    .card-energie::before { background: #10b981; }
+    .card-energie:hover { border-color: rgba(16, 185, 129, 0.5); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.15); }
+    .card-energie .lab-icon { color: #10b981; }
+
+    .card-math::before { background: #f59e0b; }
+    .card-math:hover { border-color: rgba(245, 158, 11, 0.5); box-shadow: 0 10px 30px rgba(245, 158, 11, 0.15); }
+    .card-math .lab-icon { color: #f59e0b; }
+
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="welt-container">
+
+        <!-- En-tête du Laboratoire -->
+        <div class="text-center">
+            <h1 class="welt-title">MATRICE LE WELT</h1>
+            <p class="welt-subtitle">Interface d'Accès aux Laboratoires Numériques (L2 S4)</p>
+        </div>
+
+        <!-- DEPT 1 : PHYSIQUE ONDULATOIRE & QUANTIQUE -->
+        <h3 class="dept-title"><i class="fas fa-atom"></i> Département Traitement du Signal & Quantique</h3>
+        <div class="lab-grid">
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='optique_quantique') }}" class="lab-card card-quantique">
+                <i class="fas fa-microscope lab-icon"></i>
+                <div class="lab-name">Optique Quantique</div>
+                <div class="lab-desc">Dualité Onde-Particule, Photons & États de superposition.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='optique_ondu') }}" class="lab-card card-quantique">
+                <i class="fas fa-wave-square lab-icon"></i>
+                <div class="lab-name">Optique Ondulatoire</div>
+                <div class="lab-desc">Interférométrie, Young, Billet & Lois de Snell-Descartes.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='signal_fourier') }}" class="lab-card card-quantique">
+                <i class="fas fa-chart-bar lab-icon"></i>
+                <div class="lab-name">Analyse Spectrale</div>
+                <div class="lab-desc">Transformée de Fourier, Télémétrie & Signaux périodiques.</div>
+            </a>
+        </div>
+
+        <!-- DEPT 2 : DYNAMIQUE & MÉCANIQUE DES SOLIDES -->
+        <h3 class="dept-title meca"><i class="fas fa-cogs"></i> Département Dynamique & Mécanique</h3>
+        <div class="lab-grid">
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='mecanique') }}" class="lab-card card-meca">
+                <i class="fas fa-cube lab-icon"></i>
+                <div class="lab-name">Mécanique Avancée</div>
+                <div class="lab-desc">Tenseurs d'inertie, Effet Dzhanibekov & Quaternions 3D.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='chute_libre') }}" class="lab-card card-meca">
+                <i class="fas fa-space-shuttle lab-icon"></i>
+                <div class="lab-name">Cinématique Rationnelle</div>
+                <div class="lab-desc">Balistique parabolique, Plans inclinés & Collisions.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='archimede') }}" class="lab-card card-meca">
+                <i class="fas fa-water lab-icon"></i>
+                <div class="lab-name">Hydrostatique</div>
+                <div class="lab-desc">Poussée d'Archimède, Équilibre des fluides & Télémétrie.</div>
+            </a>
+        </div>
+
+        <!-- DEPT 3 : INGÉNIERIE, RDM & THERMODYNAMIQUE -->
+        <h3 class="dept-title ener"><i class="fas fa-bolt"></i> Département Ingénierie & Énergie</h3>
+        <div class="lab-grid">
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='rdm') }}" class="lab-card card-energie">
+                <i class="fas fa-cubes lab-icon"></i>
+                <div class="lab-name">RDM Globale</div>
+                <div class="lab-desc">Résistance des matériaux, Contraintes & Déformations.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='rdm_poutre') }}" class="lab-card card-energie">
+                <i class="fas fa-ruler-horizontal lab-icon"></i>
+                <div class="lab-name">RDM : Modélisation Poutre</div>
+                <div class="lab-desc">Moments fléchissants, Efforts tranchants & Flexion.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='thermodynamique') }}" class="lab-card card-energie">
+                <i class="fas fa-fire lab-icon"></i>
+                <div class="lab-name">Thermodynamique</div>
+                <div class="lab-desc">Cycles énergétiques, Transferts thermiques & Gaz parfaits.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='pile_electrochimique') }}" class="lab-card card-energie">
+                <i class="fas fa-battery-full lab-icon"></i>
+                <div class="lab-name">Pile Électrochimique</div>
+                <div class="lab-desc">Oxydoréduction, Équations de Nernst & Énergie chimique.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='saponification') }}" class="lab-card card-energie">
+                <i class="fas fa-flask lab-icon"></i>
+                <div class="lab-name">Cinétique Chimique</div>
+                <div class="lab-desc">Réaction de saponification & Rendement réactionnel.</div>
+            </a>
+        </div>
+
+        <!-- DEPT 4 : MODÉLISATION & GESTION -->
+        <h3 class="dept-title math"><i class="fas fa-square-root-alt"></i> Département Modélisation & IA</h3>
+        <div class="lab-grid">
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='algebre') }}" class="lab-card card-math">
+                <i class="fas fa-project-diagram lab-icon"></i>
+                <div class="lab-name">Algèbre Linéaire</div>
+                <div class="lab-desc">Matrices, Valeurs propres & Espaces vectoriels.</div>
+            </a>
+            <a href="{{ url_for('laboratoire.salle_tp', session_id='stock_flux') }}" class="lab-card card-math">
+                <i class="fas fa-network-wired lab-icon"></i>
+                <div class="lab-name">Logistique & Flux</div>
+                <div class="lab-desc">Théorie des files d'attente & Gestion algorithmique de stock.</div>
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

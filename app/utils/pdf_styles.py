@@ -242,22 +242,22 @@ def draw_validation_stamp(canvas, x, y, status="VALIDÉ", color=None):
 
     # Cercle externe
     canvas.setStrokeColor(color)
-    canvas.setLineWidth(3)
-    canvas.circle(x, y, 1.5*cm, stroke=1, fill=0)
+    canvas.setLineWidth(4)
+    canvas.circle(x, y, 2.5*cm, stroke=1, fill=0)
 
     # Cercle interne
-    canvas.setLineWidth(1.5)
-    canvas.circle(x, y, 1.2*cm, stroke=1, fill=0)
+    canvas.setLineWidth(2)
+    canvas.circle(x, y, 2.1*cm, stroke=1, fill=0)
 
     # Texte du tampon
-    canvas.setFont("Helvetica-Bold", 11)
+    canvas.setFont("Helvetica-Bold", 14)
     canvas.setFillColor(color)
-    canvas.drawCentredString(x, y + 0.2*cm, status.upper())
+    canvas.drawCentredString(x, y + 0.3*cm, status.upper())
 
     # Date sous le status
-    canvas.setFont("Helvetica", 7)
+    canvas.setFont("Helvetica", 9)
     date_str = datetime.now().strftime('%d/%m/%Y')
-    canvas.drawCentredString(x, y - 0.4*cm, date_str)
+    canvas.drawCentredString(x, y - 0.5*cm, date_str)
 
 
 # ============================================================

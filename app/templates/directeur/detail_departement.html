@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}{{ departement.nom }} - Département{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- EN-TÊTE -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">
+                <i class="fas fa-building text-primary me-2"></i>{{ departement.nom }}
+                <span class="badge bg-primary ms-2">{{ departement.code }}</span>
+            </h2>
+            {% if departement.description %}
+            <p class="text-muted mb-0">{{ departement.description }}</p>
+            {% endif %}
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('directeur.modifier_departement', dept_id=departement.id) }}" class="btn btn-warning">
+                <i class="fas fa-edit me-1"></i> Modifier
+            </a>
+            <a href="{{ url_for('directeur.assigner_chef_departement', dept_id=departement.id) }}" class="btn btn-info text-white">
+                <i class="fas fa-user-tie me-1"></i> {% if departement.chef %}Changer{% else %}Assigner{% endif %} Chef
+            </a>
+            <a href="{{ url_for('directeur.liste_departements') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Retour
+            </a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ cat }} alert-dismissible fade show">{{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endwith %}
+
+    <!-- CARTES INFO -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-dark text-white py-3">
+                    <i class="fas fa-user-tie me-2"></i><strong>Chef de Département</strong>
+                </div>
+                <div class="card-body">
+                    {% if departement.chef %}
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
+                             style="width:50px;height:50px;font-size:1.2rem">
+                            {{ departement.chef.nom[0] }}{{ departement.chef.prenom[0] if departement.chef.prenom else '' }}
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-0">{{ departement.chef.grade or '' }} {{ departement.chef.nom }} {{ departement.chef.prenom }}</h6>
+                            {% if departement.chef.specialite %}
+                            <small class="text-muted"><i class="fas fa-graduation-cap me-1"></i>{{ departement.chef.specialite }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-user-slash fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-2">Aucun chef assigné</p>
+                        <a href="{{ url_for('directeur.assigner_chef_departement', dept_id=departement.id) }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-user-plus me-1"></i> Assigner
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h1 class="display-4 fw-bold text-info mb-0">{{ departement.get_nombre_filieres() }}</h1>
+                    <p class="text-muted fw-bold">Filières</p>
+                    <a href="{{ url_for('directeur.ajouter_filiere') }}" class="btn btn-sm btn-outline-info">
+                        <i class="fas fa-plus me-1"></i> Nouvelle Filière
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h1 class="display-4 fw-bold text-success mb-0">{{ departement.get_nombre_ues() }}</h1>
+                    <p class="text-muted fw-bold">Unités d'Enseignement</p>
+                    <a href="{{ url_for('directeur.ajouter_ue') }}" class="btn btn-sm btn-outline-success">
+                        <i class="fas fa-plus me-1"></i> Nouvelle UE
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======= CLASSES ASSEMBLÉES (TRONC COMMUN DÉPARTEMENTAL) ======= -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0 fw-bold">
+                <i class="fas fa-object-group me-2"></i> Classes Assemblées (Tronc Commun Départemental)
+            </h5>
+            <a href="{{ url_for('directeur.creer_classe_assemblee', dept_id=departement.id) }}" class="btn btn-dark btn-sm">
+                <i class="fas fa-plus-circle me-1"></i> Créer Classe Assemblée
+            </a>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                <i class="fas fa-info-circle me-1"></i>
+                Regroupement de toutes les filières du département pour un semestre donné.
+                Ex : <strong>{{ departement.nom }} LF1 (S1-S2)</strong>
+            </p>
+
+            {% if departement.classes_assemblees|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Nom</th>
+                            <th>Code</th>
+                            <th>Type</th>
+                            <th>Semestres</th>
+                            <th>Classes Composantes</th>
+                            <th>Étudiants</th>
+                            <th>UE</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for classe in departement.classes_assemblees %}
+                        <tr>
+                            <td class="fw-bold">{{ classe.nom_classe }}</td>
+                            <td><code>{{ classe.code_classe }}</code></td>
+                            <td>
+                                {% if classe.type_diplome_assemblee == 'fondamental' %}
+                                <span class="badge bg-info">LF</span>
+                                {% else %}
+                                <span class="badge bg-success">LP</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-secondary">{{ classe.semestres_assemblee or 'S1-S2' }}</span></td>
+                            <td>
+                                {% set composantes = classe.get_classes_composantes() %}
+                                {% if composantes %}
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for comp in composantes %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size: 0.75rem;">{{ comp.code_classe or comp.nom_classe[:8] }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-success">{{ classe.get_nombre_etudiants() }}</span></td>
+                            <td><span class="badge bg-primary">{{ classe.ues.count() }} UE</span></td>
+                            <td class="text-end">
+                                <a href="{{ url_for('directeur.ajouter_ue') }}?classe_id={{ classe.id }}"
+                                   class="btn btn-sm btn-success me-1" title="Créer UE pour ce tronc commun">
+                                    <i class="fas fa-plus me-1"></i>UE
+                                </a>
+                                <a href="{{ url_for('directeur.detail_classe', classe_id=classe.id) }}" class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <form action="{{ url_for('directeur.supprimer_classe_assemblee', classe_id=classe.id) }}"
+                                      method="POST" class="d-inline" onsubmit="return confirm('Supprimer cette classe assemblée ?')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-object-group fa-3x text-muted mb-3 d-block"></i>
+                <p class="text-muted">Aucune classe assemblée créée.</p>
+                <a href="{{ url_for('directeur.creer_classe_assemblee', dept_id=departement.id) }}" class="btn btn-warning">
+                    <i class="fas fa-plus-circle me-1"></i> Créer la première
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ======= FILIÈRES DU DÉPARTEMENT ======= -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-stream me-2"></i> Filières du Département</h5>
+            <a href="{{ url_for('directeur.ajouter_filiere') }}" class="btn btn-sm btn-light">
+                <i class="fas fa-plus me-1"></i> Ajouter Filière
+            </a>
+        </div>
+        <div class="card-body">
+            {% set filieres_list = departement.filieres.all() if departement.filieres is not string else departement.filieres %}
+            {% if filieres_list|length > 0 %}
+
+            <h6 class="fw-bold text-info mb-2"><i class="fas fa-flask me-1"></i> Licence Fondamentale (LF)</h6>
+            <div class="row g-3 mb-4">
+                {% for filiere in filieres_list if filiere.type_diplome == 'fondamental' %}
+                <div class="col-md-4">
+                    <div class="card border-info h-100">
+                        <div class="card-body">
+                            <h6 class="fw-bold">{{ filiere.nom_filiere }}</h6>
+                            <p class="mb-1"><code>{{ filiere.code_filiere }}</code> • {{ filiere.cycle or 'Licence' }}</p>
+                            <span class="badge bg-info">Fondamental</span>
+                            <span class="badge bg-secondary">{{ filiere.classes.count() }} classes</span>
+                        </div>
+                        <div class="card-footer bg-white border-0">
+                            <a href="{{ url_for('directeur.detail_filiere', filiere_id=filiere.id) }}" class="btn btn-sm btn-outline-info w-100">
+                                <i class="fas fa-eye me-1"></i> Détails
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12"><p class="text-muted small">Aucune filière fondamentale</p></div>
+                {% endfor %}
+            </div>
+
+            <h6 class="fw-bold text-success mb-2"><i class="fas fa-briefcase me-1"></i> Licence Professionnelle (LP)</h6>
+            <div class="row g-3 mb-3">
+                {% for filiere in filieres_list if filiere.type_diplome == 'professionnel' %}
+                <div class="col-md-4">
+                    <div class="card border-success h-100">
+                        <div class="card-body">
+                            <h6 class="fw-bold">{{ filiere.nom_filiere }}</h6>
+                            <p class="mb-1"><code>{{ filiere.code_filiere }}</code> • {{ filiere.cycle or 'Licence' }}</p>
+                            <span class="badge bg-success">Professionnel</span>
+                            <span class="badge bg-secondary">{{ filiere.classes.count() }} classes</span>
+                        </div>
+                        <div class="card-footer bg-white border-0">
+                            <a href="{{ url_for('directeur.detail_filiere', filiere_id=filiere.id) }}" class="btn btn-sm btn-outline-success w-100">
+                                <i class="fas fa-eye me-1"></i> Détails
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12"><p class="text-muted small">Aucune filière professionnelle</p></div>
+                {% endfor %}
+            </div>
+
+            {% else %}
+            <div class="alert alert-info mb-0">
+                <i class="fas fa-info-circle me-1"></i>
+                Aucune filière. <a href="{{ url_for('directeur.ajouter_filiere') }}" class="alert-link">Créer une filière</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ======= UE DU DÉPARTEMENT (PAR CATÉGORIE) ======= -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-book me-2"></i> UE du Département</h5>
+            <a href="{{ url_for('directeur.ajouter_ue') }}" class="btn btn-sm btn-light">
+                <i class="fas fa-plus me-1"></i> Ajouter UE
+            </a>
+        </div>
+        <div class="card-body">
+            {% set dept_ues = departement.ues.all() if departement.ues is not string else departement.ues %}
+            {% if dept_ues|length > 0 %}
+
+            {% for cat_label, cat_val, cat_color in [
+                ('🔴 Fondamentales', 'fondamentale', 'danger'),
+                ('🔵 Spécialité', 'specialite', 'primary'),
+                ('🟢 Transversales', 'transversale', 'success'),
+                ('🟡 Libres', 'libre', 'warning')
+            ] %}
+            {% set cat_ues = dept_ues|selectattr('categorie', 'equalto', cat_val)|list %}
+            {% if cat_ues|length > 0 %}
+            <h6 class="fw-bold mt-3 mb-2">
+                <span class="badge bg-{{ cat_color }}">{{ cat_label }}</span>
+                <small class="text-muted ms-2">{{ cat_ues|length }} UE</small>
+            </h6>
+            <div class="table-responsive mb-3">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr><th>Code</th><th>Intitulé</th><th>Nature</th><th>Crédits</th><th>Semestre</th><th>Classe</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for ue in cat_ues %}
+                        <tr>
+                            <td><code class="text-{{ cat_color }}">{{ ue.code_ue }}</code></td>
+                            <td>{{ ue.intitule or ue.nom_ue }}</td>
+                            <td>
+                                {% if ue.nature == 'composite' %}<span class="badge bg-dark">Composite</span>
+                                {% else %}<span class="badge bg-light text-dark">Simple</span>{% endif %}
+                            </td>
+                            <td><strong>{{ ue.credits }}</strong></td>
+                            <td>{{ ue.semestre or '-' }}</td>
+                            <td>
+                                {% set all_cls = ue.get_toutes_classes() %}
+                                {% if all_cls %}
+                                    {% for cl in all_cls %}
+                                    <span class="badge {% if cl.est_assemblee %}bg-warning text-dark{% else %}bg-light text-dark{% endif %}" style="font-size: 0.7rem;">
+                                        {{ cl.code_classe or cl.nom_classe[:10] }}
+                                    </span>
+                                    {% endfor %}
+                                {% else %}-{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            {% endfor %}
+
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-book fa-3x text-muted mb-3 d-block"></i>
+                <p class="text-muted">Aucune UE dans ce département.</p>
+                <a href="{{ url_for('directeur.ajouter_ue') }}" class="btn btn-success"><i class="fas fa-plus me-1"></i> Créer UE</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ======= UE TRONC COMMUN (CLASSES ASSEMBLÉES) ======= -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-dark text-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-layer-group me-2"></i> UE Tronc Commun (Classes Assemblées)</h5>
+        </div>
+        <div class="card-body">
+            {% set has_tc = namespace(val=false) %}
+            {% for classe in departement.classes_assemblees %}
+                {% if classe.ues.count() > 0 %}
+                {% set has_tc.val = true %}
+                <h6 class="fw-bold mb-2">
+                    <i class="fas fa-object-group me-1 text-warning"></i> {{ classe.nom_classe }}
+                    <span class="badge bg-secondary ms-1">{{ classe.ues.count() }} UE</span>
+                </h6>
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-warning">
+                            <tr><th>Code</th><th>Intitulé</th><th>Catégorie</th><th>Crédits</th><th>Semestre</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for ue in classe.ues %}
+                            <tr>
+                                <td><code>{{ ue.code_ue }}</code></td>
+                                <td>{{ ue.intitule or ue.nom_ue }}</td>
+                                <td><span class="badge bg-{{ {'fondamentale':'danger','specialite':'primary','transversale':'success','libre':'warning'}.get(ue.categorie, 'secondary') }}">{{ ue.categorie|capitalize if ue.categorie else '-' }}</span></td>
+                                <td>{{ ue.credits }}</td>
+                                <td>{{ ue.semestre or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            {% endfor %}
+
+            {% if not has_tc.val %}
+            <div class="text-center py-4">
+                <i class="fas fa-layer-group fa-3x text-muted mb-3 d-block"></i>
+                <p class="text-muted">Aucune UE de tronc commun départemental.</p>
+                <p class="text-muted small">Créez une <strong>Classe Assemblée</strong> puis attribuez-lui des UE.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

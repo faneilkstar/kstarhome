@@ -3,7 +3,7 @@
 {% block title %}Connexion Sécurisée | Polytech{% endblock %}
 
 {% block content %}
-<div class="container d-flex justify-content-center align-items-center" style="min-height: 85vh;">
+<div class="container d-flex flex-column justify-content-center align-items-center" style="min-height: 85vh;">
     <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="max-width: 900px; width: 100%;">
         <div class="row g-0">
 
@@ -75,5 +75,55 @@
             </div>
         </div>
     </div>
+
+    <!-- BOUTON GUIDE D'ORIENTATION -->
+    <div class="text-center mt-4 d-flex flex-wrap justify-content-center gap-3">
+        <a href="{{ url_for('auth.actualites_publiques') }}"
+           class="btn btn-lg rounded-pill px-5 py-3 fw-bold shadow"
+           style="background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; text-decoration: none;">
+            <i class="fas fa-compass me-2"></i> Guide d'Orientation & Actualités
+        </a>
+        <a href="{{ url_for('galerie.index') }}"
+           class="btn btn-lg rounded-pill px-5 py-3 fw-bold shadow"
+           style="background: linear-gradient(135deg, #DAA520, #B8860B); color: white; border: none; text-decoration: none;">
+            <i class="fas fa-images me-2"></i> Galerie & Identité
+        </a>
+    </div>
+
+    <!-- ANNONCES PUBLIQUES (si disponibles) -->
+    {% if annonces and annonces|length > 0 %}
+    <div class="mt-4" style="max-width: 900px; width: 100%;">
+        <h6 class="text-muted text-center mb-3 fw-bold text-uppercase" style="letter-spacing: 1px; font-size: 0.75rem;">
+            <i class="fas fa-bullhorn me-1"></i> Dernières actualités
+        </h6>
+        <div class="row g-2 justify-content-center">
+            {% for annonce in annonces[:3] %}
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            {% if annonce.categorie == 'guide' %}
+                                <span class="badge bg-success"><i class="fas fa-compass"></i></span>
+                            {% elif annonce.categorie == 'actualite' %}
+                                <span class="badge bg-warning text-dark"><i class="fas fa-bolt"></i></span>
+                            {% else %}
+                                <span class="badge bg-primary"><i class="fas fa-newspaper"></i></span>
+                            {% endif %}
+                            <h6 class="mb-0 fw-bold small">{{ annonce.titre }}</h6>
+                        </div>
+                        <p class="text-muted mb-0" style="font-size: 0.8rem;">{{ annonce.contenu[:80] }}{% if annonce.contenu|length > 80 %}...{% endif %}</p>
+                        {% if annonce.fichier_joint %}
+                        <a href="{{ url_for('auth.telecharger_guide', annonce_id=annonce.id) }}" class="btn btn-sm btn-outline-success mt-2 rounded-pill" style="font-size: 0.75rem;">
+                            <i class="fas fa-download me-1"></i> Télécharger
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 {% endblock %}

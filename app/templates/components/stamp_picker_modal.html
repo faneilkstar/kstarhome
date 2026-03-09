@@ -1,0 +1,156 @@
+{# MODAL DE SÉLECTION DE CACHETS POUR PDF #}
+<div class="modal fade" id="stampPickerModal" tabindex="-1" aria-labelledby="stampPickerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4" style="overflow: hidden;">
+            <div class="modal-header py-3 text-white" style="background: linear-gradient(135deg, #0f172a, #1e3a5f);">
+                <h5 class="modal-title fw-bold" id="stampPickerLabel">
+                    <i class="fas fa-stamp me-2"></i> Choisir les Cachets pour le Document
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="stampPickerBody">
+                <p class="text-muted small mb-3">Sélectionnez le(s) cachet(s) à appliquer sur votre document PDF, la taille et le nombre souhaité.</p>
+
+                <!-- Contrôle de taille global -->
+                <div class="mb-4 p-3 rounded-3" style="background: #f0f7ff; border: 1px solid #bfdbfe;">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="fas fa-expand-arrows-alt text-primary fs-5"></i>
+                        <div class="flex-grow-1">
+                            <label class="form-label fw-bold small text-primary mb-1">Taille des cachets (cm)</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="range" class="form-range flex-grow-1" id="stamp-global-size" min="2" max="8" step="0.5" value="5" oninput="document.getElementById('stamp-size-display').textContent = this.value + ' cm'">
+                                <span id="stamp-size-display" class="badge bg-primary fs-6 px-3 py-2" style="min-width: 60px;">5 cm</span>
+                            </div>
+                            <div class="d-flex justify-content-between mt-1">
+                                <span class="text-muted" style="font-size: 0.65rem;">Petit (2cm)</span>
+                                <span class="text-muted" style="font-size: 0.65rem;">Moyen (5cm)</span>
+                                <span class="text-muted" style="font-size: 0.65rem;">Grand (8cm)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="stamp-picker-list" class="row g-3">
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                        <div class="small">Chargement des sceaux...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light">
+                <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn text-white fw-bold rounded-pill px-4" style="background: linear-gradient(135deg, #003366, #1e40af);" onclick="confirmStampSelection()">
+                    <i class="fas fa-download me-2"></i> Télécharger avec Cachets
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let pendingDownloadUrl = '';
+let pendingDownloadType = '';
+
+function openStampPicker(downloadUrl, downloadType) {
+    pendingDownloadUrl = downloadUrl;
+    pendingDownloadType = downloadType || 'pdf';
+
+    // Charger les sceaux disponibles
+    fetch('/admin/branding/sceaux/liste')
+        .then(r => r.json())
+        .then(sceaux => {
+            const container = document.getElementById('stamp-picker-list');
+            if (!sceaux.length) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-4 text-muted">
+                        <i class="fas fa-info-circle fa-2x mb-2"></i>
+                        <div>Aucun cachet disponible. Le directeur doit d'abord en créer.</div>
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            sceaux.forEach(s => {
+                html += `
+                <div class="col-md-4 col-6">
+                    <div class="stamp-pick-card p-3 border rounded-4 h-100" style="background: #f8fafc; transition: all 0.2s; cursor: pointer;"
+                         onclick="toggleStampPick(this, ${s.id})" data-sceau-id="${s.id}">
+                        <div class="text-center">
+                            <img src="/static/${s.image_path}" alt="${s.nom}" style="max-width: 80px; max-height: 80px; border-radius: 8px;" onerror="this.style.display='none'">
+                        </div>
+                        <div class="fw-bold small text-truncate mt-2 text-center">${s.nom}</div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size: 0.65rem;">${s.type_forme}</span>
+                            <div class="d-flex align-items-center gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle p-0" style="width: 24px; height: 24px; font-size: 0.7rem;" onclick="event.stopPropagation();changeStampCount(${s.id}, -1)">−</button>
+                                <input type="number" id="stamp-count-${s.id}" value="0" min="0" max="5" class="form-control form-control-sm text-center border-0 p-0 fw-bold" style="width: 28px; font-size: 0.85rem; background: transparent;" readonly>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-circle p-0" style="width: 24px; height: 24px; font-size: 0.7rem;" onclick="event.stopPropagation();changeStampCount(${s.id}, 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        })
+        .catch(e => {
+            document.getElementById('stamp-picker-list').innerHTML = '<div class="col-12 text-danger text-center py-3">Erreur de chargement</div>';
+        });
+
+    new bootstrap.Modal(document.getElementById('stampPickerModal')).show();
+}
+
+function toggleStampPick(el, id) {
+    const input = document.getElementById('stamp-count-' + id);
+    if (parseInt(input.value) === 0) {
+        input.value = 1;
+        el.style.borderColor = '#3b82f6';
+        el.style.background = '#eff6ff';
+    } else {
+        input.value = 0;
+        el.style.borderColor = '#e2e8f0';
+        el.style.background = '#f8fafc';
+    }
+}
+
+function changeStampCount(id, delta) {
+    const input = document.getElementById('stamp-count-' + id);
+    let val = parseInt(input.value) + delta;
+    if (val < 0) val = 0;
+    if (val > 5) val = 5;
+    input.value = val;
+
+    const card = input.closest('.stamp-pick-card');
+    if (val > 0) {
+        card.style.borderColor = '#3b82f6';
+        card.style.background = '#eff6ff';
+    } else {
+        card.style.borderColor = '#e2e8f0';
+        card.style.background = '#f8fafc';
+    }
+}
+
+function confirmStampSelection() {
+    const stamps = [];
+    document.querySelectorAll('.stamp-pick-card').forEach(card => {
+        const id = card.dataset.sceauId;
+        const count = parseInt(document.getElementById('stamp-count-' + id).value);
+        if (count > 0) stamps.push({sceau_id: id, count: count});
+    });
+
+    // Construire l'URL avec les paramètres de stamps
+    let url = pendingDownloadUrl;
+    if (stamps.length) {
+        const sep = url.includes('?') ? '&' : '?';
+        url += sep + 'stamps=' + encodeURIComponent(JSON.stringify(stamps));
+    }
+
+    // Fermer le modal et déclencher le téléchargement
+    bootstrap.Modal.getInstance(document.getElementById('stampPickerModal')).hide();
+    window.open(url, '_blank');
+}
+</script>
+
+<style>
+.stamp-pick-card:hover { border-color: #93c5fd !important; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+</style>
+

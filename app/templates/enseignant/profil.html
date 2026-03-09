@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Mon Profil Enseignant{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="fas fa-user-tie me-2" style="color: #003366;"></i> Mon Profil</h2>
+        <a href="{{ url_for('enseignant.dashboard') }}" class="btn btn-outline-dark rounded-pill px-3">
+            <i class="fas fa-arrow-left me-1"></i> Dashboard
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- COLONNE GAUCHE : Photo + Infos rapides -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 text-center overflow-hidden">
+                <div class="py-4 px-3" style="background: linear-gradient(135deg, #003366, #004488);">
+                    <div class="mx-auto mb-3" style="width: 150px; height: 150px; border-radius: 50%; overflow: hidden; border: 4px solid #DAA520;">
+                        {% if enseignant.user.avatar %}
+                        <img src="/static/avatars/{{ enseignant.user.avatar }}" class="w-100 h-100" style="object-fit: cover;">
+                        {% else %}
+                        <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: #DAA520; font-size: 3rem; color: white; font-weight: bold;">
+                            {{ enseignant.prenom[0] if enseignant.prenom else '' }}{{ enseignant.nom[0] if enseignant.nom else '' }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <h4 class="text-white fw-bold mb-1">{{ enseignant.prenom }} {{ enseignant.nom }}</h4>
+                    <p class="text-white-50 mb-0">{{ enseignant.grade or 'Enseignant' }}</p>
+                    {% if enseignant.specialite %}
+                    <span class="badge bg-warning text-dark mt-2">{{ enseignant.specialite }}</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" class="mb-3">
+                        <label class="form-label fw-bold small text-muted">
+                            <i class="fas fa-camera me-1"></i> Changer la photo de profil
+                        </label>
+                        <input type="file" name="photo" class="form-control form-control-sm mb-2" accept="image/*">
+                        <button type="submit" class="btn btn-sm w-100 text-white" style="background: #003366;">
+                            <i class="fas fa-upload me-1"></i> Mettre a jour la photo
+                        </button>
+                    </form>
+                    <hr>
+                    <div class="text-start">
+                        <p class="mb-2"><i class="fas fa-envelope me-2 text-muted"></i> {{ enseignant.user.email or 'Non renseigne' }}</p>
+                        <p class="mb-2"><i class="fas fa-phone me-2 text-muted"></i> {{ enseignant.telephone or 'Non renseigne' }}</p>
+                        <p class="mb-2"><i class="fas fa-birthday-cake me-2 text-muted"></i> {{ enseignant.date_naissance.strftime('%d/%m/%Y') if enseignant.date_naissance else 'Non renseigne' }}</p>
+                        <p class="mb-2"><i class="fas fa-venus-mars me-2 text-muted"></i> {{ enseignant.sexe or 'Non renseigne' }}</p>
+                        <p class="mb-0"><i class="fas fa-map-marker-alt me-2 text-muted"></i> {{ enseignant.adresse or 'Non renseigne' }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm rounded-4 mt-3">
+                <div class="card-body text-center">
+                    <a href="{{ url_for('cartes.ma_carte_enseignant') }}" class="btn w-100 text-white" style="background: #DAA520;">
+                        <i class="fas fa-id-card me-2"></i> Voir ma carte enseignant
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLONNE DROITE : Formulaire modification -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header py-3" style="background: linear-gradient(135deg, #003366, #004488); border-radius: 16px 16px 0 0 !important;">
+                    <h5 class="text-white mb-0 fw-bold"><i class="fas fa-edit me-2"></i> Modifier mes informations</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Nom</label>
+                                <input type="text" class="form-control bg-light" value="{{ enseignant.nom }}" disabled>
+                                <small class="text-muted">Non modifiable (contacter le directeur)</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Prenom</label>
+                                <input type="text" class="form-control bg-light" value="{{ enseignant.prenom }}" disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Email</label>
+                                <input type="email" name="email" class="form-control" value="{{ enseignant.user.email or '' }}" placeholder="mon@email.com">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Telephone</label>
+                                <input type="tel" name="telephone" class="form-control" value="{{ enseignant.telephone or '' }}" placeholder="+228 90 00 00 00">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Specialite</label>
+                                <input type="text" name="specialite" class="form-control" value="{{ enseignant.specialite or '' }}" placeholder="Ex: Intelligence Artificielle">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Adresse</label>
+                                <input type="text" name="adresse" class="form-control" value="{{ enseignant.adresse or '' }}" placeholder="Quartier, Ville">
+                            </div>
+                            <div class="col-12"><hr>
+                                <h6 class="fw-bold text-danger"><i class="fas fa-lock me-1"></i> Changer le mot de passe</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Nouveau mot de passe</label>
+                                <input type="password" name="password" class="form-control" placeholder="Laisser vide pour ne pas changer">
+                            </div>
+                        </div>
+                        <div class="text-end mt-4">
+                            <button type="submit" class="btn btn-lg text-white px-5 rounded-pill" style="background: #003366;">
+                                <i class="fas fa-save me-2"></i> Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 mt-3">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-book me-2" style="color: #DAA520;"></i> Mes UE ({{ enseignant.ues|length }})</h5>
+                </div>
+                <div class="card-body p-3">
+                    {% if enseignant.ues %}
+                    <div class="row g-2">
+                        {% for ue in enseignant.ues %}
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center p-2 rounded-3 bg-light">
+                                <span class="badge me-2" style="background: #DAA520;">{{ ue.code_ue }}</span>
+                                <span class="small fw-bold">{{ ue.intitule }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center mb-0">Aucune UE attribuee</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

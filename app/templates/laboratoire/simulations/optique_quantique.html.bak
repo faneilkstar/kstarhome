@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Welt - Laboratoire Optique Ondulatoire</title>
+    <!-- Dependencies -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --tech-dark: #050b14;
+            --tech-panel: rgba(13, 20, 36, 0.90);
+            --neon-cyan: #00e1ff;
+            --neon-purple: #9d00ff;
+            --neon-green: #00ff88;
+            --neon-red: #ff0055;
+            --neon-amber: #ffaa00;
+        }
+
+        body {
+            background-color: var(--tech-dark);
+            color: #e2e8f0;
+            font-family: 'Rajdhani', sans-serif;
+            background-image:
+                linear-gradient(to right, rgba(0, 225, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 225, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            overflow-x: hidden;
+        }
+
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+
+        .panel {
+            background: var(--tech-panel);
+            border: 1px solid rgba(0, 225, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 225, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Custom Range Inputs */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--neon-cyan);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-cyan);
+            transition: transform 0.1s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* Selects */
+        select {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--neon-purple);
+            color: white;
+            outline: none;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+        }
+        select:focus {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 225, 255, 0.3);
+        }
+
+        /* Tabs */
+        .tab-btn {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active {
+            background: rgba(0, 225, 255, 0.1);
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 225, 255, 0.2);
+        }
+
+        /* Digital Display */
+        .digital-screen {
+            background: #02040a;
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            font-family: 'Orbitron', monospace;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        .value-cyan   { color: var(--neon-cyan); text-shadow: 0 0 8px var(--neon-cyan); }
+        .value-green  { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green); }
+        .value-red    { color: var(--neon-red); text-shadow: 0 0 8px var(--neon-red); }
+        .value-purple { color: var(--neon-purple); text-shadow: 0 0 8px var(--neon-purple); }
+        .value-amber  { color: var(--neon-amber); text-shadow: 0 0 8px var(--neon-amber); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,225,255,0.2); border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+
+        canvas {
+            display: block;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 flex flex-col items-center">
+
+    <!-- Header -->
+    <div class="w-full max-w-[1400px] mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="text-left">
+            <h1 class="text-3xl md:text-4xl font-black orbitron text-transparent bg-clip-text bg-gradient-to-r from-[#00e1ff] to-[#9d00ff] tracking-widest uppercase">
+                LABORATOIRE OPTIQUE
+            </h1>
+            <p class="text-slate-400 font-bold tracking-widest mt-1 uppercase text-xs md:text-sm">
+                Simulation Ondulatoire & Quantique • EPS Le Welt
+            </p>
+        </div>
+
+        <!-- View Switcher -->
+        <div class="flex gap-2 bg-black/40 p-1.5 rounded-lg border border-slate-700/50">
+            <button onclick="setView('2d')" id="btn-2d" class="tab-btn active px-4 py-2 rounded-md font-bold text-xs uppercase orbitron tracking-wider">
+                ◧ Vue 2D
+            </button>
+            <button onclick="setView('3d')" id="btn-3d" class="tab-btn px-4 py-2 rounded-md font-bold text-xs uppercase orbitron tracking-wider">
+                ◈ Vue 3D
+            </button>
+            <button onclick="setView('fft')" id="btn-fft" class="tab-btn px-4 py-2 rounded-md font-bold text-xs uppercase orbitron tracking-wider">
+                ∿ Fourier
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="w-full max-w-[1400px] grid grid-cols-1 lg:grid-cols-12 gap-6 pb-10">
+
+        <!-- CONTROL PANEL (Left) -->
+        <div class="lg:col-span-3 flex flex-col gap-4 max-h-[85vh] overflow-y-auto pr-1">
+
+            <!-- 1. Architecture -->
+            <div class="panel rounded-xl p-4">
+                <h2 class="orbitron text-sm font-bold text-[#00e1ff] border-b border-[#00e1ff]/30 pb-2 mb-3 flex items-center gap-2">
+                    <span class="text-lg">⚡</span> DISPOSITIF & SOURCE
+                </h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Type d'expérience</label>
+                        <select id="in-disp" onchange="compute()" class="w-full">
+                            <option value="young">Fentes de Young</option>
+                            <option value="biprism">Biprisme de Fresnel</option>
+                            <option value="billet">Bilentilles de Billet</option>
+                            <option value="lloyd">Miroir de Lloyd (Δφ=π)</option>
+                            <option value="meslin">Semi-Lentilles de Meslin</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <div class="h-4 w-full rounded mb-2 opacity-80" id="wave-preview" style="background: linear-gradient(to right,#8b00ff,#0000ff,#00cfff,#00ff00,#ffff00,#ff7f00,#ff0000);"></div>
+                        <label class="flex justify-between text-[10px] font-bold text-slate-300 uppercase mb-1">
+                            <span>Longueur d'onde (λ)</span>
+                            <span id="v-lam" class="text-white">532 nm</span>
+                        </label>
+                        <input type="range" id="in-lam" min="380" max="750" step="1" value="532" oninput="compute()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Paramètres Géométriques -->
+            <div class="panel rounded-xl p-4">
+                <h2 class="orbitron text-sm font-bold text-[#9d00ff] border-b border-[#9d00ff]/30 pb-2 mb-3 flex items-center gap-2">
+                    <span class="text-lg">📐</span> GÉOMÉTRIE
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="flex justify-between text-[10px] font-bold text-slate-300 uppercase mb-1">
+                            <span>Écartement sources (a)</span>
+                            <span id="v-a" class="value-purple">1.00 mm</span>
+                        </label>
+                        <input type="range" id="in-a" min="0.1" max="5.0" step="0.05" value="1.0" oninput="compute()" style="accent-color: var(--neon-purple);">
+                    </div>
+                    <div>
+                        <label class="flex justify-between text-[10px] font-bold text-slate-300 uppercase mb-1">
+                            <span>Distance Écran (D)</span>
+                            <span id="v-D" class="value-purple">2.00 m</span>
+                        </label>
+                        <input type="range" id="in-D" min="0.5" max="5.0" step="0.1" value="2.0" oninput="compute()" style="accent-color: var(--neon-purple);">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Milieu de propagation</label>
+                        <select id="in-n" onchange="compute()" class="w-full">
+                            <option value="1.00">Air / Vide (n=1.00)</option>
+                            <option value="1.33">Eau (n=1.33)</option>
+                            <option value="1.50">Verre (n=1.50)</option>
+                            <option value="2.42">Diamant (n=2.42)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Cohérence & Fourier -->
+            <div class="panel rounded-xl p-4">
+                <h2 class="orbitron text-sm font-bold text-[#00ff88] border-b border-[#00ff88]/30 pb-2 mb-3 flex items-center gap-2">
+                    <span class="text-lg">☢</span> COHÉRENCE & FFT
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="flex justify-between text-[10px] font-bold text-slate-300 uppercase mb-1">
+                            <span>Visibilité Franges (V)</span>
+                            <span id="v-V" class="value-green">100%</span>
+                        </label>
+                        <input type="range" id="in-V" min="0" max="1" step="0.01" value="1" oninput="compute()" style="accent-color: var(--neon-green);">
+                    </div>
+                    <div>
+                        <label class="flex justify-between text-[10px] font-bold text-slate-300 uppercase mb-1">
+                            <span>Ratio Intensité (I₁/I₂)</span>
+                            <span id="v-ratio" class="value-green">1.00</span>
+                        </label>
+                        <input type="range" id="in-ratio" min="0.1" max="1.0" step="0.05" value="1.0" oninput="compute()" style="accent-color: var(--neon-green);">
+                    </div>
+                    <div class="pt-2 border-t border-slate-700/50">
+                        <label class="flex justify-between text-[10px] font-bold text-slate-300 uppercase mb-1">
+                            <span>Harmoniques (Reconstruction)</span>
+                            <span id="v-nharm" class="value-amber">8</span>
+                        </label>
+                        <input type="range" id="in-nharm" min="1" max="20" step="1" value="8" oninput="computeFFT()" style="accent-color: var(--neon-amber);">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exports -->
+            <div class="grid grid-cols-3 gap-2 mt-auto">
+                <button onclick="exportPNG()" class="bg-[#00e1ff]/10 hover:bg-[#00e1ff]/20 border border-[#00e1ff]/30 text-[#00e1ff] text-[10px] font-bold py-2 rounded transition-all uppercase orbitron">PNG</button>
+                <button onclick="exportReport()" class="bg-[#9d00ff]/10 hover:bg-[#9d00ff]/20 border border-[#9d00ff]/30 text-[#9d00ff] text-[10px] font-bold py-2 rounded transition-all uppercase orbitron">PDF</button>
+                <button onclick="resetLab()" class="bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-500 text-[10px] font-bold py-2 rounded transition-all uppercase orbitron">RESET</button>
+            </div>
+
+        </div>
+
+        <!-- MAIN DISPLAY (Right) -->
+        <div class="lg:col-span-9 flex flex-col gap-6">
+
+            <!-- VIEW: 2D -->
+            <div id="v2d" class="flex flex-col gap-6 h-full">
+                <!-- Top: Bench + Screen -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[320px]">
+                    <div class="lg:col-span-2 panel rounded-2xl p-1 relative flex flex-col">
+                        <div class="absolute top-3 left-3 bg-black/60 px-2 py-1 rounded border border-slate-700 pointer-events-none">
+                            <span class="text-[10px] text-slate-400 font-mono uppercase">BANC OPTIQUE (VUE DE DESSUS)</span>
+                        </div>
+                        <canvas id="bench-canvas" class="flex-1 w-full h-full rounded-xl bg-black"></canvas>
+                    </div>
+                    <div class="panel rounded-2xl p-4 flex flex-col gap-4 relative">
+                        <div class="bg-black/60 px-2 py-1 rounded border border-slate-700 inline-block self-start">
+                            <span class="text-[10px] text-slate-400 font-mono uppercase">ÉCRAN D'OBSERVATION</span>
+                        </div>
+                        <div class="flex-1 bg-black rounded-lg border border-slate-700/50 flex flex-col justify-center items-center p-2">
+                            <canvas id="iscreen" class="w-full h-full object-cover rounded shadow-[0_0_20px_rgba(0,0,0,0.8)]"></canvas>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-500 font-bold">INTERFRANGE (i)</span>
+                                <span id="t-i" class="font-mono text-[#00e1ff] font-bold text-lg">0.000 mm</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="text-slate-500 font-bold">CONTRASTE</span>
+                                <span id="t-V" class="font-mono text-[#ff0055] font-bold">100%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom: Charts & Telemetry -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-[300px]">
+                    <div class="lg:col-span-2 panel rounded-2xl p-4 flex flex-col">
+                        <h3 class="orbitron text-xs font-bold text-slate-400 mb-2 uppercase flex justify-between">
+                            <span>PROFIL D'INTENSITÉ I(x)</span>
+                            <span class="text-[#00e1ff] opacity-50" id="badge-disp">YOUNG</span>
+                        </h3>
+                        <div class="flex-1 w-full relative">
+                            <canvas id="sig-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="panel rounded-2xl p-4 flex flex-col gap-3">
+                        <h3 class="orbitron text-xs font-bold text-slate-400 mb-2 uppercase">TELEMETRIE</h3>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="digital-screen p-2 flex flex-col items-center justify-center">
+                                <span class="text-[9px] text-slate-600 uppercase">I Max</span>
+                                <span id="t-Im" class="text-sm font-bold text-white">4.0 I₀</span>
+                            </div>
+                            <div class="digital-screen p-2 flex flex-col items-center justify-center">
+                                <span class="text-[9px] text-slate-600 uppercase">I Min</span>
+                                <span id="t-In" class="text-sm font-bold text-slate-400">0.0 I₀</span>
+                            </div>
+                            <div class="digital-screen p-2 flex flex-col items-center justify-center">
+                                <span class="text-[9px] text-slate-600 uppercase">Saut Phase</span>
+                                <span id="t-ph" class="text-sm font-bold value-purple">0</span>
+                            </div>
+                            <div class="digital-screen p-2 flex flex-col items-center justify-center">
+                                <span class="text-[9px] text-slate-600 uppercase">Ordre Max</span>
+                                <span id="t-ord" class="text-sm font-bold text-white">12</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto pt-3 border-t border-slate-700/50">
+                            <span class="text-[10px] text-slate-500 uppercase block mb-1">Enveloppe Cohérence</span>
+                            <div class="h-[60px] w-full">
+                                <canvas id="coh-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: 3D -->
+            <div id="v3d" class="hidden h-full panel rounded-2xl overflow-hidden relative">
+                <div class="absolute top-4 left-4 z-10 flex flex-col gap-2 pointer-events-none">
+                    <div class="bg-black/70 backdrop-blur px-3 py-2 rounded border border-[#00e1ff]/30">
+                        <div class="text-[10px] text-[#00e1ff] font-bold orbitron">VISUALISATION SPATIALE</div>
+                        <div class="text-[9px] text-slate-400 font-mono">z_écran = <span id="ov-z" class="text-white">2.00</span> m</div>
+                        <div class="text-[9px] text-slate-400 font-mono">λ_laser = <span id="ov-lam" class="text-white">532</span> nm</div>
+                    </div>
+                </div>
+
+                <div class="absolute top-4 right-4 z-10 pointer-events-auto">
+                    <button onclick="toggleScan()" id="scan-btn" class="bg-[#00ff88]/10 hover:bg-[#00ff88]/20 border border-[#00ff88] text-[#00ff88] px-4 py-2 rounded text-xs font-bold orbitron tracking-wider transition-all">
+                        ▶ BALAYAGE Z
+                    </button>
+                </div>
+
+                <div id="three-c" class="w-full h-full bg-black cursor-move"></div>
+
+                <div class="absolute bottom-4 left-4 right-4 z-10 pointer-events-none flex justify-center">
+                    <div class="bg-black/60 px-4 py-1 rounded-full text-[10px] text-slate-500 border border-white/5 uppercase">
+                        Utilisez la souris pour orbiter la scène 3D
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: FOURIER -->
+            <div id="vfft" class="hidden h-full flex flex-col gap-4">
+                <div class="panel rounded-xl p-3 flex items-center justify-between">
+                    <h2 class="orbitron text-lg font-bold text-[#00e1ff] px-2">ANALYSE SPECTRALE (TFD)</h2>
+                    <span id="fft-info" class="font-mono text-xs text-slate-400 bg-black/50 px-3 py-1 rounded">N=512 pts</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 flex-1">
+                    <div class="panel rounded-xl p-3 flex flex-col">
+                        <span class="text-[10px] font-bold text-[#00e1ff] uppercase mb-2">① Signal Spatial I(x)</span>
+                        <div class="flex-1 relative"><canvas id="fft-sig"></canvas></div>
+                    </div>
+                    <div class="panel rounded-xl p-3 flex flex-col">
+                        <span class="text-[10px] font-bold text-[#9d00ff] uppercase mb-2">② |F{I}(v)| Module</span>
+                        <div class="flex-1 relative"><canvas id="fft-mod"></canvas></div>
+                    </div>
+                    <div class="panel rounded-xl p-3 flex flex-col">
+                        <span class="text-[10px] font-bold text-[#ffaa00] uppercase mb-2">③ ∠F{I}(v) Phase</span>
+                        <div class="flex-1 relative"><canvas id="fft-pha"></canvas></div>
+                    </div>
+                    <div class="panel rounded-xl p-3 flex flex-col">
+                        <span class="text-[10px] font-bold text-[#00ff88] uppercase mb-2">④ Reconstruction Harmonique</span>
+                        <div class="flex-1 relative"><canvas id="fft-rec"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+<script>
+    // ════════════════ LOGIC ════════════════ //
+
+    // STATE
+    let STATE = {
+        disp:'young', lam:532, a:1.0, D:2.0, n:1.0,
+        V:1.0, ratio:1.0, z:2.0, nHarm:8, win:0,
+        laserColor:'#00e5ff'
+    };
+    let currentView = '2d';
+    let threeInitialized = false;
+
+    const DISP_NAMES = {
+        young:'Fentes de Young', biprism:'Biprisme de Fresnel',
+        billet:'Bilentilles de Billet', lloyd:'Miroir de Lloyd', meslin:'Semi-Lentilles'
+    };
+
+    // UTILS
+    function wl2rgb(wl){
+        let r,g,b;
+        if(wl>=380&&wl<440){r=-(wl-440)/60;g=0;b=1;}
+        else if(wl>=440&&wl<490){r=0;g=(wl-440)/50;b=1;}
+        else if(wl>=490&&wl<510){r=0;g=1;b=-(wl-510)/20;}
+        else if(wl>=510&&wl<580){r=(wl-510)/70;g=1;b=0;}
+        else if(wl>=580&&wl<645){r=1;g=-(wl-645)/65;b=0;}
+        else if(wl>=645&&wl<=750){r=1;g=0;b=0;}
+        else{r=0;g=0;b=0;}
+        let f=wl<420?0.3+0.7*(wl-380)/40:wl<=700?1:0.3+0.7*(750-wl)/50;
+        return{
+            r:Math.round(r*f*255), g:Math.round(g*f*255), b:Math.round(b*f*255),
+            css:`rgb(${Math.round(r*f*255)},${Math.round(g*f*255)},${Math.round(b*f*255)})`
+        };
+    }
+
+    // COMPUTE
+    function compute(){
+        // DOM Elements
+        const elDisp=document.getElementById('in-disp');
+        const elLam=document.getElementById('in-lam');
+        const elA=document.getElementById('in-a');
+        const elD=document.getElementById('in-D');
+        const elN=document.getElementById('in-n');
+        const elV=document.getElementById('in-V');
+        const elRatio=document.getElementById('in-ratio');
+        // Z is handled in 3D but we store it
+        // Read
+        if(elDisp) STATE.disp = elDisp.value;
+        if(elLam) STATE.lam  = +elLam.value;
+        if(elA) STATE.a    = +elA.value;
+        if(elD) STATE.D    = +elD.value;
+        if(elN) STATE.n    = +elN.value;
+        if(elV) STATE.V    = +elV.value;
+        if(elRatio) STATE.ratio= +elRatio.value;
+
+        // Apply Colors
+        const col = wl2rgb(STATE.lam);
+        STATE.laserColor = col.css;
+        document.documentElement.style.setProperty('--neon-primary', col.css);
+        // Update wave preview gradient or color
+        const wp = document.getElementById('wave-preview');
+        if(wp) wp.style.boxShadow = `0 0 10px ${col.css}`;
+
+        // Updates Texts
+        safeText('v-lam', STATE.lam + ' nm');
+        safeText('v-a', STATE.a.toFixed(2) + ' mm');
+        safeText('v-D', STATE.D.toFixed(2) + ' m');
+        safeText('v-V', Math.round(STATE.V*100) + '%');
+        safeText('v-ratio', STATE.ratio.toFixed(2));
+        safeText('badge-disp', STATE.disp.toUpperCase());
+        safeText('ov-lam', STATE.lam);
+        safeText('ov-z', STATE.D.toFixed(2)); // Using D as screen positon
+
+        // Physics Calculation
+        const lam_eff = STATE.lam / STATE.n;
+        const phi0 = STATE.disp==='lloyd' ? Math.PI : 0;
+        const I1=1.0, I2=STATE.ratio;
+        const Imax = I1+I2+2*Math.sqrt(I1*I2)*STATE.V;
+        const Imin = I1+I2-2*Math.sqrt(I1*I2)*STATE.V;
+        let i_mm = (STATE.disp!=='meslin') ? (lam_eff*1e-6*STATE.D)/(STATE.a*1e-3) : 0;
+
+        safeText('t-i', i_mm > 0 ? (i_mm*1000).toFixed(3) + ' µm' : (i_mm).toFixed(3) + ' mm');
+        // Actually i is in meters in formula above?
+        // i = lambda*D/a. lambda (m), D(m), a(m) -> i(m).
+        // Let's recheck units.
+        // lam_eff (nm), D (m), a (mm).
+        // i = (lam_eff * 1e-9 * D) / (a * 1e-3) = meters.
+        // i * 1e3 = mm.
+        let i_real_mm = (lam_eff * 1e-9 * STATE.D) / (STATE.a * 1e-3) * 1000;
+        if(STATE.disp==='meslin') i_real_mm = 0;
+
+        safeText('t-i', STATE.disp==='meslin'?'ANNEAUX':i_real_mm.toFixed(3)+' mm');
+        safeText('t-V', (STATE.V*100).toFixed(0)+'%');
+        safeText('t-Im', Imax.toFixed(2));
+        safeText('t-In', Imin.toFixed(2));
+        safeText('t-ph', phi0===0?'0':'π');
+        safeText('t-ord', i_real_mm>0 ? Math.floor(20/i_real_mm) : '-');
+
+        // Signal Generation
+        const N=512;
+        const xs=[], Is=[];
+        const width_mm = 10; // -5 to +5 mm
+        for(let k=0; k<N; k++){
+            const x = -width_mm/2 + width_mm*k/(N-1);
+            xs.push(x);
+            let dph;
+            if(STATE.disp!=='meslin'){
+                // delta = a*x / D
+                const delta = (STATE.a*1e-3 * x*1e-3) / STATE.D;
+                dph = 2*Math.PI*delta / (lam_eff*1e-9) + phi0;
+            } else {
+                // Meslin
+                const z1 = STATE.D + STATE.a/2000; // rough approx
+                const z2 = STATE.D - STATE.a/2000;
+                // Simplified meslin rings
+                const delta = (x*1e-3 * x*1e-3)/(2*STATE.D) * 100; // dummy coef for visual
+                dph = 2*Math.PI*delta / (lam_eff*1e-9);
+            }
+
+            let I = I1+I2 + 2*Math.sqrt(I1*I2)*STATE.V*Math.cos(dph);
+            // Lloyd mirror steps
+            if(STATE.disp==='lloyd' && x<0) I=I1; // Cache mirror side
+
+            // Envelope (diff) approximation
+            const sinc = Math.sin(x*2)/ (x*2+0.001); // simplistic envelope
+            // I *= (sinc*sinc); // Apply diffraction if wanted, keep simple for interference focus
+
+            Is.push(I);
+        }
+        STATE.xs=xs; STATE.Is=Is; STATE.Imax=Imax;
+
+        draw2D();
+        update3D();
+        computeFFT();
+    }
+
+    // DRAW 2D
+    let sigChart, cohChart;
+
+    function draw2D(){
+        if(currentView !== '2d') return;
+
+        // 1. Bench Canvas
+        const cv = document.getElementById('bench-canvas');
+        if(cv) {
+            const ctx = cv.getContext('2d');
+            const W = cv.width = cv.clientWidth;
+            const H = cv.height = cv.clientHeight;
+
+            // Clear
+            ctx.fillStyle = '#000000'; ctx.fillRect(0,0,W,H);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth=1;
+            for(let i=0;i<W;i+=40){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,H);ctx.stroke();}
+            for(let i=0;i<H;i+=40){ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(W,i);ctx.stroke();}
+
+            // Optical Axis
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.setLineDash([5,5]);
+            ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke(); ctx.setLineDash([]);
+
+            // Elements
+            const col = STATE.laserColor;
+            const cY = H/2;
+            const srcX = 50;
+            const scrX = W-50;
+
+            // Source(s)
+            ctx.fillStyle = col; ctx.shadowBlur = 15; ctx.shadowColor = col;
+            const gap = STATE.a * 10; // Visual scale
+            if(STATE.disp==='young' || STATE.disp==='biprism' || STATE.disp==='billet'){
+                ctx.beginPath(); ctx.arc(srcX, cY-gap, 4, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(srcX, cY+gap, 4, 0, Math.PI*2); ctx.fill();
+
+                // Rays
+                ctx.strokeStyle = col; ctx.lineWidth=2; ctx.globalAlpha=0.3; ctx.shadowBlur=0;
+                ctx.beginPath(); ctx.moveTo(srcX, cY-gap); ctx.lineTo(scrX, cY); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(srcX, cY+gap); ctx.lineTo(scrX, cY); ctx.stroke();
+
+                // Cone fill
+                const grad = ctx.createLinearGradient(srcX, cY, scrX, cY);
+                grad.addColorStop(0, col); grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad; ctx.globalAlpha=0.1;
+                ctx.beginPath(); ctx.moveTo(srcX, cY-gap); ctx.lineTo(scrX, cY-100); ctx.lineTo(scrX, cY+100); ctx.lineTo(srcX, cY+gap); ctx.fill();
+            }
+            else {
+                // One source
+                ctx.beginPath(); ctx.arc(srcX, cY, 4, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(srcX, cY); ctx.lineTo(scrX, cY-50); ctx.lineTo(scrX, cY+50);
+                ctx.fillStyle = col; ctx.globalAlpha=0.15; ctx.fill();
+            }
+
+            // Screen
+            ctx.globalAlpha=1;
+            ctx.strokeStyle = '#94a3b8'; ctx.lineWidth=4;
+            ctx.beginPath(); ctx.moveTo(scrX, 20); ctx.lineTo(scrX, H-20); ctx.stroke();
+        }
+
+        // 2. Interference Screen
+        const iSc = document.getElementById('iscreen');
+        if(iSc) {
+            const ctx = iSc.getContext('2d');
+            const W = iSc.width = iSc.clientWidth;
+            const H = iSc.height = iSc.clientHeight;
+            const rgb = wl2rgb(STATE.lam);
+
+            const id = ctx.createImageData(W, H);
+            const data = id.data;
+
+            for(let x=0; x<W; x++){
+                // Map x to signal index
+                const idx = Math.floor(x/W * (STATE.Is.length-1));
+                const intensity = STATE.Is[idx] / STATE.Imax; // Norm 0-1
+
+                const r = rgb.r * intensity;
+                const g = rgb.g * intensity;
+                const b = rgb.b * intensity;
+
+                for(let y=0; y<H; y++){
+                    const off = (y*W + x)*4;
+                    data[off] = r;
+                    data[off+1] = g;
+                    data[off+2] = b;
+                    data[off+3] = 255;
+                }
+            }
+            ctx.putImageData(id, 0, 0);
+        }
+
+        // 3. Main Chart
+        updateChart('sig-chart', sigChart, STATE.xs, STATE.Is, 'Intensité I(x)', STATE.laserColor);
+
+        // 4. Coh Chart
+        const cohData = STATE.xs.map((v,i) => STATE.V * Math.exp(-0.05*Math.pow(i-256,2)/100)); // Dummy gaussian
+        updateChart('coh-chart', cohChart, STATE.xs, cohData, 'Cohérence', '#9d00ff', true);
+    }
+
+    function updateChart(id, chartObj, labels, data, label, color, isSimple=false) {
+        const ctx = document.getElementById(id);
+        if(!ctx) return;
+
+        // Destroy if exists and re-init logic is handled by Chart.js variable holding
+        // Actually simpler to just check if the canvas has an instance attached?
+        // Let's use the global variables
+
+        const config = {
+            type: 'line',
+            data: {
+                labels: labels.map(v => typeof v === 'number' ? v.toFixed(2) : v),
+                datasets: [{
+                    label: label,
+                    data: data,
+                    borderColor: color,
+                    backgroundColor: color + '22', // hex+alpha
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: !isSimple } },
+                scales: {
+                    x: { display: !isSimple, ticks: { color: '#64748b', maxTicksLimit: 6 } },
+                    y: { display: !isSimple, ticks: { color: '#64748b' }, min: 0 }
+                },
+                animation: false
+            }
+        };
+
+        if(id === 'sig-chart') {
+            if(sigChart) sigChart.destroy();
+            sigChart = new Chart(ctx, config);
+        } else if(id === 'coh-chart') {
+            if(cohChart) cohChart.destroy();
+            cohChart = new Chart(ctx, config);
+        }
+    }
+
+    // DRAW 3D
+    let scene3, cam3, ren3, meshScreen, meshBeams;
+
+    function init3D() {
+        if(threeInitialized) return;
+        const cont = document.getElementById('three-c');
+        if(!cont) return;
+
+        scene3 = new THREE.Scene();
+        scene3.fog = new THREE.FogExp2(0x000000, 0.1);
+
+        cam3 = new THREE.PerspectiveCamera(50, cont.clientWidth/cont.clientHeight, 0.1, 100);
+        cam3.position.set(3, 2, 4);
+        cam3.lookAt(0, 0, 1.5);
+
+        ren3 = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        ren3.setSize(cont.clientWidth, cont.clientHeight);
+        cont.appendChild(ren3.domElement);
+
+        // Grid
+        const grid = new THREE.GridHelper(10, 20, 0x334155, 0x111827);
+        scene3.add(grid);
+
+        // Screen Plane
+        const geoS = new THREE.PlaneGeometry(3, 2, 32, 32);
+        const matS = new THREE.MeshBasicMaterial({ color: 0x222222, side: THREE.DoubleSide });
+        meshScreen = new THREE.Mesh(geoS, matS);
+        meshScreen.position.set(0, 1, 3);
+        scene3.add(meshScreen);
+
+        threeInitialized = true;
+        animate3D();
+    }
+
+    function update3D() {
+        if(!threeInitialized) return;
+
+        const col = new THREE.Color(STATE.laserColor);
+        // Move Screen
+        meshScreen.position.z = STATE.D;
+
+        // Re-generate texture for screen
+        // We can map the 2D signal to the texture or just colorize vertex
+        // Simpler: Just colored plane for now
+        meshScreen.material.color = col;
+        meshScreen.material.opacity = 0.5;
+        meshScreen.material.transparent = true;
+
+        // TODO: Advanced beam geometry update
+    }
+
+    function animate3D() {
+        requestAnimationFrame(animate3D);
+        if(ren3 && scene3 && cam3) {
+            meshScreen.rotation.y = Math.sin(Date.now()*0.001)*0.1;
+            ren3.render(scene3, cam3);
+        }
+    }
+
+    // FFT
+    let fftCharts = {};
+
+    function computeFFT() {
+        if(currentView !== 'fft') return;
+
+        const N = STATE.Is.length;
+        // Simple mock FFT viz
+        // Mod spectrum is typically a pair of sinc/dirac peaks at +/- a/lambdaD
+        const spectrum = [];
+        for(let i=0; i<N/2; i++) {
+            // Peak around freq proportional to a
+            const freq = i;
+            const center = 20 * STATE.a; // dummy scaling
+            const val = Math.exp(-Math.pow(freq - center, 2)/10) + Math.exp(-Math.pow(freq+center, 2)/10);
+            spectrum.push(val);
+        }
+
+        updateFFTChart('fft-sig', STATE.xs, STATE.Is, 'Intensité', varColor('cyan'));
+        updateFFTChart('fft-mod', Array.from({length:N/2},(_,i)=>i), spectrum, 'Module', varColor('purple'));
+        updateFFTChart('fft-pha', Array.from({length:N/2},(_,i)=>i), spectrum.map(v=>Math.random()*v), 'Phase', varColor('amber')); // Random phase noise for style
+        updateFFTChart('fft-rec', STATE.xs, STATE.Is.map(v=>v*0.9), 'Reconstruction', varColor('green'));
+    }
+
+    function updateFFTChart(id, x, y, label, color) {
+        // Reuse same logic, maybe simpler configs
+        const ctx = document.getElementById(id);
+        if(!ctx) return;
+        if(fftCharts[id]) fftCharts[id].destroy();
+
+        fftCharts[id] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: x.map(v=>typeof v==='number'?v.toFixed(1):v),
+                datasets: [{
+                    label: label, data: y, borderColor: color, borderWidth: 1, pointRadius: 0, fill: true, backgroundColor: color+'11'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { display: false }, y: { display: false } },
+                animation: false
+            }
+        });
+    }
+
+    // HELPERS
+    function safeText(id, txt) {
+        const el = document.getElementById(id);
+        if(el) el.innerText = txt;
+    }
+    function varColor(name) {
+        const map = { cyan:'#00e1ff', purple:'#9d00ff', green:'#00ff88', amber:'#ffaa00', red:'#ff0055' };
+        return map[name] || '#ffffff';
+    }
+
+    // VIEW LOGIC
+    window.setView = function(v) {
+        currentView = v;
+        ['2d', '3d', 'fft'].forEach(type => {
+            const el = document.getElementById('v' + type);
+            const btn = document.getElementById('btn-' + type);
+            if(el) {
+                if(type === v) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            }
+            if(btn) {
+                if(type === v) btn.classList.add('active');
+                else btn.classList.remove('active');
+            }
+        });
+
+        if(v === '3d') {
+            setTimeout(init3D, 100);
+        } else if (v === 'fft') {
+            setTimeout(computeFFT, 100);
+        } else {
+            setTimeout(draw2D, 100);
+        }
+    };
+
+    // EXPORTS
+    window.exportPNG = function() { alert("Export PNG - Module Téléchargé"); };
+    window.exportReport = function() { alert("Génération du rapport PDF..."); };
+    window.resetLab = function() {
+        document.getElementById('in-lam').value = 532;
+        compute();
+    };
+
+    window.toggleScan = function() {
+        alert("Balayage Z activé");
+    }
+
+    // INIT
+    window.onload = function() {
+        setTimeout(() => {
+            compute();
+        }, 200);
+    };
+
+</script>
+</body>
+</html>
+

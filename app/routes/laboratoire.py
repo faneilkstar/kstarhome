@@ -255,12 +255,33 @@ def creer_tp():
     if request.method == 'POST':
         enseignant = current_user.enseignant_profile
 
+        # Gestion du fichier sujet
+        fichier_sujet_path = None
+        if 'fichier_sujet' in request.files:
+            file = request.files['fichier_sujet']
+            if file and file.filename:
+                try:
+                    filename = secure_filename(f"tp_{current_user.id}_{int(datetime.utcnow().timestamp())}_{file.filename}")
+
+                    # Chemin local pour sauvegarde
+                    upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'tps')
+                    os.makedirs(upload_dir, exist_ok=True)
+
+                    file.save(os.path.join(upload_dir, filename))
+
+                    # Chemin relatif pour la BDD (compatible static)
+                    fichier_sujet_path = f"uploads/tps/{filename}"
+                except Exception as e:
+                    print(f"Erreur upload: {e}")
+                    flash(f"Erreur lors de l'upload du fichier: {e}", 'warning')
+
         tp = TP(
             titre=request.form.get('titre'),
             description=request.form.get('description'),
             type_simulation=request.form.get('type_simulation'),
             ia_nom=request.form.get('ia_nom', 'ETA'),
             fichier_consigne=request.form.get('consignes', '{}'),
+            fichier_sujet=fichier_sujet_path,
             bareme=request.form.get('criteres_evaluation', '{}'),
             enseignant_id=enseignant.id,
             actif=True,
@@ -443,30 +464,35 @@ def demarrer_tp(tp_id):
 # ============================================================
 # SALLE DE TP (SIMULATION EN DIRECT)
 # ============================================================
-@laboratoire_bp.route('/salle/<int:session_id>')
+@laboratoire_bp.route('/salle/<string:session_id>')
 @login_required
 @etudiant_required
 def salle_tp(session_id):
     """Salle de TP virtuelle avec simulation"""
-    session = SessionTP.query.get_or_404(session_id)
+    session = None
+    tp = None
+    interactions = []
     etudiant = current_user.etudiant_profile
 
-    # Vérifier que c'est bien la session de cet étudiant
-    if session.etudiant_id != etudiant.id:
-        flash('Cette session ne vous appartient pas', 'danger')
-        return redirect(url_for('laboratoire.hub_etudiant'))
-
-    tp = session.tp
-
-    # Historique des interactions IA
-    interactions = InteractionIA.query.filter_by(
-        session_id=session.id
-    ).order_by(InteractionIA.timestamp.asc()).all()
-
-    return render_template('laboratoire/salle_tp.html',
-                         session=session,
-                         tp=tp,
-                         interactions=interactions)
+    if session_id.isdigit():
+        session = SessionTP.query.get_or_404(int(session_id))
+        if session.etudiant_id != etudiant.id:
+            flash('Cette session ne vous appartient pas', 'danger')
+            return redirect(url_for('laboratoire.hub_etudiant'))
+        tp = session.tp
+        interactions = InteractionIA.query.filter_by(session_id=session.id).order_by(InteractionIA.timestamp.asc()).all()
+    else:
+        # Charger le TP virtuel par nom de module
+        tp = TP.query.filter_by(type_simulation=session_id).first()
+        session = None
+        interactions = []
+        # Vérifier la présence du JS de simulation
+        import os
+        js_path = os.path.join('static', 'js', f'simulation_{session_id}.js')
+        full_js_path = os.path.join(os.path.dirname(__file__), '..', js_path)
+        if not tp and not os.path.exists(full_js_path):
+            return render_template('laboratoire/labo_not_found.html', session_id=session_id)
+    return render_template('laboratoire/salle_tp.html', session=session, tp=tp, interactions=interactions)
 
 
 # ============================================================
@@ -724,4 +750,3 @@ def supprimer_tp(tp_id):
 
     flash(f'TP "{titre}" supprimé avec succès', 'success')
     return redirect(url_for('laboratoire.hub_enseignant'))
-

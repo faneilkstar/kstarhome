@@ -1,0 +1,259 @@
+{% extends "enseignant/base.html" %}
+
+{% block title %}Dashboard Chef de Département | {{ departement.nom }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --chief-gold: #b8860b;
+        --chief-dark: #0f172a;
+        --chief-blue: #1e40af;
+        --glass: rgba(255, 255, 255, 0.95);
+        --soft-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+    }
+
+    body { background: #f1f5f9; font-family: 'Inter', sans-serif; }
+
+    .chief-banner {
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+        color: white;
+        border-radius: 28px;
+        padding: 35px 40px;
+        position: relative;
+        overflow: hidden;
+    }
+    .chief-banner::before {
+        content: '';
+        position: absolute; top: 0; right: 0; width: 300px; height: 100%;
+        background: linear-gradient(135deg, transparent, rgba(184, 134, 11, 0.15));
+        border-radius: 0 28px 28px 0;
+    }
+
+    .stat-card-chief {
+        background: white;
+        border-radius: 20px;
+        padding: 24px;
+        border: 1px solid rgba(0,0,0,0.04);
+        box-shadow: var(--soft-shadow);
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-card-chief:hover { transform: translateY(-4px); box-shadow: 0 30px 50px rgba(0,0,0,0.1); }
+    .stat-card-chief .stat-icon {
+        width: 50px; height: 50px; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem;
+    }
+
+    .section-card {
+        background: white;
+        border-radius: 24px;
+        padding: 28px;
+        box-shadow: var(--soft-shadow);
+        border: 1px solid rgba(0,0,0,0.03);
+    }
+
+    .ens-row { transition: all 0.2s; border-radius: 12px; padding: 12px; }
+    .ens-row:hover { background: #f8fafc; }
+
+    .cachet-preview { width: 70px; height: 70px; object-fit: contain; border-radius: 10px; border: 2px solid #e2e8f0; background: #fafafa; }
+
+    .badge-chief { background: linear-gradient(135deg, #b8860b, #d4a017); color: white; font-weight: 700; }
+
+    .btn-chief {
+        background: linear-gradient(135deg, #0f172a, #1e3a5f);
+        color: white; border: none; border-radius: 14px;
+        padding: 10px 20px; font-weight: 700; font-size: 0.85rem;
+        transition: all 0.3s;
+    }
+    .btn-chief:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(15, 23, 42, 0.3); color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- BANNIÈRE CHEF DE DÉPARTEMENT -->
+    <div class="chief-banner mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <span class="badge badge-chief px-3 py-2 mb-2 rounded-pill"><i class="fas fa-crown me-1"></i> CHEF DE DÉPARTEMENT</span>
+                <h1 class="fw-900 display-6 mb-1">{{ enseignant.grade }} {{ enseignant.nom_complet }}</h1>
+                <h4 class="mb-3 opacity-75" style="color: #b8860b;">{{ departement.nom }} <span class="badge bg-white bg-opacity-10 text-white ms-2">{{ departement.code }}</span></h4>
+                <p class="mb-0 opacity-50 small">Département actif depuis {{ departement.date_creation.strftime('%d/%m/%Y') if departement.date_creation else '—' }}</p>
+            </div>
+            <div class="col-lg-4 text-end">
+                {% if dept_cachet %}
+                <img src="{{ url_for('static', filename=dept_cachet) }}" alt="Cachet" style="max-width: 140px; max-height: 140px; border-radius: 16px; border: 3px solid rgba(255,255,255,0.2);">
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI DÉPARTEMENT -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="stat-card-chief">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon" style="background: #eff6ff; color: #1e40af;"><i class="fas fa-layer-group"></i></div>
+                    <div>
+                        <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">Filières</div>
+                        <h3 class="fw-900 mb-0">{{ stats.nb_filieres }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card-chief">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon" style="background: #fef3c7; color: #b8860b;"><i class="fas fa-chalkboard-teacher"></i></div>
+                    <div>
+                        <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">Enseignants</div>
+                        <h3 class="fw-900 mb-0">{{ stats.nb_enseignants }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card-chief">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon" style="background: #ecfdf5; color: #059669;"><i class="fas fa-user-graduate"></i></div>
+                    <div>
+                        <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">Étudiants</div>
+                        <h3 class="fw-900 mb-0">{{ stats.nb_etudiants }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card-chief">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon" style="background: #fce7f3; color: #db2777;"><i class="fas fa-book"></i></div>
+                    <div>
+                        <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.65rem; letter-spacing: 1px;">UEs</div>
+                        <h3 class="fw-900 mb-0">{{ stats.nb_ues }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- ENSEIGNANTS DU DÉPARTEMENT -->
+        <div class="col-lg-8">
+            <div class="section-card">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-900 mb-0"><i class="fas fa-users me-2" style="color: #b8860b;"></i> Enseignants du Département</h5>
+                    <span class="badge bg-dark rounded-pill">{{ enseignants_dept|length }}</span>
+                </div>
+                {% for ens in enseignants_dept %}
+                <div class="ens-row d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: {% if ens.id == enseignant.id %}linear-gradient(135deg, #b8860b, #d4a017){% else %}#e2e8f0{% endif %}; color: {% if ens.id == enseignant.id %}white{% else %}#475569{% endif %}; font-weight: 900; font-size: 0.8rem;">
+                            {{ ens.nom[0] }}{{ ens.prenom[0] if ens.prenom else '' }}
+                        </div>
+                        <div>
+                            <div class="fw-bold">{{ ens.grade or '' }} {{ ens.nom_complet }}</div>
+                            <div class="text-muted small">{{ ens.specialite or 'Spécialité non renseignée' }} — {{ ens.ues|length }} UE(s)</div>
+                        </div>
+                    </div>
+                    {% if ens.id == enseignant.id %}
+                    <span class="badge badge-chief rounded-pill"><i class="fas fa-crown me-1"></i> Vous</span>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="text-muted text-center py-4">Aucun enseignant affilié</div>
+                {% endfor %}
+            </div>
+
+            <!-- MES UES -->
+            <div class="section-card mt-4">
+                <h5 class="fw-900 mb-4"><i class="fas fa-book-open me-2" style="color: #1e40af;"></i> Mes Unités d'Enseignement</h5>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr class="text-muted small text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">
+                                <th>Code UE</th>
+                                <th>Intitulé</th>
+                                <th class="text-center">Crédits</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ue in ues %}
+                            <tr>
+                                <td><span class="fw-bold text-dark">{{ ue.code_ue }}</span></td>
+                                <td>{{ ue.intitule }}</td>
+                                <td class="text-center"><span class="badge bg-warning text-dark fw-bold">{{ ue.credits }}</span></td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('enseignant.detail_ue', ue_id=ue.id) }}" class="btn btn-chief btn-sm">SAISIR <i class="fas fa-arrow-right ms-1"></i></a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PANNEAU DROIT : CACHETS + ACTIONS -->
+        <div class="col-lg-4">
+            <!-- CACHETS DU DÉPARTEMENT -->
+            <div class="section-card mb-4">
+                <h5 class="fw-900 mb-3"><i class="fas fa-stamp me-2" style="color: #b8860b;"></i> Cachets Autorisés</h5>
+                <p class="text-muted small mb-3">Cachets distribués à votre département par le Directeur.</p>
+                <div class="row g-2">
+                    {% for s in sceaux_dept %}
+                    <div class="col-6 text-center">
+                        <div class="p-3 border rounded-3" style="background: #fafafa;">
+                            <img src="{{ url_for('static', filename=s.image_path) }}" class="cachet-preview" alt="{{ s.nom }}" onerror="this.style.display='none'">
+                            <div class="fw-bold small mt-1 text-truncate">{{ s.nom }}</div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-12 text-center py-3 text-muted small">
+                        <i class="fas fa-info-circle me-1"></i> Aucun cachet distribué
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- DOCUMENTS -->
+            <div class="section-card mb-4">
+                <h5 class="fw-900 mb-3"><i class="fas fa-file-pdf me-2" style="color: #dc2626;"></i> Documents & Décrets</h5>
+                <div class="d-grid gap-2">
+                    <button class="btn-chief d-flex align-items-center gap-2" onclick="openStampPicker('{{ url_for('enseignant.liste_etudiants') }}', 'pdf')">
+                        <i class="fas fa-list"></i> Liste des Étudiants (PDF)
+                    </button>
+                    <a href="{{ url_for('enseignant.statistiques') }}" class="btn-chief d-flex align-items-center gap-2 text-decoration-none text-center justify-content-center">
+                        <i class="fas fa-chart-bar"></i> Statistiques Département
+                    </a>
+                    <a href="{{ url_for('enseignant.documents') }}" class="btn-chief d-flex align-items-center gap-2 text-decoration-none text-center justify-content-center">
+                        <i class="fas fa-cloud-upload-alt"></i> Support de Cours
+                    </a>
+                </div>
+            </div>
+
+            <!-- SERVICES -->
+            <div class="section-card">
+                <h5 class="fw-900 mb-3"><i class="fas fa-cogs me-2" style="color: #6366f1;"></i> Services</h5>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('enseignant.bibliotheque') }}" class="d-flex align-items-center gap-2 p-3 rounded-3 text-decoration-none fw-bold" style="background: #f1f5f9; color: #475569; transition: 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                        <i class="fas fa-infinity text-primary"></i> Bibliothèque ∞
+                    </a>
+                    <a href="{{ url_for('laboratoire.hub_enseignant') }}" class="d-flex align-items-center gap-2 p-3 rounded-3 text-decoration-none fw-bold" style="background: #f1f5f9; color: #475569; transition: 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                        <i class="fas fa-flask text-success"></i> Laboratoire Virtuel
+                    </a>
+                    <a href="{{ url_for('cartes.ma_carte_enseignant') }}" class="d-flex align-items-center gap-2 p-3 rounded-3 text-decoration-none fw-bold" style="background: #f1f5f9; color: #475569; transition: 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                        <i class="fas fa-id-card" style="color: #b8860b;"></i> Ma Carte Enseignant
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'components/stamp_picker_modal.html' %}
+{% endblock %}
+

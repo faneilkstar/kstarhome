@@ -1,0 +1,186 @@
+{% extends "enseignant/base.html" %}
+
+{% block title %}Statistiques | {{ departement.nom }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-box {
+        background: white;
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+        border: 1px solid rgba(0,0,0,0.04);
+        text-align: center;
+        transition: all 0.3s;
+    }
+    .stat-box:hover { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+    .stat-box .stat-num { font-size: 2.5rem; font-weight: 900; line-height: 1; }
+    .stat-box .stat-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-top: 8px; }
+    .fil-card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); border-left: 4px solid; }
+    .progress-slim { height: 6px; border-radius: 3px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold"><i class="fas fa-chart-bar me-2" style="color: #b8860b;"></i> Statistiques Département</h2>
+            <p class="text-muted mb-0">{{ departement.nom }} <span class="badge bg-dark">{{ departement.code }}</span></p>
+        </div>
+        <a href="{{ url_for('enseignant.dashboard') }}" class="btn btn-outline-dark rounded-pill px-4">
+            <i class="fas fa-arrow-left me-1"></i> Dashboard
+        </a>
+    </div>
+
+    <!-- KPI PRINCIPAUX -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-2 col-4">
+            <div class="stat-box">
+                <div class="stat-num text-primary">{{ stats.nb_filieres }}</div>
+                <div class="stat-label">Filières</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-4">
+            <div class="stat-box">
+                <div class="stat-num" style="color: #b8860b;">{{ stats.nb_enseignants }}</div>
+                <div class="stat-label">Enseignants</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-4">
+            <div class="stat-box">
+                <div class="stat-num text-success">{{ stats.nb_etudiants }}</div>
+                <div class="stat-label">Étudiants</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-4">
+            <div class="stat-box">
+                <div class="stat-num text-info">{{ stats.nb_ues }}</div>
+                <div class="stat-label">Total UE</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-4">
+            <div class="stat-box">
+                <div class="stat-num text-danger">{{ stats.nb_ues_sans_prof }}</div>
+                <div class="stat-label">UE sans Prof</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-4">
+            <div class="stat-box">
+                <div class="stat-num text-warning">{{ stats.nb_classes_assemb }}</div>
+                <div class="stat-label">Tronc Commun</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DÉTAIL PAR FILIÈRE -->
+    <h5 class="fw-bold mb-3"><i class="fas fa-graduation-cap me-2"></i> Répartition par Filière</h5>
+    <div class="row g-3 mb-4">
+        {% for fs in stats.filieres_stats %}
+        <div class="col-md-4">
+            <div class="fil-card" style="border-color: {% if fs.filiere.type_diplome == 'fondamental' %}#3b82f6{% else %}#10b981{% endif %};">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h6 class="fw-bold mb-0">{{ fs.filiere.nom_filiere }}</h6>
+                        <span class="badge {% if fs.filiere.type_diplome == 'fondamental' %}bg-primary{% else %}bg-success{% endif %} mt-1">
+                            {{ fs.filiere.label_type }} — {{ fs.filiere.cycle or 'Licence' }}
+                        </span>
+                    </div>
+                    <span class="badge bg-dark rounded-pill">{{ fs.filiere.code_filiere }}</span>
+                </div>
+                <div class="row g-2 mt-2">
+                    <div class="col-4 text-center">
+                        <div class="fw-900 text-dark">{{ fs.nb_classes }}</div>
+                        <div class="text-muted" style="font-size: 0.65rem;">Classes</div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="fw-900 text-primary">{{ fs.nb_etudiants }}</div>
+                        <div class="text-muted" style="font-size: 0.65rem;">Étudiants</div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="fw-900 text-success">{{ fs.nb_ues }}</div>
+                        <div class="text-muted" style="font-size: 0.65rem;">UE</div>
+                    </div>
+                </div>
+                {% if stats.nb_etudiants > 0 %}
+                <div class="mt-2">
+                    <div class="progress progress-slim">
+                        <div class="progress-bar {% if fs.filiere.type_diplome == 'fondamental' %}bg-primary{% else %}bg-success{% endif %}"
+                             style="width: {{ (fs.nb_etudiants / stats.nb_etudiants * 100)|round(0) }}%"></div>
+                    </div>
+                    <div class="text-end text-muted mt-1" style="font-size: 0.6rem;">{{ (fs.nb_etudiants / stats.nb_etudiants * 100)|round(1) }}% des étudiants</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center text-muted py-4">Aucune filière dans ce département.</div>
+        {% endfor %}
+    </div>
+
+    <!-- CLASSES ASSEMBLÉES -->
+    {% if classes_assemb %}
+    <h5 class="fw-bold mb-3"><i class="fas fa-object-group text-warning me-2"></i> Classes Tronc Commun</h5>
+    <div class="row g-3 mb-4">
+        {% for ca in classes_assemb %}
+        <div class="col-md-4">
+            <div class="fil-card" style="border-color: #f59e0b;">
+                <h6 class="fw-bold mb-1">{{ ca.nom_classe }}</h6>
+                <div class="d-flex gap-1 mb-2">
+                    <span class="badge bg-warning text-dark">{{ ca.code_classe }}</span>
+                    <span class="badge bg-secondary">{{ ca.semestres_assemblee }}</span>
+                </div>
+                <div class="text-muted small">
+                    <i class="fas fa-sitemap me-1"></i> {{ ca.get_sigles_composantes() or 'Aucune composante' }}
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <span class="fw-bold text-dark">{{ ca.get_nombre_etudiants() }} étu.</span>
+                    <span class="text-muted">{{ ca.get_nombre_ues() }} UE</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- PROGRESSION NOTES -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <h5 class="fw-bold mb-3"><i class="fas fa-chart-pie me-2 text-info"></i> Progression des Notes</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded-3" style="background: #f0fdf4;">
+                        <div>
+                            <div class="fw-bold text-success">UE avec notes saisies</div>
+                            <div class="text-muted small">Notes partielles ou complètes</div>
+                        </div>
+                        <h3 class="fw-900 text-success mb-0">{{ stats.nb_ues_notes }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex justify-content-between align-items-center p-3 rounded-3" style="background: #fef2f2;">
+                        <div>
+                            <div class="fw-bold text-danger">UE sans enseignant</div>
+                            <div class="text-muted small">Nécessitent affectation</div>
+                        </div>
+                        <h3 class="fw-900 text-danger mb-0">{{ stats.nb_ues_sans_prof }}</h3>
+                    </div>
+                </div>
+            </div>
+            {% if stats.nb_ues > 0 %}
+            <div class="mt-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-bold text-muted">Taux de couverture notes</span>
+                    <span class="small fw-bold">{{ (stats.nb_ues_notes / stats.nb_ues * 100)|round(1) }}%</span>
+                </div>
+                <div class="progress" style="height: 10px; border-radius: 5px;">
+                    <div class="progress-bar bg-success" style="width: {{ (stats.nb_ues_notes / stats.nb_ues * 100)|round(0) }}%"></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

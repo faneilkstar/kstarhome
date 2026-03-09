@@ -1,61 +1,247 @@
 {% extends "base.html" %}
-{% block title %}Détails Classe{% endblock %}
-
-{% block sidebar %}
-<ul class="nav flex-column">
-  <li class="nav-item"><a class="nav-link" href="{{ url_for('directeur.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-  <li class="nav-item"><a class="nav-link active" href="{{ url_for('directeur.liste_classes') }}"><i class="fas fa-door-open"></i> Classes</a></li>
-</ul>
-{% endblock %}
+{% block title %}{{ classe.nom_classe }} — Détails Classe{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between mb-4">
-  <h2><i class="fas fa-door-open"></i> Classe {{ classe.nom_classe }}</h2>
-  <a href="{{ url_for('directeur.liste_classes') }}" class="btn btn-secondary">
-    <i class="fas fa-arrow-left"></i> Retour
-  </a>
-</div>
+<div class="container-fluid py-4">
 
-<div class="card mb-4">
-  <div class="card-header">Informations sur la classe</div>
-  <div class="card-body">
-    <p><strong>Nom :</strong> {{ classe.nom_classe }}</p>
-    <p><strong>Grade :</strong> {{ classe.grade }}</p>
-    <p><strong>Cycle :</strong> {{ classe.cycle }}</p>
-    <p><strong>Filière :</strong> {{ classe.filiere.nom_filiere }}</p>
-    <p><strong>Nombre d'étudiants :</strong> {{ etudiants|length }}</p>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-header">Étudiants inscrits ({{ etudiants|length }})</div>
-  <div class="card-body">
-    {% if etudiants %}
-    <div class="table-responsive">
-      <table class="table table-hover">
-        <thead>
-          <tr>
-            <th>Matricule</th>
-            <th>Nom</th>
-            <th>Prénom</th>
-            <th>Statut</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for etudiant in etudiants %}
-          <tr>
-            <td>{{ etudiant.get_matricule() }}</td>
-            <td>{{ etudiant.nom }}</td>
-            <td>{{ etudiant.prenom }}</td>
-            <td>{{ etudiant.statut_inscription }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('directeur.liste_classes') }}">Classes</a></li>
+                    {% if classe.est_assemblee and classe.departement_source %}
+                    <li class="breadcrumb-item"><a href="{{ url_for('directeur.detail_departement', dept_id=classe.departement_source_id) }}">{{ classe.departement_source.nom }}</a></li>
+                    {% elif classe.filiere %}
+                    <li class="breadcrumb-item"><a href="{{ url_for('directeur.detail_filiere', filiere_id=classe.filiere_id) }}">{{ classe.filiere.nom_filiere }}</a></li>
+                    {% endif %}
+                    <li class="breadcrumb-item active">{{ classe.nom_classe }}</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-1">
+                {% if classe.est_assemblee %}
+                <i class="fas fa-object-group text-warning me-2"></i>
+                {% else %}
+                <i class="fas fa-door-open text-primary me-2"></i>
+                {% endif %}
+                {{ classe.nom_classe }}
+                <span class="badge bg-dark ms-2" style="font-size: 0.6em;">{{ classe.code_classe }}</span>
+            </h2>
+            {% if classe.est_assemblee %}
+            <p class="text-muted mb-0">
+                <span class="badge bg-warning text-dark me-2"><i class="fas fa-layer-group me-1"></i> TRONC COMMUN</span>
+                {% if classe.type_diplome_assemblee == 'fondamental' %}<span class="badge bg-info">LF</span>{% else %}<span class="badge bg-success">LP</span>{% endif %}
+                <span class="badge bg-secondary">{{ classe.semestres_assemblee or 'S1-S2' }}</span>
+                <span class="badge bg-dark">{{ classe.annee }}e Année</span>
+            </p>
+            {% endif %}
+        </div>
+        <div class="d-flex gap-2">
+            {% if classe.est_assemblee %}
+            <a href="{{ url_for('directeur.ajouter_ue') }}?classe_id={{ classe.id }}" class="btn btn-success rounded-pill">
+                <i class="fas fa-plus me-1"></i> Ajouter UE
+            </a>
+            {% endif %}
+            <a href="{{ url_for('directeur.liste_classes') }}" class="btn btn-outline-dark rounded-pill">
+                <i class="fas fa-arrow-left me-1"></i> Retour
+            </a>
+        </div>
     </div>
-    {% else %}
-    <p class="text-muted">Aucun étudiant inscrit dans cette classe.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ cat }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+    {% endwith %}
+
+    <!-- INFOS CARTE -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center p-4 h-100">
+                <div class="mb-2"><i class="fas fa-users fa-2x {% if classe.est_assemblee %}text-warning{% else %}text-primary{% endif %}"></i></div>
+                <h2 class="fw-900 mb-0">{{ etudiants|length }}</h2>
+                <div class="text-muted small fw-bold">ÉTUDIANTS</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center p-4 h-100">
+                <div class="mb-2"><i class="fas fa-book-open fa-2x text-success"></i></div>
+                <h2 class="fw-900 mb-0">{{ classe.get_nombre_ues() }}</h2>
+                <div class="text-muted small fw-bold">UE</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center p-4 h-100">
+                <div class="mb-2"><i class="fas fa-graduation-cap fa-2x text-info"></i></div>
+                <h3 class="fw-bold mb-0">{{ classe.cycle or 'Licence' }}</h3>
+                <div class="text-muted small fw-bold">CYCLE</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center p-4 h-100">
+                <div class="mb-2"><i class="fas fa-stream fa-2x text-secondary"></i></div>
+                {% if classe.est_assemblee %}
+                    {% set filieres_comp = classe.get_filieres_composantes() %}
+                    {% if filieres_comp %}
+                    <div class="d-flex flex-wrap gap-1 justify-content-center">
+                        {% for fil in filieres_comp %}
+                        <span class="badge bg-dark bg-opacity-75 px-2 py-1" style="font-size: 0.75rem;">{{ fil.code_filiere or fil.nom_filiere }}</span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <h5 class="fw-bold mb-0">Tronc Commun</h5>
+                    {% endif %}
+                {% else %}
+                <h5 class="fw-bold mb-0">{{ classe.filiere.nom_filiere if classe.filiere else 'N/A' }}</h5>
+                {% endif %}
+                <div class="text-muted small fw-bold">{% if classe.est_assemblee %}FILIÈRES REGROUPÉES{% else %}FILIÈRE{% endif %}</div>
+            </div>
+        </div>
+    </div>
+
+    {% if classe.est_assemblee %}
+    <!-- CLASSES COMPOSANTES (pour tronc commun) -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header py-3 text-dark" style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 16px 16px 0 0 !important;">
+            <h5 class="mb-0 fw-bold"><i class="fas fa-sitemap me-2"></i> Classes Composantes (Unifiées)</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">Ce tronc commun regroupe les étudiants de toutes ces classes :</p>
+            <div class="d-flex flex-wrap gap-2">
+                {% for comp in classe.get_classes_composantes() %}
+                <a href="{{ url_for('directeur.detail_classe', classe_id=comp.id) }}" class="btn btn-outline-dark rounded-pill px-3">
+                    <i class="fas fa-door-open me-1"></i>
+                    <strong>{{ comp.code_classe or comp.nom_classe }}</strong>
+                    <span class="badge bg-primary ms-1">{{ comp.get_nombre_etudiants() }} étu.</span>
+                </a>
+                {% else %}
+                <span class="text-muted">Aucune classe composante trouvée (vérifiez que les filières ont des classes de même année).</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
     {% endif %}
-  </div>
+
+    <!-- UE DE CETTE CLASSE -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header py-3 text-white" style="background: linear-gradient(135deg, #0f172a, #1e3a5f); border-radius: 16px 16px 0 0 !important;">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold"><i class="fas fa-book me-2"></i> Unités d'Enseignement ({{ classe.get_nombre_ues() }})</h5>
+                <a href="{{ url_for('directeur.ajouter_ue') }}?classe_id={{ classe.id }}" class="btn btn-sm btn-light rounded-pill"><i class="fas fa-plus me-1"></i> Ajouter UE</a>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if classe.ues.count() > 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Code</th><th>Intitulé</th><th>Catégorie</th><th class="text-center">Crédits</th><th>Enseignant(s)</th>{% if classe.est_assemblee %}<th>Classes liées</th>{% endif %}<th class="text-end">Actions</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for ue in classe.ues %}
+                        <tr>
+                            <td><code class="fw-bold">{{ ue.code_ue }}</code></td>
+                            <td>
+                                {{ ue.intitule }}
+                                {% if ue.type_affectation == 'tronc_commun' %}
+                                <span class="badge bg-info bg-opacity-10 text-info ms-1" style="font-size: 0.65rem;">TC</span>
+                                {% endif %}
+                                {% if ue.nature == 'composite' %}
+                                <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">COMPOSITE</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ {'fondamentale':'danger','specialite':'primary','transversale':'success','libre':'warning'}.get(ue.categorie, 'secondary') }}">
+                                    {{ ue.categorie|capitalize if ue.categorie else '-' }}
+                                </span>
+                            </td>
+                            <td class="text-center"><span class="badge bg-dark">{{ ue.credits }}</span></td>
+                            <td>
+                                {% for ens in ue.enseignants %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary">{{ ens.nom }} {{ ens.prenom[0] if ens.prenom else '' }}.</span>
+                                {% else %}<span class="text-muted small">Non assigné</span>{% endfor %}
+                            </td>
+                            {% if classe.est_assemblee %}
+                            <td>
+                                {% set classes_comp = classe.get_classes_composantes() %}
+                                {% if classes_comp %}
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for comp in classes_comp %}
+                                    <span class="badge bg-light text-dark border" style="font-size: 0.65rem;">{{ comp.code_classe or comp.nom_classe }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                            <td class="text-end">
+                                <a href="{{ url_for('directeur.detail_ue', ue_id=ue.id) }}" class="btn btn-sm btn-outline-primary rounded-pill"><i class="fas fa-eye"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted"><i class="fas fa-book fa-2x mb-2 d-block"></i> Aucune UE</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- LISTE DES ÉTUDIANTS -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header py-3" style="background: linear-gradient(135deg, #059669, #10b981); border-radius: 16px 16px 0 0 !important;">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold text-white">
+                    <i class="fas fa-user-graduate me-2"></i>
+                    {% if classe.est_assemblee %}Étudiants Unifiés{% else %}Étudiants Inscrits{% endif %}
+                    ({{ etudiants|length }})
+                </h5>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if etudiants %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Matricule</th>
+                            <th>Nom & Prénom</th>
+                            {% if classe.est_assemblee %}<th>Classe d'origine</th>{% endif %}
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for etudiant in etudiants %}
+                        <tr>
+                            <td class="text-muted">{{ loop.index }}</td>
+                            <td><code>{{ etudiant.get_matricule() if etudiant.get_matricule else 'ETU-' ~ etudiant.id }}</code></td>
+                            <td class="fw-bold">{{ etudiant.nom|upper }} {{ etudiant.prenom|title if etudiant.prenom else '' }}</td>
+                            {% if classe.est_assemblee %}
+                            <td>
+                                {% if etudiant.classe %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary">{{ etudiant.classe.code_classe or etudiant.classe.nom_classe }}</span>
+                                {% else %}<span class="text-muted">—</span>{% endif %}
+                            </td>
+                            {% endif %}
+                            <td>
+                                {% if etudiant.statut_inscription == 'accepté' %}
+                                <span class="badge bg-success">Inscrit</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ etudiant.statut_inscription }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-users fa-3x mb-3 d-block"></i>
+                <p>Aucun étudiant {% if classe.est_assemblee %}dans les classes composantes{% else %}inscrit dans cette classe{% endif %}.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
 {% endblock %}

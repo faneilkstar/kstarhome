@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Mon Profil Etudiant{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="fas fa-user-graduate me-2" style="color: #DAA520;"></i> Mon Profil</h2>
+        <a href="{{ url_for('etudiant.dashboard') }}" class="btn btn-outline-dark rounded-pill px-3">
+            <i class="fas fa-arrow-left me-1"></i> Dashboard
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- COLONNE GAUCHE : Photo + Infos rapides -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 text-center overflow-hidden">
+                <div class="py-4 px-3" style="background: linear-gradient(135deg, #0f172a, #1e40af);">
+                    <div class="mx-auto mb-3" style="width: 150px; height: 150px; border-radius: 50%; overflow: hidden; border: 4px solid #DAA520;">
+                        {% if current_user.avatar %}
+                        <img src="/static/avatars/{{ current_user.avatar }}" class="w-100 h-100" style="object-fit: cover;">
+                        {% else %}
+                        <div class="w-100 h-100 d-flex align-items-center justify-content-center" style="background: #DAA520; font-size: 3rem; color: white; font-weight: bold;">
+                            {{ etudiant.prenom[0] if etudiant.prenom else '' }}{{ etudiant.nom[0] if etudiant.nom else '' }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <h4 class="text-white fw-bold mb-1">{{ etudiant.prenom }} {{ etudiant.nom }}</h4>
+                    <p class="text-white-50 mb-0">{{ etudiant.get_matricule() }}</p>
+                    {% if etudiant.classe %}
+                    <span class="badge bg-warning text-dark mt-2">{{ etudiant.classe.nom_classe }}</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <!-- Upload photo -->
+                    <form method="POST" enctype="multipart/form-data" class="mb-3">
+                        <label class="form-label fw-bold small text-muted">
+                            <i class="fas fa-camera me-1"></i> Changer la photo de profil
+                        </label>
+                        <input type="file" name="photo" class="form-control form-control-sm mb-2" accept="image/*">
+                        <button type="submit" class="btn btn-sm w-100 text-white" style="background: #1e40af;">
+                            <i class="fas fa-upload me-1"></i> Mettre a jour la photo
+                        </button>
+                        <small class="text-muted d-block mt-1">Cette photo sera sur votre carte etudiant</small>
+                    </form>
+                    <hr>
+                    <div class="text-start">
+                        <p class="mb-2"><i class="fas fa-envelope me-2 text-muted"></i> {{ current_user.email or 'Non renseigne' }}</p>
+                        <p class="mb-2"><i class="fas fa-phone me-2 text-muted"></i> {{ etudiant.telephone or 'Non renseigne' }}</p>
+                        <p class="mb-2"><i class="fas fa-birthday-cake me-2 text-muted"></i> {{ etudiant.date_naissance.strftime('%d/%m/%Y') if etudiant.date_naissance else 'Non renseigne' }}</p>
+                        <p class="mb-2"><i class="fas fa-venus-mars me-2 text-muted"></i> {{ etudiant.sexe or 'Non renseigne' }}</p>
+                        <p class="mb-2"><i class="fas fa-flag me-2 text-muted"></i> {{ etudiant.nationalite or 'Non renseigne' }}</p>
+                        <p class="mb-0"><i class="fas fa-map-marker-alt me-2 text-muted"></i> {{ etudiant.adresse or 'Non renseigne' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bouton carte -->
+            <div class="card border-0 shadow-sm rounded-4 mt-3">
+                <div class="card-body text-center">
+                    <a href="{{ url_for('cartes.telecharger_carte', etudiant_id=etudiant.id) }}" class="btn w-100 text-white" style="background: #DAA520;">
+                        <i class="fas fa-id-card me-2"></i> Telecharger ma carte etudiant
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLONNE DROITE : Formulaire modification -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header py-3" style="background: linear-gradient(135deg, #0f172a, #1e40af); border-radius: 16px 16px 0 0 !important;">
+                    <h5 class="text-white mb-0 fw-bold"><i class="fas fa-edit me-2"></i> Modifier mes informations</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Nom</label>
+                                <input type="text" class="form-control bg-light" value="{{ etudiant.nom }}" disabled>
+                                <small class="text-muted">Non modifiable</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Prenom</label>
+                                <input type="text" class="form-control bg-light" value="{{ etudiant.prenom }}" disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Matricule</label>
+                                <input type="text" class="form-control bg-light" value="{{ etudiant.get_matricule() }}" disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Classe</label>
+                                <input type="text" class="form-control bg-light" value="{{ etudiant.classe.nom_classe if etudiant.classe else 'N/A' }}" disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Telephone</label>
+                                <input type="tel" name="telephone" class="form-control" value="{{ etudiant.telephone or '' }}" placeholder="+228 90 00 00 00">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Situation matrimoniale</label>
+                                <select name="situation_matrimoniale" class="form-select">
+                                    <option value="">-- Choisir --</option>
+                                    <option value="Celibataire" {% if etudiant.situation_matrimoniale == 'Celibataire' %}selected{% endif %}>Celibataire</option>
+                                    <option value="Marie(e)" {% if etudiant.situation_matrimoniale == 'Marie(e)' %}selected{% endif %}>Marie(e)</option>
+                                </select>
+                            </div>
+                            <div class="col-12"><hr>
+                                <h6 class="fw-bold text-danger"><i class="fas fa-lock me-1"></i> Changer le mot de passe</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Nouveau mot de passe</label>
+                                <input type="password" name="new_password" class="form-control" placeholder="Laisser vide pour ne pas changer">
+                            </div>
+                        </div>
+                        <div class="text-end mt-4">
+                            <button type="submit" class="btn btn-lg text-white px-5 rounded-pill" style="background: #1e40af;">
+                                <i class="fas fa-save me-2"></i> Enregistrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Infos academiques -->
+            <div class="card border-0 shadow-sm rounded-4 mt-3">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-graduation-cap me-2" style="color: #DAA520;"></i> Informations academiques</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="bg-light rounded-3 p-3 text-center">
+                                <small class="text-muted fw-bold d-block">CLASSE</small>
+                                <span class="fw-bold">{{ etudiant.classe.nom_classe if etudiant.classe else 'N/A' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="bg-light rounded-3 p-3 text-center">
+                                <small class="text-muted fw-bold d-block">FILIERE</small>
+                                <span class="fw-bold">{{ etudiant.classe.filiere.nom_filiere if etudiant.classe and etudiant.classe.filiere else 'N/A' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="bg-light rounded-3 p-3 text-center">
+                                <small class="text-muted fw-bold d-block">STATUT</small>
+                                <span class="badge bg-success">{{ etudiant.statut_inscription or 'Actif' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

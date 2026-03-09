@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}Créer une classe assemblée - {{ departement.nom }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="d-flex align-items-center mb-4 gap-3">
+        <a href="{{ url_for('directeur.detail_departement', dept_id=departement.id) }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+        <h3 class="mb-0 fw-bold">
+            <i class="fas fa-object-group text-warning"></i>
+            Créer une Classe Assemblée — {{ departement.code }}
+        </h3>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ cat }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+    {% endwith %}
+
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark fw-bold">
+                    <i class="fas fa-plus-circle"></i> Nouvelle Classe Assemblée (Tronc Commun)
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info py-2">
+                        <i class="fas fa-info-circle"></i>
+                        Un tronc commun regroupe <strong>plusieurs filières</strong> d'un même niveau.
+                        Cochez les filières à regrouper, puis créez des UE pour cette classe.
+                    </div>
+
+                    <form method="POST">
+                        <!-- TYPE DE DIPLÔME -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Type de diplôme</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="form-check border rounded p-3 text-center">
+                                        <input class="form-check-input" type="radio" name="type_diplome"
+                                               value="fondamental" id="type_fond" checked
+                                               onchange="updateFilieresEtNom()">
+                                        <label class="form-check-label d-block" for="type_fond">
+                                            <strong>LF</strong><br>
+                                            <small class="text-muted">Fondamental</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check border rounded p-3 text-center">
+                                        <input class="form-check-input" type="radio" name="type_diplome"
+                                               value="professionnel" id="type_pro"
+                                               onchange="updateFilieresEtNom()">
+                                        <label class="form-check-label d-block" for="type_pro">
+                                            <strong>LP</strong><br>
+                                            <small class="text-muted">Professionnel</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ANNÉE -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Année</label>
+                            <select name="annee" class="form-select" id="selectAnnee" onchange="updateFilieresEtNom()">
+                                <option value="1">1ère année</option>
+                                <option value="2">2ème année</option>
+                                <option value="3">3ème année</option>
+                            </select>
+                        </div>
+
+                        <!-- SEMESTRES -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Semestres concernés</label>
+                            <select name="semestres" class="form-select" id="selectSemestres">
+                                <option value="S1-S2">S1-S2 (1ère année)</option>
+                                <option value="S3-S4">S3-S4 (2ème année)</option>
+                                <option value="S5-S6">S5-S6 (3ème année)</option>
+                            </select>
+                        </div>
+
+                        <!-- ========================================== -->
+                        <!-- COCHAGE DES FILIÈRES À REGROUPER           -->
+                        <!-- ========================================== -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-check-square text-primary"></i>
+                                Filières à regrouper dans ce tronc commun
+                            </label>
+                            <div class="border rounded p-3" id="filieres-container">
+                                {% if filieres %}
+                                {% for filiere in filieres %}
+                                <div class="form-check mb-2 filiere-item"
+                                     data-type="{{ filiere.type_diplome }}">
+                                    <input class="form-check-input filiere-check" type="checkbox"
+                                           name="filieres_ids" value="{{ filiere.id }}"
+                                           id="fil_{{ filiere.id }}" checked>
+                                    <label class="form-check-label" for="fil_{{ filiere.id }}">
+                                        <strong>{{ filiere.nom_filiere }}</strong>
+                                        {% if filiere.type_diplome == 'fondamental' %}
+                                        <span class="badge bg-info ms-1">LF</span>
+                                        {% else %}
+                                        <span class="badge bg-success ms-1">LP</span>
+                                        {% endif %}
+                                        <small class="text-muted ms-1">({{ filiere.classes.count() }} classes)</small>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                                {% else %}
+                                <p class="text-muted mb-0">Aucune filière dans ce département.</p>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted mt-1 d-block">
+                                <i class="fas fa-lightbulb text-warning"></i>
+                                Seules les filières du même type (LF ou LP) sont cochables.
+                                Les autres sont automatiquement masquées.
+                            </small>
+                        </div>
+
+                        <!-- NOM -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nom de la classe assemblée</label>
+                            <input type="text" name="nom" class="form-control" id="inputNom"
+                                   placeholder="Généré automatiquement si vide">
+                            <small class="text-muted">Laissez vide pour auto-générer. Ex: "{{ departement.nom }} LF1 (S1-S2)"</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-warning w-100 py-2 fw-bold">
+                            <i class="fas fa-plus-circle me-1"></i> Créer la classe assemblée
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <!-- Classes assemblées existantes -->
+            {% if classes_existantes %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-dark text-white fw-bold">
+                    <i class="fas fa-object-group"></i> Classes assemblées existantes
+                </div>
+                <div class="card-body p-0">
+                    {% for ca in classes_existantes %}
+                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <div>
+                            <strong>{{ ca.nom_classe }}</strong>
+                            <br>
+                            <small class="text-muted"><code>{{ ca.code_classe }}</code></small>
+                            <span class="badge bg-primary ms-1">{{ ca.ues.count() }} UE</span>
+                            {% if ca.type_diplome_assemblee == 'fondamental' %}
+                            <span class="badge bg-info">LF</span>
+                            {% else %}
+                            <span class="badge bg-success">LP</span>
+                            {% endif %}
+                            {% set filieres_comp = ca.get_filieres_composantes() %}
+                            {% if filieres_comp %}
+                            <div class="mt-1">
+                                <small class="text-muted">
+                                    <i class="fas fa-stream me-1"></i>
+                                    {% for fil in filieres_comp %}{{ fil.nom_filiere }}{% if not loop.last %} · {% endif %}{% endfor %}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-1">
+                            <a href="{{ url_for('directeur.ajouter_ue') }}?classe_id={{ ca.id }}"
+                               class="btn btn-outline-success btn-sm" title="Créer UE pour cette classe">
+                                <i class="fas fa-plus"></i> UE
+                            </a>
+                            <form method="POST"
+                                  action="{{ url_for('directeur.supprimer_classe_assemblee', classe_id=ca.id) }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                        onclick="return confirm('Supprimer ?')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Filières du département (aperçu) -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white fw-bold">
+                    <i class="fas fa-stream"></i> Filières du département
+                </div>
+                <div class="card-body">
+                    {% if filieres %}
+                    {% for filiere in filieres %}
+                    <div class="mb-2 pb-2 border-bottom">
+                        <strong>{{ filiere.nom_filiere }}</strong>
+                        {% if filiere.type_diplome == 'professionnel' %}
+                        <span class="badge bg-success">LP</span>
+                        {% else %}
+                        <span class="badge bg-info">LF</span>
+                        {% endif %}
+                        <div class="ms-3 mt-1">
+                            {% for c in filiere.classes.filter_by(active=True) %}
+                            <span class="badge bg-light text-dark border me-1 mb-1">{{ c.nom_classe }}</span>
+                            {% else %}
+                            <small class="text-muted">Aucune classe</small>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="text-muted mb-0">Aucune filière.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateFilieresEtNom() {
+    const type = document.querySelector('input[name="type_diplome"]:checked').value;
+    const annee = document.getElementById('selectAnnee').value;
+    const label = type === 'fondamental' ? 'LF' : 'LP';
+    const semestreMap = {'1': 'S1-S2', '2': 'S3-S4', '3': 'S5-S6'};
+
+    // Mettre à jour le semestre automatiquement
+    document.getElementById('selectSemestres').value = semestreMap[annee] || 'S1-S2';
+
+    // Mettre à jour le placeholder du nom
+    document.getElementById('inputNom').placeholder = `{{ departement.nom }} ${label}${annee} (${semestreMap[annee]})`;
+
+    // Filtrer les filières : ne montrer que celles du même type
+    document.querySelectorAll('.filiere-item').forEach(item => {
+        const filType = item.dataset.type;
+        if (filType === type) {
+            item.style.display = 'block';
+            item.querySelector('.filiere-check').checked = true;
+            item.querySelector('.filiere-check').disabled = false;
+        } else {
+            item.style.display = 'none';
+            item.querySelector('.filiere-check').checked = false;
+            item.querySelector('.filiere-check').disabled = true;
+        }
+    });
+}
+
+// Init au chargement
+document.addEventListener('DOMContentLoaded', updateFilieresEtNom);
+</script>
+{% endblock %}
+

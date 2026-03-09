@@ -5,7 +5,7 @@ Architecture V2
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
-from app.models import Departement, Enseignant, Filiere, UE
+from app.models import Departement, Enseignant, Filiere, UE, Classe
 from functools import wraps
 
 bp = Blueprint('departements', __name__, url_prefix='/directeur/departements')
@@ -81,13 +81,30 @@ def detail_departement(id):
     ues_transversales = dept.ues.filter_by(categorie='transversale', active=True).all()
     ues_libres = dept.ues.filter_by(categorie='libre', active=True).all()
 
+    # Classes assemblées (Tronc commun départemental)
+    classes_assemblees = Classe.query.filter_by(
+        departement_source_id=id, est_assemblee=True, active=True
+    ).order_by(Classe.annee).all()
+
+    # Toutes les classes du département (pour référence)
+    toutes_classes_dept = []
+    for f in filieres:
+        for c in f.classes.filter_by(active=True):
+            toutes_classes_dept.append(c)
+
+    # Enseignants pour le modal chef
+    enseignants = Enseignant.query.filter_by(actif=True).order_by(Enseignant.nom).all()
+
     return render_template('directeur/departements/detail.html',
                          departement=dept,
                          filieres=filieres,
                          ues_fondamentales=ues_fondamentales,
                          ues_specialite=ues_specialite,
                          ues_transversales=ues_transversales,
-                         ues_libres=ues_libres)
+                         ues_libres=ues_libres,
+                         classes_assemblees=classes_assemblees,
+                         toutes_classes_dept=toutes_classes_dept,
+                         enseignants=enseignants)
 
 
 @bp.route('/<int:id>/assigner-chef', methods=['POST'])

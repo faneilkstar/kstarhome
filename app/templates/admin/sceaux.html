@@ -1,0 +1,734 @@
+{% extends "base.html" %}
+{% block title %}Matrice Le Welt — Sceaux Quantiques{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg-tech: #030108;
+        --bg-paper: #fdfbf7;
+        --panel-tech: rgba(10, 5, 25, 0.85);
+        --panel-paper: rgba(255, 255, 255, 0.95);
+        --text-tech: #e2e8f0;
+        --text-paper: #1e293b;
+        --welt-blue: #0044ff;
+        --welt-cyan: #00e1ff;
+        --welt-purple: #9d00ff;
+    }
+    .welt-body { background: var(--bg-tech); color: var(--text-tech); font-family: 'Rajdhani', sans-serif; transition: background 0.5s; background-image: radial-gradient(circle at 50% 50%, #0d061c 0%, #030108 100%); min-height: 100vh; }
+    .welt-body.paper-mode { background: var(--bg-paper); background-image: none; color: var(--text-paper); }
+    .bg-panel { background: var(--panel-tech); border: 1px solid rgba(0, 225, 255, 0.3); box-shadow: 0 0 30px rgba(157, 0, 255, 0.1); transition: all 0.5s; border-radius: 24px; }
+    .paper-mode .bg-panel { background: var(--panel-paper); border-color: #cbd5e1; box-shadow: 0 15px 35px rgba(0,0,0,0.08); }
+    .cinzel { font-family: 'Cinzel', serif; }
+    .welt-input { background: rgba(0, 0, 0, 0.4); border: 1px solid #4c1d95; color: #fff; transition: all 0.3s; border-radius: 10px; padding: 8px 12px; width: 100%; }
+    .paper-mode .welt-input { background: #fff; border-color: #cbd5e1; color: #0f172a; }
+    .welt-input:focus { outline: none; border-color: var(--welt-cyan); box-shadow: 0 0 15px rgba(0, 225, 255, 0.4); }
+    .welt-select { background: rgba(0, 0, 0, 0.4); border: 1px solid #4c1d95; color: #fff; border-radius: 10px; padding: 8px 12px; width: 100%; cursor: pointer; }
+    .paper-mode .welt-select { background: #fff; border-color: #cbd5e1; color: #0f172a; }
+    input[type="range"] { accent-color: var(--welt-purple); width: 100%; }
+    .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .svg-container { transition: all 0.5s; box-shadow: inset 0 0 100px rgba(0, 68, 255, 0.1); background: rgba(0,0,0,0.3); border: 1px solid rgba(0, 68, 255, 0.4); border-radius: 24px; min-height: 500px; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; overflow: hidden; }
+    .paper-mode .svg-container { background: #fdfbf7; border: 1px solid #e2e8f0; box-shadow: 0 25px 50px rgba(0,0,0,0.15); }
+    .paper-mode #stamp-svg { mix-blend-mode: multiply; }
+    @keyframes plasma-pulse { 0% { box-shadow: 0 0 15px rgba(0, 225, 255, 0.4); } 50% { box-shadow: 0 0 25px rgba(157, 0, 255, 0.6); } 100% { box-shadow: 0 0 15px rgba(0, 68, 255, 0.4); } }
+    .btn-glow { animation: plasma-pulse 3s infinite; }
+    .welt-btn { border: 1px solid rgba(0, 225, 255, 0.5); background: rgba(5, 2, 10, 0.8); color: var(--welt-cyan); font-weight: 700; padding: 10px 16px; border-radius: 12px; cursor: pointer; transition: all 0.3s; text-align: center; font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase; text-decoration: none; display: inline-block; }
+    .welt-btn:hover { background: rgba(15, 8, 38, 0.9); transform: translateY(-1px); color: var(--welt-cyan); }
+    .welt-btn-purple { border-color: rgba(157, 0, 255, 0.5); color: var(--welt-purple); }
+    .welt-btn-primary { background: linear-gradient(135deg, #0044ff, #00e1ff, #9d00ff); color: white; border: none; font-family: 'Cinzel', serif; padding: 14px 24px; font-size: 0.9rem; letter-spacing: 2px; }
+    .paper-mode .welt-btn { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
+    .paper-mode .welt-btn-primary { background: linear-gradient(135deg, #1e3a5f, #0f172a); }
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+    .label-welt { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--welt-cyan); margin-bottom: 6px; }
+    .paper-mode .label-welt { color: #64748b; }
+    .sub-panel { background: rgba(0,0,0,0.2); padding: 16px; border-radius: 16px; border: 1px solid rgba(0,225,255,0.15); }
+    .paper-mode .sub-panel { background: #f8fafc; border-color: #e2e8f0; }
+    .sceau-card { background: rgba(0,0,0,0.3); border: 1px solid rgba(0,225,255,0.2); border-radius: 14px; padding: 10px; text-align: center; transition: all 0.3s; cursor: pointer; }
+    .sceau-card:hover { border-color: var(--welt-cyan); transform: scale(1.03); }
+    .sceau-card img { max-width: 80px; max-height: 80px; border-radius: 8px; }
+    .paper-mode .sceau-card { background: #fff; border-color: #e2e8f0; }
+    .mode-toggle { display: flex; align-items: center; gap: 8px; }
+    .toggle-track { width: 48px; height: 24px; border-radius: 12px; background: linear-gradient(90deg, #0044ff, #9d00ff); position: relative; cursor: pointer; border: none; }
+    .toggle-knob { width: 20px; height: 20px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: all 0.3s; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+    .toggle-knob.on { left: 26px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="welt-body" id="welt-root">
+    <div class="container-fluid py-4">
+        <!-- HEADER -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h1 class="cinzel fw-900 mb-0" style="background: linear-gradient(90deg, #0044ff, #00e1ff, #9d00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 1.8rem;">MATRICE LE WELT — EPS</h1>
+                <p class="mb-0 small fw-bold" style="letter-spacing: 3px; color: var(--welt-cyan);">ARCHITECTURE QUANTIQUE & DISPOSITIF DE FORMES</p>
+            </div>
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <div class="mode-toggle bg-panel px-3 py-2">
+                    <span class="small fw-bold" style="color: var(--welt-cyan);" id="label-tech">Tech</span>
+                    <button class="toggle-track" onclick="toggleMode()">
+                        <div class="toggle-knob" id="mode-knob"></div>
+                    </button>
+                    <span class="small fw-bold text-muted" id="label-paper">Papier</span>
+                </div>
+                <a href="{{ url_for('branding.distribution_sceaux') }}" class="welt-btn"><i class="fas fa-share-alt me-1"></i> Distribuer</a>
+                <a href="{{ url_for('branding.index') }}" class="welt-btn"><i class="fas fa-palette me-1"></i> Branding</a>
+                <a href="{{ url_for('directeur.dashboard') }}" class="welt-btn"><i class="fas fa-arrow-left me-1"></i> Dashboard</a>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- PANNEAU DE CONTRÔLE -->
+            <div class="col-lg-5">
+                <div class="bg-panel p-4" style="max-height: 82vh; overflow-y: auto;">
+                    <!-- Sélecteur principal -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-7">
+                            <div class="sub-panel">
+                                <div class="label-welt">Protocole Officiel</div>
+                                <select id="stamp-selector" class="welt-select" onchange="switchStamp()">
+                                    <option value="circular">1. Institutionnel (Circulaire)</option>
+                                    <option value="rectangular">2. Département (Rectangulaire)</option>
+                                    <option value="square">3. Directeur (Carré)</option>
+                                    <option value="hexagon">4. Validation (Hexagonal)</option>
+                                    <option value="star">5. Pôle d'Excellence (Étoile)</option>
+                                    <option value="oval">6. Nominatif (Ovale)</option>
+                                    <option value="chiefcircle">7. Chef de Département (Cercle)</option>
+                                    <option value="freemode">8. Mode Libre (Import Image)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="sub-panel">
+                                <div class="label-welt" style="color: var(--welt-purple);">Spectre</div>
+                                <div class="d-flex gap-2">
+                                    <button onclick="setWeltTheme()" class="welt-btn flex-grow-1" style="background: linear-gradient(90deg, #0044ff, #00e1ff, #9d00ff); color: white; border: none; font-size: 0.7rem;">LE WELT</button>
+                                    <input type="color" id="global-color" value="#00e1ff" class="form-control form-control-color p-0" style="width: 40px; height: 34px; border-radius: 8px; border: none;" oninput="updateColorGradient()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 1. CIRCULAIRE -->
+                    <div id="controls-circular" class="form-section active fade-in">
+                        <div class="sub-panel mb-3">
+                            <div class="label-welt mb-2"><i class="fas fa-university me-1"></i> Sceau Institutionnel</div>
+                            <input type="text" id="circ-top" class="welt-input mb-2" value="{{ config.nom_ecole or 'ÉCOLE POLYTECHNIQUE' }}" oninput="updateStamp()">
+                            <input type="text" id="circ-bottom" class="welt-input mb-2" value="{{ config.ville or 'LOMÉ' }} - {{ config.pays or 'TOGO' }} • EST. {{ config.annee_creation or 1974 }}" oninput="updateStamp()">
+                            <input type="text" id="circ-center" class="welt-input mb-2 text-center cinzel fw-bold" style="font-size: 1.2rem;" value="{{ config.nom_court or 'EPS' }}" oninput="updateStamp()">
+                            <div class="mt-3 pt-3" style="border-top: 1px solid rgba(0,225,255,0.15);">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="label-welt mb-0">Déformation Spirographe</span>
+                                    <span class="label-welt mb-0" id="fiber-val" style="color: var(--welt-purple);">55</span>
+                                </div>
+                                <input type="range" id="input-fibers" min="10" max="150" value="55" oninput="generateFibers()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. RECTANGULAIRE -->
+                    <div id="controls-rectangular" class="form-section fade-in">
+                        <div class="sub-panel mb-3">
+                            <div class="label-welt mb-2"><i class="fas fa-building me-1"></i> Cachet Département</div>
+                            <select id="input-dept-select" class="welt-select mb-2" onchange="fillDeptInfo()">
+                                <option value="">-- Choisir un département --</option>
+                                {% for dept in departements %}
+                                <option value="{{ dept.id }}" data-nom="{{ dept.nom }}" data-code="{{ dept.code }}" data-chef="{{ dept.chef.nom_complet if dept.chef else '' }}" data-grade="{{ dept.chef.grade if dept.chef else '' }}">{{ dept.nom }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" id="rect-top" class="welt-input mb-2" value="{{ config.nom_ecole or 'ÉCOLE POLYTECHNIQUE' }}" oninput="updateStamp()">
+                            <input type="text" id="rect-dept" class="welt-input mb-2 cinzel fw-bold" value="DÉPARTEMENT" oninput="updateStamp()">
+                            <input type="text" id="rect-chef" class="welt-input mb-2" value="" placeholder="Chef de département (auto)" oninput="updateStamp()">
+                            <input type="text" id="rect-sigle" class="welt-input text-center fw-bold" value="DPT" oninput="updateStamp()">
+                        </div>
+                    </div>
+
+                    <!-- 3. CARRÉ (DIRECTEUR) -->
+                    <div id="controls-square" class="form-section fade-in">
+                        <div class="sub-panel mb-3">
+                            <div class="label-welt mb-2"><i class="fas fa-shield-alt me-1"></i> Cachet du Directeur</div>
+                            <input type="text" id="sq-title" class="welt-input mb-2 cinzel fw-bold" value="{{ config.nom_ecole or 'ÉCOLE POLYTECHNIQUE' }}" oninput="updateStamp()">
+                            <input type="text" id="sq-center" class="welt-input mb-2 text-center fw-bold" style="font-size: 1.2rem;" value="{{ config.nom_court or 'EPS' }}" oninput="updateStamp()">
+                            <input type="text" id="sq-directeur" class="welt-input mb-2 fw-bold" value="{{ config.nom_directeur or 'LE DIRECTEUR' }}" placeholder="Nom du Directeur" oninput="updateStamp()">
+                            <input type="text" id="sq-bottom" class="welt-input" value="DIRECTION GÉNÉRALE" oninput="updateStamp()">
+                        </div>
+                    </div>
+
+                    <!-- 4. HEXAGONAL -->
+                    <div id="controls-hexagon" class="form-section fade-in">
+                        <div class="sub-panel mb-3">
+                            <div class="label-welt mb-2"><i class="fas fa-check-double me-1"></i> Validation Officielle</div>
+                            <input type="text" id="hex-top" class="welt-input mb-2 fw-bold" value="VALIDATION OFFICIELLE" oninput="updateStamp()">
+                            <input type="text" id="hex-center" class="welt-input mb-2 text-center fw-bold" value="CONFORME" oninput="updateStamp()">
+                            <input type="text" id="hex-bottom" class="welt-input" value="SYSTÈMES QUANTIQUES" oninput="updateStamp()">
+                        </div>
+                    </div>
+
+                    <!-- 5. ÉTOILE -->
+                    <div id="controls-star" class="form-section fade-in">
+                        <div class="sub-panel mb-3">
+                            <div class="label-welt mb-2"><i class="fas fa-star me-1"></i> Pôle d'Excellence</div>
+                            <input type="text" id="star-top" class="welt-input mb-2 cinzel fw-bold" value="PÔLE D'EXCELLENCE" oninput="updateStamp()">
+                            <input type="text" id="star-center" class="welt-input mb-2 text-center fw-bold" style="font-size: 1.2rem;" value="1er" oninput="updateStamp()">
+                            <input type="text" id="star-bottom" class="welt-input mb-2" value="RECHERCHE & INNOVATION" oninput="updateStamp()">
+                            <div class="mt-3 pt-3" style="border-top: 1px solid rgba(157,0,255,0.2);">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="label-welt mb-0" style="color: var(--welt-purple);">Nombre de Pointes</span>
+                                    <span class="label-welt mb-0" style="color: var(--welt-purple);" id="star-val">5</span>
+                                </div>
+                                <input type="range" id="input-star" min="4" max="12" value="5" oninput="drawStar()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. OVALE -->
+                    <div id="controls-oval" class="form-section fade-in">
+                        <div class="sub-panel mb-3">
+                            <div class="label-welt mb-2"><i class="fas fa-user-tie me-1"></i> Cachet Nominatif</div>
+                            <select id="oval-dept-select" class="welt-select mb-2" onchange="fillOvalChef()">
+                                <option value="">-- Chef de département (auto) --</option>
+                                {% for dept in departements %}
+                                <option value="{{ dept.id }}" data-nom="{{ dept.nom }}" data-code="{{ dept.code }}" data-chef="{{ dept.chef.nom_complet if dept.chef else '' }}" data-grade="{{ dept.chef.grade if dept.chef else '' }}">{{ dept.nom }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" id="oval-name" class="welt-input mb-2 cinzel fw-bold" value="{{ config.nom_directeur or 'DR. NOM' }}" placeholder="Prénom & NOM" oninput="updateStamp()">
+                            <input type="text" id="oval-grade" class="welt-input mb-2" value="PROFESSEUR TITULAIRE" placeholder="Grade" oninput="updateStamp()">
+                            <input type="text" id="oval-role" class="welt-input mb-2 fw-bold" value="DIRECTEUR" placeholder="Fonction" oninput="updateStamp()">
+                            <input type="text" id="oval-sigle" class="welt-input text-center fw-bold" value="{{ config.nom_court or 'EPS' }}" placeholder="Sigle" oninput="updateStamp()">
+                        </div>
+                    </div>
+
+                    <!-- 7. CHEF DE DÉPARTEMENT (CERCLE NOMINATIF) -->
+                    <div id="controls-chiefcircle" class="form-section fade-in">
+                        <div class="sub-panel mb-3">
+                            <div class="label-welt mb-2"><i class="fas fa-crown me-1"></i> Cachet Chef de Département</div>
+                            <select id="chief-dept-select" class="welt-select mb-2" onchange="fillChiefCircle()">
+                                <option value="">-- Sélectionner le département --</option>
+                                {% for dept in departements %}
+                                <option value="{{ dept.id }}" data-nom="{{ dept.nom }}" data-code="{{ dept.code }}" data-chef="{{ dept.chef.nom_complet if dept.chef else '' }}" data-grade="{{ dept.chef.grade if dept.chef else '' }}">{{ dept.nom }}{% if dept.chef %} — {{ dept.chef.nom_complet }}{% endif %}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="text" id="chief-ecole" class="welt-input mb-2" value="{{ config.nom_ecole or 'ÉCOLE POLYTECHNIQUE' }}" oninput="updateStamp()">
+                            <input type="text" id="chief-dept" class="welt-input mb-2 cinzel fw-bold" value="DÉPARTEMENT" oninput="updateStamp()">
+                            <input type="text" id="chief-nom" class="welt-input mb-2 fw-bold" value="CHEF DE DÉPARTEMENT" placeholder="Nom complet (auto)" oninput="updateStamp()">
+                            <input type="text" id="chief-grade" class="welt-input mb-2" value="" placeholder="Grade (auto)" oninput="updateStamp()">
+                            <input type="text" id="chief-sigle" class="welt-input text-center fw-bold" value="DPT" oninput="updateStamp()">
+                        </div>
+                    </div>
+
+                    <!-- 8. MODE LIBRE (IMPORT IMAGE) -->
+                    <div id="controls-freemode" class="form-section fade-in">
+                        <div class="sub-panel mb-3">
+                            <div class="label-welt mb-2"><i class="fas fa-magic me-1"></i> Mode Libre — Import & Personnalisation</div>
+                            <p class="small mb-3" style="color: rgba(255,255,255,0.5);">Importez votre propre image de cachet (PNG transparent recommandé) ou un SVG.</p>
+                            <div class="mb-3">
+                                <label class="d-block mb-2 fw-bold" style="color: var(--welt-cyan); font-size: 0.75rem;">IMPORTER UNE IMAGE</label>
+                                <input type="file" id="free-image-upload" class="welt-input" accept="image/*,.svg" onchange="loadFreeImage(event)">
+                            </div>
+                            <input type="text" id="free-label" class="welt-input mb-2 fw-bold text-center" value="" placeholder="Texte à superposer (optionnel)" oninput="updateFreeLabel()">
+                            <div class="d-flex gap-2">
+                                <div class="flex-grow-1">
+                                    <label class="d-block mb-1" style="color: rgba(255,255,255,0.4); font-size: 0.65rem;">TAILLE</label>
+                                    <input type="range" id="free-size" min="100" max="550" value="400" oninput="updateFreeStamp()">
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label class="d-block mb-1" style="color: rgba(255,255,255,0.4); font-size: 0.65rem;">OPACITÉ</label>
+                                    <input type="range" id="free-opacity" min="20" max="100" value="100" oninput="updateFreeStamp()">
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mt-2">
+                                <div class="flex-grow-1">
+                                    <label class="d-block mb-1" style="color: rgba(255,255,255,0.4); font-size: 0.65rem;">ROTATION °</label>
+                                    <input type="range" id="free-rotation" min="-180" max="180" value="0" oninput="updateFreeStamp()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BOUTONS D'EXPORT -->
+                    <div class="mt-4 pt-3" style="border-top: 1px solid rgba(0,225,255,0.2);">
+                        <div class="row g-2 mb-2">
+                            <div class="col-6"><button onclick="downloadFormat('svg')" class="welt-btn w-100">SVG Vectoriel</button></div>
+                            <div class="col-6"><button onclick="downloadFormat('png')" class="welt-btn welt-btn-purple w-100">PNG Transparent</button></div>
+                        </div>
+                        <button onclick="sauvegarderCachet()" class="welt-btn welt-btn-primary w-100 btn-glow">
+                            <i class="fas fa-save me-2"></i> ENREGISTRER COMME CACHET OFFICIEL
+                        </button>
+                    </div>
+
+                    <!-- GALERIE SCEAUX EXISTANTS -->
+                    {% if sceaux_existants %}
+                    <div class="mt-4 pt-3" style="border-top: 1px solid rgba(0,225,255,0.2);">
+                        <div class="label-welt mb-3"><i class="fas fa-archive me-1"></i> Sceaux Enregistrés ({{ sceaux_existants|length }})</div>
+                        <div class="row g-2">
+                            {% for s in sceaux_existants[:8] %}
+                            <div class="col-3">
+                                <div class="sceau-card" title="{{ s.nom }}">
+                                    <img src="{{ url_for('static', filename=s.image_path) }}" alt="{{ s.nom }}" onerror="this.style.display='none'">
+                                    <div class="small mt-1 text-truncate" style="font-size: 0.6rem;">{{ s.type_forme }}</div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ZONE D'APERÇU SVG -->
+            <div class="col-lg-7">
+                <div class="svg-container" id="preview-area">
+                    <svg id="stamp-svg" viewBox="0 0 600 600" width="100%" style="max-width: 550px; max-height: 550px; overflow: visible;" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#0044ff" id="stop1"/>
+                                <stop offset="50%" stop-color="#00e1ff" id="stop2"/>
+                                <stop offset="100%" stop-color="#9d00ff" id="stop3"/>
+                            </linearGradient>
+                            <linearGradient id="reverseGradient" x1="100%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#9d00ff" id="r-stop1"/>
+                                <stop offset="50%" stop-color="#00e1ff" id="r-stop2"/>
+                                <stop offset="100%" stop-color="#0044ff" id="r-stop3"/>
+                            </linearGradient>
+                            <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feGaussianBlur stdDeviation="1.5" result="blur"/>
+                                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                            <filter id="strongGlow" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="3.5" result="blur"/>
+                                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                            <path id="path-circ-top" d="M 100 300 A 200 200 0 1 1 500 300" fill="transparent"/>
+                            <path id="path-circ-bottom" d="M 500 300 A 200 200 0 0 1 100 300" fill="transparent"/>
+                            <path id="path-oval-top" d="M 70 300 A 230 140 0 1 1 530 300" fill="transparent"/>
+                            <path id="path-oval-bottom" d="M 530 300 A 230 140 0 0 1 70 300" fill="transparent"/>
+                            <pattern id="techGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="url(#reverseGradient)" stroke-width="0.8" opacity="0.3"/>
+                                <circle cx="20" cy="20" r="1.5" fill="url(#mainGradient)" opacity="0.6"/>
+                            </pattern>
+                        </defs>
+                        <g id="main-layer">
+                            <!-- 1. CIRCULAIRE -->
+                            <g id="svg-circular" class="stamp-group fade-in">
+                                <g id="quantum-fibers" filter="url(#softGlow)"></g>
+                                <circle cx="300" cy="300" r="230" fill="none" stroke="url(#mainGradient)" stroke-width="3"/>
+                                <circle cx="300" cy="300" r="165" fill="none" stroke="url(#reverseGradient)" stroke-width="2"/>
+                                <circle cx="300" cy="300" r="158" fill="none" stroke="url(#mainGradient)" stroke-width="1.5" stroke-dasharray="4 6"/>
+                                <text font-family="Cinzel, serif" font-size="26" font-weight="800" fill="url(#mainGradient)" letter-spacing="2" filter="url(#softGlow)">
+                                    <textPath id="out-circ-top" href="#path-circ-top" startOffset="50%" text-anchor="middle">ÉCOLE POLYTECHNIQUE</textPath>
+                                </text>
+                                <text font-family="Rajdhani, sans-serif" font-size="22" font-weight="700" fill="url(#reverseGradient)" letter-spacing="4">
+                                    <textPath id="out-circ-bottom" href="#path-circ-bottom" startOffset="50%" text-anchor="middle">LOMÉ - TOGO</textPath>
+                                </text>
+                                <g transform="translate(300, 290)">
+                                    <path d="M -90,0 C -90,-50 90,-50 90,0 C 90,50 -90,50 -90,0" fill="none" stroke="url(#mainGradient)" stroke-width="2" transform="rotate(30)"/>
+                                    <path d="M -90,0 C -90,-50 90,-50 90,0 C 90,50 -90,50 -90,0" fill="none" stroke="url(#reverseGradient)" stroke-width="2" transform="rotate(90)"/>
+                                    <path d="M -90,0 C -90,-50 90,-50 90,0 C 90,50 -90,50 -90,0" fill="none" stroke="url(#mainGradient)" stroke-width="2" transform="rotate(150)"/>
+                                    <circle cx="0" cy="-60" r="5" fill="url(#mainGradient)" filter="url(#strongGlow)"/>
+                                    <circle cx="51.96" cy="30" r="5" fill="url(#reverseGradient)" filter="url(#strongGlow)"/>
+                                    <circle cx="-51.96" cy="30" r="5" fill="url(#mainGradient)" filter="url(#strongGlow)"/>
+                                </g>
+                                <text id="out-circ-center" x="300" y="325" font-family="Cinzel, serif" font-size="85" font-weight="900" fill="url(#mainGradient)" text-anchor="middle" filter="url(#strongGlow)">EPS</text>
+                            </g>
+
+                            <!-- 2. RECTANGULAIRE -->
+                            <g id="svg-rectangular" class="stamp-group" style="display:none;">
+                                <rect x="20" y="40" width="560" height="240" rx="15" fill="url(#techGrid)"/>
+                                <rect x="20" y="40" width="560" height="240" rx="15" fill="none" stroke="url(#mainGradient)" stroke-width="4" filter="url(#softGlow)"/>
+                                <rect x="30" y="50" width="540" height="220" rx="10" fill="none" stroke="url(#reverseGradient)" stroke-width="2" stroke-dasharray="10 5"/>
+                                <path d="M 20 80 L 20 55 Q 20 40 35 40 L 60 40" fill="none" stroke="url(#mainGradient)" stroke-width="6" filter="url(#strongGlow)"/>
+                                <path d="M 580 240 L 580 265 Q 580 280 565 280 L 540 280" fill="none" stroke="url(#mainGradient)" stroke-width="6" filter="url(#strongGlow)"/>
+                                <g transform="translate(110, 160)">
+                                    <circle cx="0" cy="0" r="55" fill="rgba(3,1,8,0.8)" stroke="url(#reverseGradient)" stroke-width="3"/>
+                                    <circle cx="0" cy="0" r="45" fill="none" stroke="url(#mainGradient)" stroke-width="1.5" stroke-dasharray="5 5"/>
+                                    <text id="out-rect-sigle" x="0" y="15" font-family="Cinzel, serif" font-size="36" font-weight="900" fill="url(#mainGradient)" text-anchor="middle" filter="url(#strongGlow)">DPT</text>
+                                </g>
+                                <line x1="190" y1="60" x2="190" y2="260" stroke="url(#mainGradient)" stroke-width="2"/>
+                                <text id="out-rect-top" x="220" y="90" font-family="Rajdhani, sans-serif" font-size="14" font-weight="700" fill="url(#reverseGradient)" letter-spacing="3">ÉCOLE POLYTECHNIQUE</text>
+                                <text id="out-rect-dept" x="220" y="135" font-family="Cinzel, serif" font-size="22" font-weight="900" fill="url(#mainGradient)" letter-spacing="1">DÉPARTEMENT</text>
+                                <line x1="220" y1="150" x2="550" y2="150" stroke="url(#reverseGradient)" stroke-width="2" stroke-dasharray="4 4"/>
+                                <text x="220" y="178" font-family="Rajdhani, sans-serif" font-size="10" font-weight="800" fill="url(#reverseGradient)" letter-spacing="2">CHEF DE DÉPARTEMENT :</text>
+                                <text id="out-rect-chef" x="220" y="205" font-family="Rajdhani, sans-serif" font-size="18" font-weight="800" fill="url(#mainGradient)" letter-spacing="2"></text>
+                                <text x="220" y="255" font-family="Rajdhani, sans-serif" font-size="10" font-weight="700" fill="url(#mainGradient)" letter-spacing="4" opacity="0.6">VALIDE POUR PUBLICATION OFFICIELLE</text>
+                            </g>
+
+                            <!-- 3. CARRÉ (DIRECTEUR) -->
+                            <g id="svg-square" class="stamp-group" style="display:none;">
+                                <rect x="50" y="50" width="500" height="500" rx="20" fill="url(#techGrid)" stroke="url(#mainGradient)" stroke-width="6" filter="url(#softGlow)"/>
+                                <rect x="62" y="62" width="476" height="476" rx="14" fill="none" stroke="url(#reverseGradient)" stroke-width="2.5" stroke-dasharray="12 6"/>
+                                <!-- Coins décoratifs -->
+                                <path d="M 50 90 L 50 65 Q 50 50 65 50 L 90 50" fill="none" stroke="url(#mainGradient)" stroke-width="8" filter="url(#strongGlow)"/>
+                                <path d="M 510 50 L 535 50 Q 550 50 550 65 L 550 90" fill="none" stroke="url(#mainGradient)" stroke-width="8" filter="url(#strongGlow)"/>
+                                <path d="M 50 510 L 50 535 Q 50 550 65 550 L 90 550" fill="none" stroke="url(#mainGradient)" stroke-width="8" filter="url(#strongGlow)"/>
+                                <path d="M 510 550 L 535 550 Q 550 550 550 535 L 550 510" fill="none" stroke="url(#mainGradient)" stroke-width="8" filter="url(#strongGlow)"/>
+
+                                <text id="out-sq-title" x="300" y="130" font-family="Cinzel, serif" font-size="24" font-weight="900" fill="url(#mainGradient)" text-anchor="middle" letter-spacing="1">ÉCOLE POLYTECHNIQUE</text>
+                                <line x1="130" y1="148" x2="470" y2="148" stroke="url(#reverseGradient)" stroke-width="3"/>
+
+                                <text id="out-sq-center" x="300" y="305" font-family="Cinzel, serif" font-size="120" font-weight="900" fill="url(#mainGradient)" text-anchor="middle" filter="url(#strongGlow)">EPS</text>
+
+                                <!-- Étoile décorative -->
+                                <text x="300" y="195" font-family="serif" font-size="28" fill="url(#reverseGradient)" text-anchor="middle">★</text>
+
+                                <line x1="130" y1="405" x2="470" y2="405" stroke="url(#reverseGradient)" stroke-width="3"/>
+
+                                <!-- Nom du directeur -->
+                                <text id="out-sq-directeur" x="300" y="445" font-family="Cinzel, serif" font-size="20" font-weight="800" fill="url(#mainGradient)" text-anchor="middle" letter-spacing="1">LE DIRECTEUR</text>
+
+                                <text id="out-sq-bottom" x="300" y="500" font-family="Rajdhani, sans-serif" font-size="18" font-weight="800" fill="url(#reverseGradient)" text-anchor="middle" letter-spacing="4">DIRECTION GÉNÉRALE</text>
+                            </g>
+
+                            <!-- 4. HEXAGONAL -->
+                            <g id="svg-hexagon" class="stamp-group" style="display:none;">
+                                <polygon points="516.5,175 516.5,425 300,550 83.5,425 83.5,175 300,50" fill="url(#techGrid)" stroke="url(#mainGradient)" stroke-width="6" filter="url(#softGlow)"/>
+                                <polygon points="499.1,185 499.1,415 300,530 100.9,415 100.9,185 300,70" fill="none" stroke="url(#reverseGradient)" stroke-width="2.5" stroke-dasharray="8 6"/>
+                                <path id="path-hex-top" d="M 160 300 A 140 140 0 1 1 440 300" fill="transparent"/>
+                                <path id="path-hex-bottom" d="M 440 300 A 140 140 0 0 1 160 300" fill="transparent"/>
+                                <text font-family="Rajdhani, sans-serif" font-size="26" font-weight="800" fill="url(#mainGradient)" letter-spacing="3">
+                                    <textPath id="out-hex-top" href="#path-hex-top" startOffset="50%" text-anchor="middle">VALIDATION OFFICIELLE</textPath>
+                                </text>
+                                <text font-family="Rajdhani, sans-serif" font-size="18" font-weight="700" fill="url(#reverseGradient)" letter-spacing="3">
+                                    <textPath id="out-hex-bottom" href="#path-hex-bottom" startOffset="50%" text-anchor="middle">SYSTÈMES QUANTIQUES</textPath>
+                                </text>
+                                <path d="M 230 310 L 280 370 L 380 230" fill="none" stroke="url(#mainGradient)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" filter="url(#strongGlow)"/>
+                                <text id="out-hex-center" x="300" y="440" font-family="Cinzel, serif" font-size="34" font-weight="900" fill="url(#mainGradient)" text-anchor="middle" letter-spacing="2">CONFORME</text>
+                                <line x1="200" y1="460" x2="400" y2="460" stroke="url(#reverseGradient)" stroke-width="3"/>
+                            </g>
+
+                            <!-- 5. ÉTOILE -->
+                            <g id="svg-star" class="stamp-group" style="display:none;">
+                                <circle cx="300" cy="300" r="260" fill="none" stroke="url(#mainGradient)" stroke-width="4" stroke-dasharray="12 6"/>
+                                <path id="path-star-top" d="M 80 300 A 220 220 0 1 1 520 300" fill="transparent"/>
+                                <path id="path-star-bottom" d="M 520 300 A 220 220 0 0 1 80 300" fill="transparent"/>
+                                <text font-family="Cinzel, serif" font-size="30" font-weight="800" fill="url(#mainGradient)" letter-spacing="2" filter="url(#softGlow)">
+                                    <textPath id="out-star-top" href="#path-star-top" startOffset="50%" text-anchor="middle">PÔLE D'EXCELLENCE</textPath>
+                                </text>
+                                <text font-family="Rajdhani, sans-serif" font-size="20" font-weight="700" fill="url(#reverseGradient)" letter-spacing="4">
+                                    <textPath id="out-star-bottom" href="#path-star-bottom" startOffset="50%" text-anchor="middle">RECHERCHE & INNOVATION</textPath>
+                                </text>
+                                <polygon id="star-polygon" fill="url(#techGrid)" stroke="url(#mainGradient)" stroke-width="6" stroke-linejoin="round" filter="url(#softGlow)"/>
+                                <g id="star-points" fill="url(#mainGradient)" filter="url(#strongGlow)"></g>
+                                <circle cx="300" cy="300" r="65" fill="rgba(3,1,8,0.8)" stroke="url(#reverseGradient)" stroke-width="4"/>
+                                <text id="out-star-center" x="300" y="325" font-family="Cinzel, serif" font-size="50" font-weight="900" fill="url(#mainGradient)" text-anchor="middle" filter="url(#strongGlow)">1er</text>
+                            </g>
+
+                            <!-- 6. OVALE -->
+                            <g id="svg-oval" class="stamp-group" style="display:none;">
+                                <ellipse cx="300" cy="300" rx="280" ry="180" fill="none" stroke="url(#mainGradient)" stroke-width="6" filter="url(#softGlow)"/>
+                                <ellipse cx="300" cy="300" rx="270" ry="170" fill="url(#techGrid)" stroke="url(#reverseGradient)" stroke-width="2" stroke-dasharray="8 6"/>
+                                <ellipse cx="300" cy="300" rx="190" ry="100" fill="none" stroke="url(#mainGradient)" stroke-width="3"/>
+                                <text font-family="Cinzel, serif" font-size="28" font-weight="900" fill="url(#mainGradient)" letter-spacing="1">
+                                    <textPath id="out-oval-name" href="#path-oval-top" startOffset="50%" text-anchor="middle">DR. NOM</textPath>
+                                </text>
+                                <text font-family="Rajdhani, sans-serif" font-size="20" font-weight="800" fill="url(#reverseGradient)" letter-spacing="3">
+                                    <textPath id="out-oval-role" href="#path-oval-bottom" startOffset="50%" text-anchor="middle">DIRECTEUR</textPath>
+                                </text>
+                                <text id="out-oval-sigle" x="300" y="295" font-family="Cinzel, serif" font-size="60" font-weight="900" fill="url(#mainGradient)" text-anchor="middle" filter="url(#strongGlow)">EPS</text>
+                                <line x1="180" y1="315" x2="420" y2="315" stroke="url(#reverseGradient)" stroke-width="3" stroke-dasharray="6 4"/>
+                                <text id="out-oval-grade" x="300" y="345" font-family="Rajdhani, sans-serif" font-size="14" font-weight="800" fill="url(#mainGradient)" text-anchor="middle" letter-spacing="3">PROFESSEUR TITULAIRE</text>
+                                <circle cx="110" cy="300" r="7" fill="url(#mainGradient)" filter="url(#strongGlow)"/>
+                                <circle cx="490" cy="300" r="7" fill="url(#mainGradient)" filter="url(#strongGlow)"/>
+                            </g>
+
+                            <!-- 7. CHEF DE DÉPARTEMENT (CERCLE NOMINATIF) -->
+                            <g id="svg-chiefcircle" class="stamp-group" style="display:none;">
+                                <!-- Cercles concentriques -->
+                                <circle cx="300" cy="300" r="250" fill="none" stroke="url(#mainGradient)" stroke-width="5" filter="url(#softGlow)"/>
+                                <circle cx="300" cy="300" r="240" fill="url(#techGrid)" stroke="url(#reverseGradient)" stroke-width="2"/>
+                                <circle cx="300" cy="300" r="200" fill="none" stroke="url(#mainGradient)" stroke-width="3" stroke-dasharray="8 4"/>
+                                <circle cx="300" cy="300" r="130" fill="none" stroke="url(#reverseGradient)" stroke-width="2.5"/>
+                                <circle cx="300" cy="300" r="125" fill="none" stroke="url(#mainGradient)" stroke-width="1" stroke-dasharray="3 3"/>
+
+                                <!-- Texte circulaire : école en haut -->
+                                <path id="path-chief-top" d="M 70 300 A 230 230 0 1 1 530 300" fill="transparent"/>
+                                <path id="path-chief-bottom" d="M 530 300 A 230 230 0 0 1 70 300" fill="transparent"/>
+
+                                <text font-family="Cinzel, serif" font-size="22" font-weight="800" fill="url(#mainGradient)" letter-spacing="2">
+                                    <textPath id="out-chief-ecole" href="#path-chief-top" startOffset="50%" text-anchor="middle">ÉCOLE POLYTECHNIQUE</textPath>
+                                </text>
+
+                                <!-- Texte circulaire : département en bas -->
+                                <text font-family="Rajdhani, sans-serif" font-size="20" font-weight="700" fill="url(#reverseGradient)" letter-spacing="3">
+                                    <textPath id="out-chief-dept" href="#path-chief-bottom" startOffset="50%" text-anchor="middle">DÉPARTEMENT</textPath>
+                                </text>
+
+                                <!-- Étoiles décoratives entre les cercles -->
+                                <circle cx="300" cy="55" r="6" fill="url(#mainGradient)" filter="url(#strongGlow)"/>
+                                <circle cx="300" cy="545" r="6" fill="url(#mainGradient)" filter="url(#strongGlow)"/>
+                                <circle cx="55" cy="300" r="5" fill="url(#reverseGradient)" filter="url(#strongGlow)"/>
+                                <circle cx="545" cy="300" r="5" fill="url(#reverseGradient)" filter="url(#strongGlow)"/>
+
+                                <!-- Zone centrale : Sigle + Nom + Grade -->
+                                <text id="out-chief-sigle" x="300" y="270" font-family="Cinzel, serif" font-size="65" font-weight="900" fill="url(#mainGradient)" text-anchor="middle" filter="url(#strongGlow)">DPT</text>
+
+                                <line x1="195" y1="285" x2="405" y2="285" stroke="url(#reverseGradient)" stroke-width="2.5" stroke-dasharray="5 5"/>
+
+                                <text font-family="Rajdhani, sans-serif" font-size="14" font-weight="800" fill="url(#reverseGradient)" text-anchor="middle" letter-spacing="2">
+                                    <tspan id="out-chief-titre" x="300" y="310">CHEF DE DÉPARTEMENT</tspan>
+                                </text>
+                                <text font-family="Cinzel, serif" font-size="18" font-weight="900" fill="url(#mainGradient)" text-anchor="middle" letter-spacing="1">
+                                    <tspan id="out-chief-nom" x="300" y="340">NOM DU CHEF</tspan>
+                                </text>
+                                <text font-family="Rajdhani, sans-serif" font-size="12" font-weight="700" fill="url(#reverseGradient)" text-anchor="middle" letter-spacing="2">
+                                    <tspan id="out-chief-grade" x="300" y="365">GRADE</tspan>
+                                </text>
+
+                                <!-- Petite couronne décorative en haut du centre -->
+                                <text x="300" y="210" font-family="serif" font-size="30" fill="url(#mainGradient)" text-anchor="middle" filter="url(#strongGlow)">♛</text>
+                            </g>
+
+                            <!-- 8. MODE LIBRE (IMAGE IMPORTÉE) -->
+                            <g id="svg-freemode" class="stamp-group" style="display:none;">
+                                <!-- Cadre décoratif -->
+                                <circle cx="300" cy="300" r="265" fill="none" stroke="url(#mainGradient)" stroke-width="3" stroke-dasharray="15 8" opacity="0.4"/>
+
+                                <!-- Zone image importée -->
+                                <g id="free-image-group" transform="translate(300,300)">
+                                    <image id="free-image-el" x="-200" y="-200" width="400" height="400" href="" preserveAspectRatio="xMidYMid meet"/>
+                                </g>
+
+                                <!-- Label superposé (optionnel) -->
+                                <text id="out-free-label" x="300" y="520" font-family="Cinzel, serif" font-size="26" font-weight="900" fill="url(#mainGradient)" text-anchor="middle" filter="url(#strongGlow)"></text>
+
+                                <!-- Indicateur si aucune image -->
+                                <g id="free-placeholder">
+                                    <circle cx="300" cy="280" r="80" fill="none" stroke="url(#reverseGradient)" stroke-width="2" stroke-dasharray="5 5" opacity="0.5"/>
+                                    <text x="300" y="275" font-family="Rajdhani, sans-serif" font-size="40" fill="url(#mainGradient)" text-anchor="middle" opacity="0.4">📎</text>
+                                    <text x="300" y="310" font-family="Rajdhani, sans-serif" font-size="14" fill="url(#reverseGradient)" text-anchor="middle" opacity="0.5">IMPORTER VOTRE IMAGE</text>
+                                    <text x="300" y="335" font-family="Rajdhani, sans-serif" font-size="11" fill="url(#reverseGradient)" text-anchor="middle" opacity="0.3">PNG transparent ou SVG recommandé</text>
+                                </g>
+                            </g>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let isPaperMode = false;
+
+function setWeltTheme() {
+    ['stop1','r-stop3'].forEach(id => document.getElementById(id).setAttribute('stop-color', '#0044ff'));
+    ['stop2','r-stop2'].forEach(id => document.getElementById(id).setAttribute('stop-color', '#00e1ff'));
+    ['stop3','r-stop1'].forEach(id => document.getElementById(id).setAttribute('stop-color', '#9d00ff'));
+    document.getElementById('global-color').value = "#00e1ff";
+}
+
+function updateColorGradient() {
+    const hex = document.getElementById('global-color').value;
+    let r = parseInt(hex.substring(1,3),16), g = parseInt(hex.substring(3,5),16), b = parseInt(hex.substring(5,7),16);
+    let hex2 = "#" + ((1<<24)+(Math.max(0,r-50)<<16)+(g<<8)+Math.min(255,b+100)).toString(16).slice(1);
+    let hex3 = "#" + ((1<<24)+(Math.min(255,r+50)<<16)+(g<<8)+b).toString(16).slice(1);
+    document.getElementById('stop1').setAttribute('stop-color', hex3);
+    document.getElementById('stop2').setAttribute('stop-color', hex);
+    document.getElementById('stop3').setAttribute('stop-color', hex2);
+    document.getElementById('r-stop1').setAttribute('stop-color', hex2);
+    document.getElementById('r-stop2').setAttribute('stop-color', hex);
+    document.getElementById('r-stop3').setAttribute('stop-color', hex3);
+}
+
+function gcd(a, b) { return b ? gcd(b, a % b) : a; }
+function generateFibers() {
+    const group = document.getElementById('quantum-fibers');
+    if(!group) return;
+    const complexity = parseInt(document.getElementById('input-fibers').value);
+    document.getElementById('fiber-val').textContent = complexity;
+    const cx = 300, cy = 300, R = 265, r = complexity, d = 25, points = [];
+    const limit = Math.PI * 2 * (r / gcd(R, r));
+    for (let t = 0; t <= limit + 0.1; t += 0.05)
+        points.push(`${cx+(R-r)*Math.cos(t)+d*Math.cos(((R-r)/r)*t)},${cy+(R-r)*Math.sin(t)-d*Math.sin(((R-r)/r)*t)}`);
+    const pathD = `M ${points[0]} L ${points.join(' L ')}`;
+    group.innerHTML = `<path d="${pathD}" fill="none" stroke="url(#mainGradient)" stroke-width="3" opacity="0.5"/><path d="${pathD}" fill="none" stroke="url(#reverseGradient)" stroke-width="1" opacity="0.9"/>`;
+}
+
+function drawStar() {
+    const n = parseInt(document.getElementById('input-star').value);
+    document.getElementById('star-val').textContent = n;
+    let cx=300, cy=300, outer=175, inner=75, pts=[], circles="";
+    for(let i=0; i<n*2; i++) {
+        let r = (i%2===0)?outer:inner, a = (i*Math.PI/n)-(Math.PI/2);
+        let x=cx+r*Math.cos(a), y=cy+r*Math.sin(a);
+        pts.push(`${x},${y}`);
+        if(i%2===0) circles += `<circle cx="${x}" cy="${y}" r="6.5"/>`;
+    }
+    document.getElementById('star-polygon').setAttribute('points', pts.join(' '));
+    document.getElementById('star-points').innerHTML = circles;
+}
+
+function toggleMode() {
+    isPaperMode = !isPaperMode;
+    document.getElementById('welt-root').classList.toggle('paper-mode');
+    document.getElementById('mode-knob').classList.toggle('on');
+    document.getElementById('label-paper').style.color = isPaperMode ? '#9d00ff' : '#94a3b8';
+    document.getElementById('label-tech').style.color = isPaperMode ? '#94a3b8' : '#00e1ff';
+}
+
+function fillDeptInfo() {
+    const opt = document.getElementById('input-dept-select').selectedOptions[0];
+    if(opt.value) {
+        document.getElementById('rect-dept').value = 'DÉPARTEMENT ' + (opt.dataset.nom||'').toUpperCase();
+        document.getElementById('rect-chef').value = (opt.dataset.grade ? opt.dataset.grade+' ' : '') + (opt.dataset.chef||'');
+        document.getElementById('rect-sigle').value = opt.dataset.code||'DPT';
+        updateStamp();
+    }
+}
+
+function fillOvalChef() {
+    const opt = document.getElementById('oval-dept-select').selectedOptions[0];
+    if(opt.value) {
+        document.getElementById('oval-name').value = (opt.dataset.grade ? opt.dataset.grade+' ' : '') + (opt.dataset.chef||'NOM');
+        document.getElementById('oval-role').value = 'CHEF DE DÉPARTEMENT';
+        document.getElementById('oval-sigle').value = opt.dataset.code||'DPT';
+        document.getElementById('oval-grade').value = opt.dataset.grade||'ENSEIGNANT';
+        updateStamp();
+    }
+}
+
+function fillChiefCircle() {
+    const opt = document.getElementById('chief-dept-select').selectedOptions[0];
+    if(opt.value) {
+        document.getElementById('chief-dept').value = 'DÉPARTEMENT ' + (opt.dataset.nom||'').toUpperCase();
+        document.getElementById('chief-nom').value = (opt.dataset.chef||'NOM DU CHEF').toUpperCase();
+        document.getElementById('chief-grade').value = (opt.dataset.grade||'').toUpperCase();
+        document.getElementById('chief-sigle').value = opt.dataset.code||'DPT';
+        updateStamp();
+    }
+}
+
+function switchStamp() {
+    const type = document.getElementById('stamp-selector').value;
+    document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.stamp-group').forEach(el => el.style.display = 'none');
+    document.getElementById('controls-' + type).classList.add('active');
+    document.getElementById('svg-' + type).style.display = 'block';
+    document.getElementById('stamp-svg').setAttribute('viewBox', type==='rectangular' ? '0 0 600 320' : '0 0 600 600');
+    updateStamp();
+}
+
+// ============================================
+// MODE LIBRE — Import Image
+// ============================================
+let freeImageData = null;
+
+function loadFreeImage(event) {
+    const file = event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        freeImageData = e.target.result;
+        document.getElementById('free-image-el').setAttribute('href', freeImageData);
+        // Cacher le placeholder
+        const ph = document.getElementById('free-placeholder');
+        if(ph) ph.style.display = 'none';
+        updateFreeStamp();
+    };
+    reader.readAsDataURL(file);
+}
+
+function updateFreeStamp() {
+    const size = parseInt(document.getElementById('free-size').value);
+    const opacity = parseInt(document.getElementById('free-opacity').value) / 100;
+    const rotation = parseInt(document.getElementById('free-rotation').value);
+
+    const imgEl = document.getElementById('free-image-el');
+    const group = document.getElementById('free-image-group');
+
+    imgEl.setAttribute('x', -size/2);
+    imgEl.setAttribute('y', -size/2);
+    imgEl.setAttribute('width', size);
+    imgEl.setAttribute('height', size);
+    imgEl.setAttribute('opacity', opacity);
+    group.setAttribute('transform', `translate(300,300) rotate(${rotation})`);
+}
+
+function updateFreeLabel() {
+    const label = document.getElementById('free-label').value;
+    const el = document.getElementById('out-free-label');
+    if(el) el.textContent = label.toUpperCase();
+}
+
+function updateStamp() {
+    const t = document.getElementById('stamp-selector').value;
+    const map = {
+        circular:    [['out-circ-top','circ-top'],['out-circ-bottom','circ-bottom'],['out-circ-center','circ-center']],
+        rectangular: [['out-rect-top','rect-top'],['out-rect-dept','rect-dept'],['out-rect-chef','rect-chef'],['out-rect-sigle','rect-sigle']],
+        square:      [['out-sq-title','sq-title'],['out-sq-center','sq-center'],['out-sq-directeur','sq-directeur'],['out-sq-bottom','sq-bottom']],
+        hexagon:     [['out-hex-top','hex-top'],['out-hex-center','hex-center'],['out-hex-bottom','hex-bottom']],
+        star:        [['out-star-top','star-top'],['out-star-center','star-center',false],['out-star-bottom','star-bottom']],
+        oval:        [['out-oval-name','oval-name'],['out-oval-grade','oval-grade'],['out-oval-role','oval-role'],['out-oval-sigle','oval-sigle']],
+        chiefcircle: [['out-chief-ecole','chief-ecole'],['out-chief-dept','chief-dept'],['out-chief-nom','chief-nom'],['out-chief-grade','chief-grade'],['out-chief-sigle','chief-sigle']],
+        freemode:    [['out-free-label','free-label']]
+    };
+    (map[t]||[]).forEach(([out,inp,upper]) => {
+        const el = document.getElementById(out), val = document.getElementById(inp).value;
+        if(el) el.textContent = upper === false ? val : val.toUpperCase();
+    });
+}
+
+function downloadFormat(format) {
+    const svg = document.getElementById('stamp-svg');
+    const data = new XMLSerializer().serializeToString(svg);
+    const type = document.getElementById('stamp-selector').value;
+    const filename = `Sceau_LeWelt_${type}.${format}`;
+    if(format === 'svg') {
+        const blob = new Blob([data], {type:'image/svg+xml;charset=utf-8'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+    } else {
+        const vb = svg.getAttribute('viewBox').split(' '), w = +vb[2], h = +vb[3];
+        const blob = new Blob([data], {type:'image/svg+xml;charset=utf-8'}), url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+            const s=4, canvas=document.createElement('canvas'); canvas.width=w*s; canvas.height=h*s;
+            const ctx=canvas.getContext('2d'); ctx.scale(s,s); ctx.drawImage(img,0,0);
+            const a=document.createElement('a'); a.href=canvas.toDataURL('image/png'); a.download=filename; a.click(); URL.revokeObjectURL(url);
+        };
+        img.src = url;
+    }
+}
+
+function sauvegarderCachet() {
+    const svg = document.getElementById('stamp-svg');
+    const vb = svg.getAttribute('viewBox').split(' '), w = +vb[2], h = +vb[3];
+    const data = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([data], {type:'image/svg+xml;charset=utf-8'}), url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+        const s=4, canvas=document.createElement('canvas'); canvas.width=w*s; canvas.height=h*s;
+        const ctx=canvas.getContext('2d'); ctx.scale(s,s); ctx.drawImage(img,0,0);
+        const base64 = canvas.toDataURL('image/png');
+        const type = document.getElementById('stamp-selector').value;
+        let payload = {image: base64, type_forme: type};
+        if(type==='rectangular') {
+            payload.type='departement'; payload.departement_id=document.getElementById('input-dept-select').value;
+            if(!payload.departement_id){alert('Sélectionnez un département !');return;}
+        } else if(type==='oval') {
+            const d=document.getElementById('oval-dept-select').value;
+            payload.type=d?'chef_departement':'directeur'; if(d) payload.departement_id=d;
+        } else if(type==='chiefcircle') {
+            const d=document.getElementById('chief-dept-select').value;
+            payload.type='chef_departement'; payload.type_forme='chiefcircle';
+            if(d) payload.departement_id=d;
+            else {alert('Sélectionnez un département !');return;}
+        } else if(type==='freemode') {
+            payload.type='ecole'; payload.type_forme='freemode';
+        } else if(type==='square') payload.type='directeur';
+        else payload.type='ecole';
+
+        fetch('{{ url_for("branding.sauvegarder_sceau") }}', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+        .then(r=>r.json()).then(d=>{
+            if(d.success){alert('✅ '+d.message);location.reload();}
+            else alert('❌ '+(d.error||'Erreur'));
+        }).catch(e=>alert('Erreur: '+e));
+        URL.revokeObjectURL(url);
+    };
+    img.src = url;
+}
+
+setWeltTheme(); generateFibers(); drawStar(); switchStamp();
+</script>
+{% endblock %}
+

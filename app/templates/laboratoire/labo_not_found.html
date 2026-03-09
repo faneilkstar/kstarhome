@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="alert alert-danger text-center p-4">
+        <h2>Laboratoire virtuel non trouvé</h2>
+        <p>Le laboratoire <strong>{{ session_id }}</strong> n'existe pas ou n'est pas encore configuré.<br>
+        Veuillez contacter l'administrateur ou choisir un autre module.</p>
+        <a href="{{ url_for('laboratoire.hub_etudiant') }}" class="btn btn-primary mt-3">Retour au hub étudiant</a>
+    </div>
+</div>
+{% endblock %}

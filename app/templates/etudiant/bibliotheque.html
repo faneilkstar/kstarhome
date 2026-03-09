@@ -1,191 +1,83 @@
 {% extends "base.html" %}
-{% block title %}Bibliothèque Numérique Infinie | KstarHome{% endblock %}
+{% block title %}Bibliothèque | Étudiant{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold">
-                <i class="fas fa-infinity me-2 text-primary"></i>
-                Bibliothèque Numérique Infinie
-            </h2>
-            <p class="text-muted mb-0">Accédez à une collection illimitée de livres et ressources</p>
-        </div>
-        <div class="d-flex gap-2">
-            <input type="text" id="searchBook" class="form-control" placeholder="Rechercher titre, auteur..." style="width: 300px;">
-            <select id="categoryFilter" class="form-select" style="width: 200px;">
-                <option value="">🔍 Toutes catégories</option>
-                <optgroup label="📚 Sciences">
-                    <option value="Mathématiques">Mathématiques</option>
-                    <option value="Physique">Physique</option>
-                    <option value="Chimie">Chimie</option>
-                    <option value="Biologie">Biologie</option>
-                </optgroup>
-                <optgroup label="💻 Ingénierie">
-                    <option value="Informatique">Informatique</option>
-                    <option value="Électronique">Électronique</option>
-                    <option value="Électrotechnique">Électrotechnique</option>
-                    <option value="Mécanique">Mécanique</option>
-                    <option value="Génie Civil">Génie Civil</option>
-                    <option value="Automatique">Automatique</option>
-                    <option value="Thermodynamique">Thermodynamique</option>
-                </optgroup>
-                <optgroup label="📖 Lettres & Humains">
-                    <option value="Roman">Roman</option>
-                    <option value="Histoire">Histoire</option>
-                    <option value="Philosophie">Philosophie</option>
-                    <option value="Langues">Langues</option>
-                </optgroup>
-                <optgroup label="💼 Gestion">
-                    <option value="Économie">Économie</option>
-                    <option value="Gestion">Gestion</option>
-                    <option value="Droit">Droit</option>
-                </optgroup>
-                <optgroup label="🎨 Autres">
-                    <option value="Arts">Arts</option>
-                    <option value="Sport">Sport</option>
-                    <option value="Autre">Autre</option>
-                </optgroup>
-            </select>
-        </div>
+<div class="container-fluid py-4">
+    <div class="mb-4">
+        <h2 class="fw-bold"><i class="fas fa-infinity me-2 text-primary"></i>Bibliothèque Numérique</h2>
+        <p class="text-muted">{{ total_livres }} livres disponibles • Consultez et téléchargez gratuitement</p>
     </div>
 
-    <!-- Statistiques -->
-    <div class="row mb-4 g-3">
-        <div class="col-md-3">
-            <div class="card-pro bg-primary bg-opacity-10 border-0 p-3 text-center">
-                <h3 class="fw-bold text-primary mb-0">{{ livres|length }}+</h3>
-                <p class="text-muted small mb-0"><i class="fas fa-book me-1"></i>Livres</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card-pro bg-success bg-opacity-10 border-0 p-3 text-center">
-                <h3 class="fw-bold text-success mb-0">∞</h3>
-                <p class="text-muted small mb-0"><i class="fas fa-infinity me-1"></i>Collection Infinie</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card-pro bg-info bg-opacity-10 border-0 p-3 text-center">
-                <h3 class="fw-bold text-info mb-0">24/7</h3>
-                <p class="text-muted small mb-0"><i class="fas fa-clock me-1"></i>Disponible</p>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card-pro bg-warning bg-opacity-10 border-0 p-3 text-center">
-                <h3 class="fw-bold text-warning mb-0">PDF</h3>
-                <p class="text-muted small mb-0"><i class="fas fa-file-pdf me-1"></i>Format</p>
-            </div>
-        </div>
+    <!-- Recherche -->
+    <div class="mb-4">
+        <input type="text" id="searchBooks" class="form-control form-control-lg" placeholder="🔍 Rechercher un livre...">
     </div>
 
-    <div class="row g-4" id="bookGrid">
-        {% for livre in livres %}
-        <div class="col-md-3 col-sm-6 book-item" data-titre="{{ livre.titre|lower }}" data-auteur="{{ livre.auteur|lower }}" data-categorie="{{ livre.categorie or '' }}">
-            <div class="card h-100 border-0 shadow-sm hover-card">
-                <div style="height: 250px; overflow: hidden;" class="position-relative">
-                    <div class="d-flex align-items-center justify-content-center h-100 bg-gradient"
-                         style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                        <i class="fas fa-book fa-4x text-white opacity-50"></i>
-                    </div>
-                    {% if livre.categorie %}
-                    <span class="position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75">
-                        {{ livre.categorie }}
-                    </span>
-                    {% endif %}
-                </div>
-                
-                <div class="card-body">
-                    <h5 class="card-title fw-bold text-truncate mb-2">{{ livre.titre }}</h5>
-                    <p class="card-text text-muted small"><i class="fas fa-user me-1"></i>{{ livre.auteur }}</p>
-                    {% if livre.description %}
-                    <p class="small text-muted" style="max-height: 40px; overflow: hidden;">
-                        {{ livre.description[:80] }}...
-                    </p>
-                    {% endif %}
-                </div>
-                
-                <div class="card-footer bg-white border-0 pb-3">
-                    <div class="d-flex gap-2">
-                        <a href="{{ url_for('static', filename='library/pdf/' + livre.fichier_pdf) }}"
-                           class="btn btn-primary flex-grow-1" target="_blank">
-                            <i class="fas fa-book-open me-1"></i> Lire
-                        </a>
-                        <a href="{{ url_for('static', filename='library/pdf/' + livre.fichier_pdf) }}"
-                           class="btn btn-outline-secondary" download title="Télécharger">
-                            <i class="fas fa-download"></i>
-                        </a>
+    <!-- Étagères -->
+    {% for etagere in etageres %}
+    <div class="card border-0 shadow-sm mb-4 etagere-card">
+        <div class="card-header d-flex justify-content-between align-items-center py-3"
+             style="background: {{ etagere.couleur }}; color: white; cursor: pointer;"
+             onclick="toggleEtagere('etag_{{ etagere.id }}')">
+            <div>
+                <i class="{{ etagere.icone }} me-2"></i>
+                <strong>{{ etagere.nom }}</strong>
+                <span class="badge bg-light text-dark ms-2">{{ etagere.get_nombre_livres() }} livres</span>
+            </div>
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="card-body" id="etag_{{ etagere.id }}">
+            <div class="row g-3">
+                {% for livre in etagere.livres.all() %}
+                <div class="col-lg-3 col-md-4 col-sm-6 livre-item">
+                    <div class="card h-100 border-0 shadow-sm hover-card">
+                        <div style="height:140px;overflow:hidden;">
+                            <div class="d-flex align-items-center justify-content-center h-100"
+                                 style="background:linear-gradient(135deg,{{ etagere.couleur }} 0%,#333 100%);">
+                                <i class="fas fa-book fa-3x text-white opacity-50"></i>
+                            </div>
+                        </div>
+                        <div class="card-body p-2">
+                            <h6 class="fw-bold mb-1 livre-titre" style="font-size:0.85rem">{{ livre.titre|truncate(45) }}</h6>
+                            <p class="text-muted mb-0 livre-auteur" style="font-size:0.75rem"><i class="fas fa-user me-1"></i>{{ livre.auteur }}</p>
+                        </div>
+                        <div class="card-footer bg-white border-0 p-2">
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('static', filename='library/pdf/' + livre.fichier_pdf) }}"
+                                   class="btn btn-sm btn-primary flex-grow-1" target="_blank"><i class="fas fa-book-open me-1"></i>Lire</a>
+                                <a href="{{ url_for('static', filename='library/pdf/' + livre.fichier_pdf) }}"
+                                   class="btn btn-sm btn-success" download><i class="fas fa-download"></i></a>
+                            </div>
+                        </div>
                     </div>
                 </div>
+                {% else %}
+                <div class="col-12 text-center py-3 text-muted"><small>Étagère vide</small></div>
+                {% endfor %}
             </div>
         </div>
-        {% endfor %}
-
-        {% if livres|length == 0 %}
-        <div class="col-12 text-center py-5">
-            <i class="fas fa-infinity fa-4x text-primary mb-3"></i>
-            <h4 class="fw-bold mb-2">Collection Infinie en Chargement</h4>
-            <p class="text-muted">La bibliothèque numérique sera bientôt disponible.</p>
-        </div>
-        {% endif %}
     </div>
+    {% endfor %}
 
-    <div id="noResults" class="text-center py-5" style="display: none;">
-        <i class="fas fa-search fa-3x text-muted mb-3"></i>
-        <h4>Aucun résultat</h4>
-        <p class="text-muted">Essayez d'autres mots-clés</p>
+    {% if total_livres == 0 %}
+    <div class="text-center py-5">
+        <i class="fas fa-book-open fa-4x text-muted mb-3"></i>
+        <h4>Aucun livre disponible</h4>
+        <p class="text-muted">La bibliothèque sera bientôt alimentée par les enseignants</p>
     </div>
+    {% endif %}
 </div>
 
-<style>
-.hover-card {
-    transition: all 0.3s ease;
-}
-.hover-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
-}
-</style>
-
+<style>.hover-card{transition:all .3s ease}.hover-card:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.12)!important}</style>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('searchBook');
-    const categoryFilter = document.getElementById('categoryFilter');
-    const bookGrid = document.getElementById('bookGrid');
-    const noResults = document.getElementById('noResults');
-
-    function filterBooks() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const selectedCategory = categoryFilter.value;
-        let visibleCount = 0;
-
-        document.querySelectorAll('.book-item').forEach(item => {
-            const titre = item.dataset.titre;
-            const auteur = item.dataset.auteur;
-            const categorie = item.dataset.categorie;
-
-            const matchSearch = !searchTerm || titre.includes(searchTerm) || auteur.includes(searchTerm);
-            const matchCategory = !selectedCategory || categorie === selectedCategory;
-
-            if (matchSearch && matchCategory) {
-                item.style.display = '';
-                visibleCount++;
-            } else {
-                item.style.display = 'none';
-            }
-        });
-
-        if (visibleCount === 0 && (searchTerm || selectedCategory)) {
-            bookGrid.style.display = 'none';
-            noResults.style.display = 'block';
-        } else {
-            bookGrid.style.display = 'flex';
-            bookGrid.classList.add('row', 'g-4');
-            noResults.style.display = 'none';
-        }
-    }
-
-    searchInput.addEventListener('input', filterBooks);
-    categoryFilter.addEventListener('change', filterBooks);
+function toggleEtagere(id){const el=document.getElementById(id);el.style.display=el.style.display==='none'?'block':'none'}
+document.getElementById('searchBooks').addEventListener('input',function(){
+    const q=this.value.toLowerCase();
+    document.querySelectorAll('.livre-item').forEach(function(el){
+        const t=el.querySelector('.livre-titre').textContent.toLowerCase();
+        const a=el.querySelector('.livre-auteur').textContent.toLowerCase();
+        el.style.display=(t.includes(q)||a.includes(q))?'':'none';
+    });
 });
 </script>
 {% endblock %}

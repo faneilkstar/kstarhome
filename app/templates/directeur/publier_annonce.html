@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Publier une Annonce{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold"><i class="fas fa-pen-fancy me-2"></i>Nouvelle Publication</h2>
+                <a href="{{ url_for('directeur.liste_annonces') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Retour
+                </a>
+            </div>
+
+            <div class="card shadow-sm border-0" style="border-radius: 20px;">
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data">
+
+                        <!-- Catégorie -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Type de publication</label>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="categorie" id="cat_article" value="article" checked>
+                                    <label class="btn btn-outline-primary w-100 py-3" for="cat_article">
+                                        <i class="fas fa-newspaper d-block mb-1 fs-4"></i>
+                                        <small>Article</small>
+                                    </label>
+                                </div>
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="categorie" id="cat_guide" value="guide">
+                                    <label class="btn btn-outline-success w-100 py-3" for="cat_guide">
+                                        <i class="fas fa-compass d-block mb-1 fs-4"></i>
+                                        <small>Guide d'orientation</small>
+                                    </label>
+                                </div>
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="categorie" id="cat_actu" value="actualite">
+                                    <label class="btn btn-outline-warning w-100 py-3" for="cat_actu">
+                                        <i class="fas fa-bolt d-block mb-1 fs-4"></i>
+                                        <small>Actualité</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Titre -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Titre <span class="text-danger">*</span></label>
+                            <input type="text" name="titre" class="form-control form-control-lg"
+                                   placeholder="Ex: Guide d'inscription 2026-2027" required>
+                        </div>
+
+                        <!-- Contenu -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Contenu <span class="text-danger">*</span></label>
+                            <textarea name="contenu" class="form-control" rows="8"
+                                      placeholder="Rédigez votre article, guide ou actualité ici..." required></textarea>
+                        </div>
+
+                        <!-- Fichier joint -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-paperclip me-1"></i> Fichier joint (PDF, DOC, image)
+                            </label>
+                            <input type="file" name="fichier_joint" class="form-control"
+                                   accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
+                            <small class="text-muted">Formats acceptés : PDF, DOC, DOCX, PNG, JPG</small>
+                        </div>
+
+                        <!-- Visibilité -->
+                        <div class="mb-4 p-3 bg-light rounded-3">
+                            <label class="form-label fw-bold mb-3">
+                                <i class="fas fa-eye me-1"></i> Visibilité
+                            </label>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="visible_public" id="vis_public">
+                                        <label class="form-check-label fw-bold" for="vis_public">
+                                            <i class="fas fa-globe text-success me-1"></i> Page de connexion
+                                        </label>
+                                        <br><small class="text-muted">Tout le monde peut voir</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="visible_etudiants" id="vis_etu" checked>
+                                        <label class="form-check-label fw-bold" for="vis_etu">
+                                            <i class="fas fa-user-graduate text-info me-1"></i> Étudiants
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="visible_enseignants" id="vis_ens" checked>
+                                        <label class="form-check-label fw-bold" for="vis_ens">
+                                            <i class="fas fa-chalkboard-teacher text-primary me-1"></i> Enseignants
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg py-3 fw-bold" style="border-radius: 15px;">
+                                <i class="fas fa-paper-plane me-2"></i> Publier
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

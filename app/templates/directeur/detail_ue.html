@@ -19,21 +19,108 @@
                 <h5 class="fw-bold mb-4">Informations Générales</h5>
                 <div class="row g-3">
                     <div class="col-6">
-                        <label class="text-muted small text-uppercase fw-bold">Classe</label>
-                        <p class="fw-bold text-dark">{{ ue.classe.nom_classe if ue.classe else 'Non assignée' }}</p>
+                        <label class="text-muted small text-uppercase fw-bold">Classe(s)</label>
+                        {% set toutes_classes = ue.get_toutes_classes() %}
+                        {% if toutes_classes %}
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                {% for cl in toutes_classes %}
+                                <a href="{{ url_for('directeur.detail_classe', classe_id=cl.id) }}" class="badge {% if cl.est_assemblee %}bg-warning text-dark{% else %}bg-primary{% endif %} text-decoration-none px-2 py-1" style="font-size: 0.85rem;">
+                                    {% if cl.est_assemblee %}<i class="fas fa-object-group me-1"></i>{% endif %}
+                                    {{ cl.code_classe or cl.nom_classe }}
+                                </a>
+                                {% endfor %}
+                            </div>
+
+                            {# ── TRONC COMMUN : Afficher les filières et classes composantes ── #}
+                            {% if ue.type_affectation == 'tronc_commun' %}
+                            <div class="mt-2">
+                                <span class="badge bg-info bg-opacity-10 text-info"><i class="fas fa-users me-1"></i> Tronc Commun</span>
+                                {% for cl in toutes_classes %}
+                                    {% if cl.est_assemblee %}
+                                        {# Filières composantes #}
+                                        {% set filieres_comp = cl.get_filieres_composantes() %}
+                                        {% if filieres_comp %}
+                                        <div class="mt-2 p-2 rounded" style="background: #fef9e7; border: 1px solid #f0e68c;">
+                                            <div class="small fw-bold text-dark mb-1">
+                                                <i class="fas fa-sitemap me-1 text-warning"></i> Filières regroupées :
+                                            </div>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% for fil in filieres_comp %}
+                                                <span class="badge bg-dark bg-opacity-75 text-white">{{ fil.code_filiere or fil.nom_filiere }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
+                                        {# Classes composantes réelles #}
+                                        {% set classes_comp = cl.get_classes_composantes() %}
+                                        {% if classes_comp %}
+                                        <div class="mt-2 p-2 rounded" style="background: #eef6ff; border: 1px solid #b8d4f0;">
+                                            <div class="small fw-bold text-dark mb-1">
+                                                <i class="fas fa-door-open me-1 text-primary"></i> Classes liées ({{ classes_comp|length }}) :
+                                            </div>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% for comp in classes_comp %}
+                                                <a href="{{ url_for('directeur.detail_classe', classe_id=comp.id) }}" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none">
+                                                    {{ comp.code_classe or comp.nom_classe }}
+                                                    <span class="ms-1 badge bg-primary">{{ comp.get_nombre_etudiants() }}</span>
+                                                </a>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        {% elif ue.type_affectation == 'libre' %}
+                            <p class="fw-bold text-warning"><i class="fas fa-gift me-1"></i> UE Libre (ouverte à tous)</p>
+                        {% else %}
+                            <p class="text-muted">Non assignée</p>
+                        {% endif %}
                     </div>
                     <div class="col-6">
                         <label class="text-muted small text-uppercase fw-bold">Crédits / Coef</label>
                         <p class="fw-bold text-dark">{{ ue.credits }} ECTS / Coeff {{ ue.coefficient }}</p>
                     </div>
+                    <div class="col-6">
+                        <label class="text-muted small text-uppercase fw-bold">Semestre</label>
+                        <p class="fw-bold text-dark"><span class="badge bg-dark">{{ ue.semestre or 'S1' }}</span></p>
+                    </div>
+                    <div class="col-6">
+                        <label class="text-muted small text-uppercase fw-bold">Catégorie</label>
+                        <p class="fw-bold text-dark">
+                            {% if ue.categorie == 'fondamentale' %}<span class="badge bg-danger">Fondamentale</span>
+                            {% elif ue.categorie == 'specialite' %}<span class="badge bg-primary">Spécialité</span>
+                            {% elif ue.categorie == 'transversale' %}<span class="badge bg-success">Transversale</span>
+                            {% elif ue.categorie == 'libre' %}<span class="badge bg-warning text-dark">Libre</span>
+                            {% else %}<span class="badge bg-secondary">{{ ue.categorie }}</span>{% endif %}
+                        </p>
+                    </div>
                     <div class="col-12">
-                        <label class="text-muted small text-uppercase fw-bold">Filière</label>
-                        {% if ue.classe and ue.classe.filiere %}
+                        <label class="text-muted small text-uppercase fw-bold">Département / Filière</label>
+                        {% if ue.departement %}
+                            <p class="fw-bold text-dark"><i class="fas fa-building me-1 text-primary"></i> {{ ue.departement.nom }}
+                            {% if ue.classe and ue.classe.filiere %}
+                                → {{ ue.classe.filiere.nom_filiere }} ({{ ue.classe.filiere.cycle }})
+                            {% endif %}
+                            </p>
+                        {% elif ue.classe and ue.classe.filiere %}
                             <p class="fw-bold text-dark">{{ ue.classe.filiere.nom_filiere }} ({{ ue.classe.filiere.cycle }})</p>
                         {% else %}
                             <p class="text-muted">N/A</p>
                         {% endif %}
                     </div>
+                    {% if ue.type_structure != 'ue_simple' %}
+                    <div class="col-12">
+                        <label class="text-muted small text-uppercase fw-bold">Structure</label>
+                        <p class="fw-bold">
+                            {% if ue.type_structure == 'ue_composite' %}<span class="badge bg-warning text-dark"><i class="fas fa-layer-group me-1"></i> UE Composite ({{ ue.elements_constitutifs.count() }} EC)</span>
+                            {% elif ue.type_structure == 'element_constitutif' %}<span class="badge bg-info"><i class="fas fa-puzzle-piece me-1"></i> Élément Constitutif</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 

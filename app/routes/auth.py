@@ -1,10 +1,11 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, send_file
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db
-from app.models import User, Etudiant, Enseignant, Filiere
+from app.models import User, Etudiant, Enseignant, Filiere, Annonce
 from datetime import datetime
 import os
+import io
 
 # UN SEUL Blueprint défini ici
 bp = Blueprint('auth', __name__)
@@ -65,7 +66,40 @@ def login():
         else:
             flash('Identifiants (pseudo ou mot de passe) incorrects.', 'danger')
 
-    return render_template('auth/login.html')
+    # Charger les annonces publiques pour la page de connexion
+    annonces_publiques = Annonce.query.filter_by(visible_public=True).order_by(Annonce.date_publication.desc()).limit(5).all()
+    guide = Annonce.query.filter_by(visible_public=True, categorie='guide').order_by(Annonce.date_publication.desc()).first()
+
+    return render_template('auth/login.html', annonces=annonces_publiques, guide=guide)
+
+
+# ============================================================
+# ACTUALITÉS & ANNONCES PUBLIQUES (Accès public - pas besoin de connexion)
+# ============================================================
+@bp.route('/actualites')
+def actualites_publiques():
+    """Page publique des actualités et annonces de l'école"""
+    annonces = Annonce.query.filter_by(visible_public=True).order_by(Annonce.date_publication.desc()).all()
+    guides = Annonce.query.filter_by(visible_public=True, categorie='guide').order_by(Annonce.date_publication.desc()).all()
+    actualites = Annonce.query.filter_by(visible_public=True, categorie='actualite').order_by(Annonce.date_publication.desc()).all()
+    articles = Annonce.query.filter_by(visible_public=True, categorie='article').order_by(Annonce.date_publication.desc()).all()
+    return render_template('auth/guide_orientation.html',
+                           guides=guides, actualites=actualites, articles=articles, annonces=annonces)
+
+
+@bp.route('/telecharger-guide/<int:annonce_id>')
+def telecharger_guide(annonce_id):
+    """Télécharger le fichier joint d'une annonce (accès public)"""
+    annonce = Annonce.query.get_or_404(annonce_id)
+    if not annonce.visible_public or not annonce.fichier_joint:
+        flash('Fichier non disponible.', 'warning')
+        return redirect(url_for('auth.actualites_publiques'))
+    # Chemin absolu pour éviter le doublon app/app/static
+    filepath = os.path.join(current_app.root_path, 'static', annonce.fichier_joint)
+    if os.path.exists(filepath):
+        return send_file(filepath, as_attachment=True)
+    flash('Fichier introuvable.', 'danger')
+    return redirect(url_for('auth.guide_orientation'))
 
 
 # ============================================================
@@ -237,3 +271,163 @@ def profil():
         return redirect(url_for('auth.profil'))
 
     return render_template('auth/profil.html')
+
+
+# Route de redirection vers le profil spécifique
+@bp.route('/mon-profil')
+@login_required
+def mon_profil_redirect():
+    """Redirige vers le profil spécifique selon le rôle"""
+    if current_user.role == 'ENSEIGNANT':
+        return redirect(url_for('enseignant.profil'))
+    elif current_user.role == 'ETUDIANT':
+        return redirect(url_for('etudiant.profil'))
+    return redirect(url_for('auth.profil'))
+
+
+# ============================================================
+# GUIDE D'ORIENTATION (route publique, sans connexion)
+# ============================================================
+@bp.route('/guide')
+def guide_orientation():
+    """Page publique du guide d'orientation – accessible sans connexion"""
+    from app.models import ConfigurationEcole, Departement, Filiere, UE, Classe
+    config        = ConfigurationEcole.query.first()
+    departements  = Departement.query.filter_by(active=True).order_by(Departement.nom).all()
+    filieres_fond = Filiere.query.filter_by(active=True, type_diplome='fondamental').order_by(Filiere.nom_filiere).all()
+    filieres_pro  = Filiere.query.filter_by(active=True, type_diplome='professionnel').order_by(Filiere.nom_filiere).all()
+    ues_majeures  = UE.query.filter_by(active=True, parent_id=None).order_by(UE.semestre, UE.code_ue).all()
+    nb_etudiants  = Etudiant.query.count()
+    return render_template('public/guide_orientation.html',
+                           config=config,
+                           departements=departements,
+                           filieres_fond=filieres_fond,
+                           filieres_pro=filieres_pro,
+                           ues_majeures=ues_majeures,
+                           nb_etudiants=nb_etudiants,
+                           annee=datetime.now().year)
+
+
+@bp.route('/guide/pdf')
+def guide_orientation_pdf():
+    """Télécharge le guide d'orientation en PDF (sans connexion)"""
+    from app.models import ConfigurationEcole, Departement, Filiere, UE
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import cm
+    from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
+                                    Table, TableStyle, PageBreak, HRFlowable)
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER
+
+    config       = ConfigurationEcole.query.first()
+    nom_ecole    = config.nom_ecole    if config else "École Polytechnique de la State"
+    nom_directeur = config.nom_directeur if config else "La Direction"
+    departements = Departement.query.filter_by(active=True).order_by(Departement.nom).all()
+    filieres     = Filiere.query.filter_by(active=True).order_by(Filiere.nom_filiere).all()
+    ues_majeures = UE.query.filter_by(active=True, parent_id=None).order_by(UE.semestre, UE.code_ue).all()
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4,
+                            leftMargin=2*cm, rightMargin=2*cm,
+                            topMargin=2*cm, bottomMargin=2*cm)
+
+    styles = getSampleStyleSheet()
+    BLUE  = colors.HexColor('#003366')
+    GOLD  = colors.HexColor('#CC9933')
+    LIGHT = colors.HexColor('#EEF2FF')
+
+    s_titre  = ParagraphStyle('T',  parent=styles['Title'],   textColor=BLUE, fontSize=22, spaceAfter=8,  alignment=TA_CENTER)
+    s_h1     = ParagraphStyle('H1', parent=styles['Heading1'], textColor=BLUE, fontSize=14, spaceBefore=14, spaceAfter=6)
+    s_h2     = ParagraphStyle('H2', parent=styles['Heading2'], textColor=GOLD, fontSize=12, spaceBefore=10, spaceAfter=4)
+    s_body   = ParagraphStyle('B',  parent=styles['Normal'],  fontSize=10, spaceAfter=4)
+    s_center = ParagraphStyle('C',  parent=styles['Normal'],  fontSize=10, alignment=TA_CENTER)
+
+    story = []
+    # Page de garde
+    story.append(Spacer(1, 3*cm))
+    story.append(Paragraph(nom_ecole.upper(), s_titre))
+    story.append(HRFlowable(width="80%", thickness=2, color=GOLD, hAlign='CENTER'))
+    story.append(Spacer(1, 0.4*cm))
+    story.append(Paragraph("<b>Guide d'Orientation Officiel</b>",
+                            ParagraphStyle('GT', parent=s_titre, fontSize=16, textColor=GOLD)))
+    story.append(Paragraph(f"Année Universitaire {datetime.now().year}-{datetime.now().year+1}", s_center))
+    story.append(Spacer(1, 3*cm))
+    story.append(Paragraph(f"Directeur(trice) : <b>{nom_directeur}</b>", s_center))
+    story.append(Paragraph(f"Mis à jour le : {datetime.now().strftime('%d/%m/%Y')}", s_center))
+    story.append(PageBreak())
+
+    # Mot de la direction
+    story.append(Paragraph("1. Mot de la Direction", s_h1))
+    story.append(HRFlowable(width="100%", thickness=1, color=BLUE))
+    story.append(Spacer(1, 0.3*cm))
+    story.append(Paragraph(
+        f"Bienvenue à {nom_ecole}. Notre mission est de former les ingénieurs et innovateurs de demain. "
+        "Ce guide présente l'ensemble de notre offre de formation, qui évolue constamment pour répondre "
+        "aux défis technologiques et aux besoins du marché de l'emploi.", s_body))
+
+    # Départements & Filières
+    story.append(Spacer(1, 0.5*cm))
+    story.append(Paragraph("2. Nos Départements et Filières", s_h1))
+    story.append(HRFlowable(width="100%", thickness=1, color=BLUE))
+    for dept in departements:
+        story.append(Paragraph(f"Département : {dept.nom}", s_h2))
+        chef_txt = f"{dept.chef.nom} {dept.chef.prenom}" if dept.chef else "Non assigné"
+        story.append(Paragraph(f"<b>Chef de département :</b> {chef_txt}", s_body))
+        if dept.description:
+            story.append(Paragraph(dept.description, s_body))
+
+        fil_dept = [f for f in filieres if f.departement_id == dept.id]
+        if fil_dept:
+            data = [['Code', 'Filière', 'Cycle', 'Type', 'Classes']]
+            for f in fil_dept:
+                type_lbl = 'Fondamentale' if f.type_diplome == 'fondamental' else 'Professionnelle'
+                classes_noms = ", ".join([c.nom_classe for c in f.classes.filter_by(active=True).all()])
+                data.append([f.code_filiere or '-', f.nom_filiere, f.cycle or '-', type_lbl, classes_noms[:40]])
+            tbl = Table(data, colWidths=[2*cm, 6.5*cm, 2.5*cm, 3.5*cm, 3.5*cm])
+            tbl.setStyle(TableStyle([
+                ('BACKGROUND',     (0,0), (-1,0), BLUE),
+                ('TEXTCOLOR',      (0,0), (-1,0), colors.white),
+                ('FONTNAME',       (0,0), (-1,0), 'Helvetica-Bold'),
+                ('FONTSIZE',       (0,0), (-1,-1), 8),
+                ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, LIGHT]),
+                ('GRID',           (0,0), (-1,-1), 0.4, colors.lightgrey),
+            ]))
+            story.append(tbl)
+        story.append(Spacer(1, 0.3*cm))
+
+    story.append(PageBreak())
+
+    # UE
+    story.append(Paragraph("3. Structure des Unités d'Enseignement", s_h1))
+    story.append(HRFlowable(width="100%", thickness=1, color=BLUE))
+    if ues_majeures:
+        data_ue = [['Code', 'Intitulé', 'Semestre', 'Crédits', 'Catégorie']]
+        for ue in ues_majeures[:60]:
+            cat_map = {'fondamentale': 'Fondamentale', 'specialite': 'Spécialité',
+                       'transversale': 'Transversale',  'libre': 'Libre'}
+            cat = cat_map.get(ue.categorie or '', '-')
+            data_ue.append([ue.code_ue, (ue.nom_ue or ue.intitule or '')[:45],
+                             ue.semestre or '-', str(ue.credits or 0), cat])
+        tbl_ue = Table(data_ue, colWidths=[2.5*cm, 9*cm, 2*cm, 2*cm, 2.5*cm])
+        tbl_ue.setStyle(TableStyle([
+            ('BACKGROUND',     (0,0), (-1,0), BLUE),
+            ('TEXTCOLOR',      (0,0), (-1,0), colors.white),
+            ('FONTNAME',       (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE',       (0,0), (-1,-1), 8),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, LIGHT]),
+            ('GRID',           (0,0), (-1,-1), 0.4, colors.lightgrey),
+        ]))
+        story.append(tbl_ue)
+
+    story.append(Spacer(1, 1*cm))
+    story.append(HRFlowable(width="80%", thickness=1, color=GOLD, hAlign='CENTER'))
+    story.append(Paragraph("Pour plus d'informations, consultez votre portail en ligne.", s_center))
+
+    doc.build(story)
+    buffer.seek(0)
+    filename = f"guide_orientation_{datetime.now().year}.pdf"
+    return send_file(buffer, as_attachment=True,
+                     download_name=filename,
+                     mimetype='application/pdf')
+

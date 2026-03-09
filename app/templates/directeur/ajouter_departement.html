@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un Département{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus-circle"></i> Créer un Nouveau Département
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('directeur.ajouter_departement') }}">
+
+                        <div class="mb-3">
+                            <label for="nom" class="form-label">
+                                <i class="fas fa-building"></i> Nom du Département *
+                            </label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="nom"
+                                   name="nom"
+                                   placeholder="Ex: Informatique, Mathématiques, Génie Civil..."
+                                   required>
+                            <small class="text-muted">Nom complet du département</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="code" class="form-label">
+                                <i class="fas fa-tag"></i> Code du Département *
+                            </label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="code"
+                                   name="code"
+                                   placeholder="Ex: INFO, MATH, GC"
+                                   maxlength="10"
+                                   style="text-transform: uppercase;"
+                                   required>
+                            <small class="text-muted">Code unique (3-10 caractères en majuscules)</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-align-left"></i> Description
+                            </label>
+                            <textarea class="form-control"
+                                      id="description"
+                                      name="description"
+                                      rows="3"
+                                      placeholder="Description des missions et domaines du département..."></textarea>
+                        </div>
+
+                        <hr>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Note :</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Le chef de département sera assigné depuis la page de détails</li>
+                                <li>Une fois créé, vous pourrez y associer des filières</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('directeur.liste_departements') }}"
+                               class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Retour
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save"></i> Créer le Département
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-génération du code à partir du nom
+document.getElementById('nom').addEventListener('blur', function() {
+    let nom = this.value.trim();
+    let codeInput = document.getElementById('code');
+
+    if (nom && !codeInput.value) {
+        // Génération auto : prendre les premières lettres
+        let mots = nom.split(' ');
+        let code = mots.map(mot => mot.charAt(0)).join('').toUpperCase();
+        codeInput.value = code.substring(0, 10);
+    }
+});
+</script>
+{% endblock %}
+
